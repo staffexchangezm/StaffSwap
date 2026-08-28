@@ -18,14 +18,15 @@ The theme is compatible with Elementor and other page builders through normal Wo
 2. Activate **StaffSwap Core** in Plugins.
 3. Activate **StaffSwap Resources**, **StaffSwap Profiles**, and **StaffSwap Messaging** when those modules are needed.
 4. Activate **StaffSwap** in Appearance > Themes.
-5. Activating the core plugin automatically creates these pages with their shortcodes:
+5. Open Appearance > StaffSwap Setup and click **Run setup**. This creates the essential pages, sets the homepage, and builds the StaffSwap Main Menu. The setup screen can be reopened at any time.
+6. Activating the core plugin automatically creates these pages with their shortcodes:
 	- `swaps`: `[staffswap_listings]`
 	- `create-swap`: `[staffswap_create_form]`
 	- `search`: `[staffswap_search]`
 	- `register`: `[staffswap_register]`
 	- `sign-in`: `[staffswap_login]`
 	- `my-profile`: `[staffswap_dashboard]`
-6. Add a Resources page with `[staffswap_resources]` and a Profile page with `[staffswap_profile]`. Set the home page in Settings > Reading. Saving Permalinks once after activation refreshes the custom listing routes. The `/swap/` archive is also available directly.
+7. Add a Resources page with `[staffswap_resources]` and a Profile page with `[staffswap_profile]` if they were not included by the setup screen. Set the home page in Settings > Reading if you want a different page. Saving Permalinks once after activation refreshes the custom listing routes. The `/swap/` archive is also available directly.
 
 ## Assets
 
