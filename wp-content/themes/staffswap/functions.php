@@ -1,10 +1,10 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) { exit; }
-function staffswap_setup() { add_theme_support( 'title-tag' ); add_theme_support( 'post-thumbnails' ); register_nav_menus( array( 'primary' => __( 'Primary Menu', 'staffswap' ) ) ); }
+function staffswap_setup() { add_theme_support( 'title-tag' ); add_theme_support( 'post-thumbnails' ); add_theme_support( 'align-wide' ); register_nav_menus( array( 'primary' => __( 'Primary Menu', 'staffswap' ) ) ); }
 add_action( 'after_setup_theme', 'staffswap_setup' );
 function staffswap_assets() { wp_enqueue_style( 'staffswap-fonts', 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap', array(), null ); wp_enqueue_style( 'staffswap-style', get_stylesheet_uri(), array( 'staffswap-fonts' ), '1.0.1' ); wp_enqueue_script( 'staffswap-main', get_template_directory_uri() . '/assets/js/main.js', array(), '1.0.1', true ); }
 add_action( 'wp_enqueue_scripts', 'staffswap_assets' );
-function staffswap_fallback_menu() { echo '<ul><li><a href="' . esc_url( home_url( '/' ) ) . '">Home</a></li><li><a href="' . esc_url( home_url( '/swaps/' ) ) . '">Find Swaps</a></li><li><a href="' . esc_url( home_url( '/search/' ) ) . '">How It Works</a></li><li><a href="' . esc_url( home_url( '/swaps/' ) ) . '">Success Stories</a></li><li><a href="' . esc_url( home_url( '/resources/' ) ) . '">Resources</a></li><li><a href="' . esc_url( home_url( '/pricing/' ) ) . '">Pricing</a></li></ul>'; }
+function staffswap_fallback_menu() { echo '<ul><li><a href="' . esc_url( home_url( '/' ) ) . '">Home</a></li><li><a href="' . esc_url( home_url( '/swaps/' ) ) . '">Find Swaps</a></li><li><a href="' . esc_url( home_url( '/how-it-works/' ) ) . '">How It Works</a></li><li><a href="' . esc_url( home_url( '/success-stories/' ) ) . '">Success Stories</a></li><li><a href="' . esc_url( home_url( '/resources/' ) ) . '">Resources</a></li><li><a href="' . esc_url( home_url( '/blog/' ) ) . '">Blog</a></li><li><a href="' . esc_url( home_url( '/pricing/' ) ) . '">Pricing</a></li></ul>'; }
 
 function staffswap_customize_register( $wp_customize ) {
 	$wp_customize->add_section( 'staffswap_home', array( 'title' => __( 'StaffSwap Homepage', 'staffswap' ), 'priority' => 30 ) );
@@ -51,6 +51,10 @@ function staffswap_setup_pages() {
 		'login' => array( 'title' => 'Sign In', 'slug' => 'sign-in', 'content' => '[staffswap_login]' ),
 		'profile' => array( 'title' => 'My Profile', 'slug' => 'my-profile', 'content' => '[staffswap_dashboard]' ),
 		'resources' => array( 'title' => 'Resources Centre', 'slug' => 'resources', 'content' => '[staffswap_resources]' ),
+		'how' => array( 'title' => 'How It Works', 'slug' => 'how-it-works', 'content' => '<h1>How StaffExchangeHub Works</h1><p>Build your profile, post a request, compare matches, connect securely, and complete your workplace exchange.</p>' ),
+		'success' => array( 'title' => 'Success Stories', 'slug' => 'success-stories', 'content' => '<h1>Success Stories</h1><p>Read how professionals across Zambia have found better workplace placements.</p>' ),
+		'blog' => array( 'title' => 'Blog', 'slug' => 'blog', 'content' => '<h1>StaffExchangeHub Blog</h1><p>Practical advice for workplace mobility, career growth, and professional exchange.</p>' ),
+		'pricing' => array( 'title' => 'Pricing', 'slug' => 'pricing', 'content' => '<h1>Plans for every professional move</h1><p>Start with the free exchange network and choose premium visibility when you need it.</p>' ),
 	);
 	$created = array();
 	foreach ( $pages as $key => $page ) {
@@ -65,20 +69,52 @@ function staffswap_setup_pages() {
 	$menu_id = $menu ? $menu->term_id : wp_create_nav_menu( 'StaffSwap Main Menu' );
 	if ( ! is_wp_error( $menu_id ) ) {
 		$items = wp_get_nav_menu_items( $menu_id );
-		if ( empty( $items ) ) { foreach ( array( 'home', 'swaps', 'search', 'resources' ) as $key ) { if ( ! empty( $created[ $key ] ) ) { wp_update_nav_menu_item( $menu_id, 0, array( 'menu-item-title' => $pages[ $key ]['title'], 'menu-item-object' => 'page', 'menu-item-object-id' => $created[ $key ], 'menu-item-type' => 'post_type', 'menu-item-status' => 'publish' ) ); } } }
+		$menu_keys = array( 'home', 'swaps', 'how', 'success', 'resources', 'blog', 'pricing' );
+		$existing_ids = array(); foreach ( (array) $items as $item ) { $existing_ids[] = (int) $item->object_id; }
+		foreach ( $menu_keys as $key ) { if ( ! empty( $created[ $key ] ) && ! in_array( (int) $created[ $key ], $existing_ids, true ) ) { wp_update_nav_menu_item( $menu_id, 0, array( 'menu-item-title' => $pages[ $key ]['title'], 'menu-item-object' => 'page', 'menu-item-object-id' => $created[ $key ], 'menu-item-type' => 'post_type', 'menu-item-status' => 'publish' ) ); } }
 		$locations = get_theme_mod( 'nav_menu_locations', array() ); $locations['primary'] = $menu_id; set_theme_mod( 'nav_menu_locations', $locations );
 	}
 	update_option( 'staffswap_show_setup', '0' );
 	return $created;
 }
 
+function staffswap_setup_status() {
+	$menu = wp_get_nav_menu_object( 'StaffSwap Main Menu' );
+	$locations = get_theme_mod( 'nav_menu_locations', array() );
+	$required = array( 'home', 'swaps', 'search', 'create-swap', 'register', 'sign-in', 'my-profile', 'resources', 'blog', 'pricing' );
+	$pages = array();
+	foreach ( $required as $slug ) { $pages[ $slug ] = (bool) get_page_by_path( $slug ); }
+	return array( 'menu' => (bool) $menu, 'menu_assigned' => $menu && ! empty( $locations['primary'] ) && (int) $locations['primary'] === (int) $menu->term_id, 'pages' => $pages, 'elementor' => defined( 'ELEMENTOR_VERSION' ), 'elementskit' => defined( 'ELEMENTSKIT_VERSION' ), 'front_page' => 'page' === get_option( 'show_on_front' ) && (bool) get_option( 'page_on_front' ) );
+}
+
+function staffswap_handle_setup() {
+	if ( ! current_user_can( 'manage_options' ) ) { wp_die( esc_html__( 'You are not allowed to run StaffSwap setup.', 'staffswap' ) ); }
+	check_admin_referer( 'staffswap_run_setup', 'staffswap_setup_nonce' );
+	$created = staffswap_setup_pages();
+	if ( is_array( $created ) ) { wp_safe_redirect( add_query_arg( array( 'page' => 'staffswap-setup', 'staffswap_setup' => 'complete' ), admin_url( 'themes.php' ) ) ); exit; }
+	wp_safe_redirect( add_query_arg( array( 'page' => 'staffswap-setup', 'staffswap_setup' => 'failed' ), admin_url( 'themes.php' ) ) ); exit;
+}
+add_action( 'admin_post_staffswap_run_setup', 'staffswap_handle_setup' );
+
+function staffswap_handle_repair() {
+	if ( ! current_user_can( 'manage_options' ) ) { wp_die( esc_html__( 'You are not allowed to repair StaffSwap setup.', 'staffswap' ) ); }
+	check_admin_referer( 'staffswap_repair_setup', 'staffswap_repair_nonce' );
+	staffswap_setup_pages();
+	wp_safe_redirect( add_query_arg( array( 'page' => 'staffswap-setup', 'staffswap_setup' => 'repaired' ), admin_url( 'themes.php' ) ) );
+	exit;
+}
+add_action( 'admin_post_staffswap_repair_setup', 'staffswap_handle_repair' );
+
 function staffswap_setup_screen() {
 	if ( ! current_user_can( 'manage_options' ) ) { return; }
 	$notice = '';
-	if ( isset( $_POST['staffswap_run_setup'] ) && check_admin_referer( 'staffswap_run_setup', 'staffswap_setup_nonce' ) ) { staffswap_setup_pages(); $notice = '<div class="notice notice-success is-dismissible"><p><strong>StaffSwap is ready.</strong> Your pages, homepage, and navigation were configured.</p></div>'; }
+	if ( isset( $_GET['staffswap_setup'] ) && 'complete' === sanitize_key( wp_unslash( $_GET['staffswap_setup'] ) ) ) { $notice = '<div class="notice notice-success is-dismissible"><p><strong>StaffSwap is ready.</strong> Your pages, homepage, and navigation were configured.</p></div>'; }
+	if ( isset( $_GET['staffswap_setup'] ) && 'failed' === sanitize_key( wp_unslash( $_GET['staffswap_setup'] ) ) ) { $notice = '<div class="notice notice-error is-dismissible"><p>StaffSwap setup could not complete. Check your administrator permissions and try again.</p></div>'; }
+	if ( isset( $_GET['staffswap_setup'] ) && 'repaired' === sanitize_key( wp_unslash( $_GET['staffswap_setup'] ) ) ) { $notice = '<div class="notice notice-success is-dismissible"><p><strong>Setup repaired.</strong> Pages, navigation, and homepage settings were checked again.</p></div>'; }
+	$status = staffswap_setup_status();
 	$plugins = array( 'staffswap-core/staffswap-core.php' => 'Swap marketplace', 'staffswap-resources/staffswap-resources.php' => 'Resources Centre', 'staffswap-profiles/staffswap-profiles.php' => 'Member profiles', 'staffswap-messaging/staffswap-messaging.php' => 'Private messaging' );
 	if ( ! function_exists( 'is_plugin_active' ) ) { require_once ABSPATH . 'wp-admin/includes/plugin.php'; }
-	?><div class="wrap staffswap-setup"><div class="staffswap-setup__hero"><div><span class="staffswap-kicker">STAFFEXCHANGEHUB</span><h1>Set up your exchange network</h1><p>Build the essential pages and navigation for your professional workplace marketplace.</p></div><div class="staffswap-setup__mark">S</div></div><?php echo $notice; ?><div class="staffswap-setup__grid"><section class="staffswap-setup__main"><div class="staffswap-setup__card"><span class="staffswap-step">01</span><h2>Launch the core experience</h2><p>Creates the homepage, swap search, registration, sign-in, profile, create-post, and resources pages. It also sets Home as the front page and adds a polished main menu.</p><form method="post"><?php wp_nonce_field( 'staffswap_run_setup', 'staffswap_setup_nonce' ); ?><button class="button button-primary button-hero" type="submit" name="staffswap_run_setup">Run setup</button></form></div><div class="staffswap-setup__card"><span class="staffswap-step">02</span><h2>Shape your brand</h2><p>Update your hero message, CTA labels, homepage stats, and primary color without touching code.</p><a class="button" href="<?php echo esc_url( admin_url( 'customize.php' ) ); ?>">Open Customizer</a></div></section><aside class="staffswap-setup__side"><div class="staffswap-setup__card"><h2>Module checklist</h2><?php foreach ( $plugins as $plugin => $label ) : ?><p class="staffswap-check"><span class="<?php echo is_plugin_active( $plugin ) ? 'is-ready' : ''; ?>"><?php echo is_plugin_active( $plugin ) ? '&#10003;' : '&#9675;'; ?></span><?php echo esc_html( $label ); ?></p><?php endforeach; ?></div><div class="staffswap-setup__card staffswap-setup__tip"><strong>Recommended next step</strong><p>Activate StaffSwap Core first, then add Resources, Profiles, and Messaging as your site grows.</p><a href="<?php echo esc_url( admin_url( 'plugins.php' ) ); ?>">Manage plugins</a></div></aside></div></div><?php
+	?><div class="wrap staffswap-setup"><div class="staffswap-setup__hero"><div><span class="staffswap-kicker">STAFFEXCHANGEHUB</span><h1>Set up your exchange network</h1><p>Build the essential pages, navigation, modules, and builder compatibility for your marketplace.</p></div><div class="staffswap-setup__mark">S</div></div><?php echo $notice; ?><div class="staffswap-setup__grid"><section class="staffswap-setup__main"><div class="staffswap-setup__card"><span class="staffswap-step">01</span><h2>Launch or repair the core experience</h2><p>Creates missing pages, sets Home as the front page, repairs the StaffSwap Main Menu, and refreshes the primary menu assignment.</p><form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"><?php wp_nonce_field( 'staffswap_run_setup', 'staffswap_setup_nonce' ); ?><input type="hidden" name="action" value="staffswap_run_setup"><button class="button button-primary button-hero" type="submit">Run setup</button></form><form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="margin-top:10px"><?php wp_nonce_field( 'staffswap_repair_setup', 'staffswap_repair_nonce' ); ?><input type="hidden" name="action" value="staffswap_repair_setup"><button class="button" type="submit">Repair pages and menu</button></form></div><div class="staffswap-setup__card"><span class="staffswap-step">02</span><h2>System health</h2><p class="staffswap-check"><span class="<?php echo $status['menu_assigned'] ? 'is-ready' : ''; ?>"><?php echo $status['menu_assigned'] ? '&#10003;' : '&#9675;'; ?></span>Primary menu assigned</p><p class="staffswap-check"><span class="<?php echo $status['front_page'] ? 'is-ready' : ''; ?>"><?php echo $status['front_page'] ? '&#10003;' : '&#9675;'; ?></span>Homepage configured</p><p class="staffswap-check"><span class="<?php echo $status['elementor'] ? 'is-ready' : ''; ?>"><?php echo $status['elementor'] ? '&#10003;' : '&#9675;'; ?></span><?php echo $status['elementor'] ? 'Elementor detected' : 'Elementor not installed'; ?></p><?php if ( $status['elementskit'] ) : ?><p class="staffswap-check"><span>&#9888;</span>ElementsKit detected: check that no empty header template is assigned.</p><?php endif; ?><p><a class="button" href="<?php echo esc_url( admin_url( 'nav-menus.php' ) ); ?>">Edit menu</a> <a class="button" href="<?php echo esc_url( admin_url( 'options-reading.php' ) ); ?>">Reading settings</a></p></div><div class="staffswap-setup__card"><span class="staffswap-step">03</span><h2>Shape your brand</h2><p>Update hero message, CTA labels, homepage stats, and primary color from the visual Customizer or StaffSwap settings.</p><a class="button" href="<?php echo esc_url( admin_url( 'customize.php' ) ); ?>">Open Customizer</a> <a class="button" href="<?php echo esc_url( admin_url( 'options-general.php?page=staffswap-settings' ) ); ?>">Open StaffSwap settings</a></div></section><aside class="staffswap-setup__side"><div class="staffswap-setup__card"><h2>Module checklist</h2><?php foreach ( $plugins as $plugin => $label ) : ?><p class="staffswap-check"><span class="<?php echo is_plugin_active( $plugin ) ? 'is-ready' : ''; ?>"><?php echo is_plugin_active( $plugin ) ? '&#10003;' : '&#9675;'; ?></span><?php echo esc_html( $label ); ?></p><?php endforeach; ?></div><div class="staffswap-setup__card staffswap-setup__tip"><strong>Builder compatibility</strong><p>Use Elementor Full Width or Default for the homepage. Do not assign an empty ElementsKit header, or it will replace the StaffSwap header.</p><a href="<?php echo esc_url( admin_url( 'plugins.php' ) ); ?>">Manage plugins</a></div></aside></div></div><?php
 }
 
 function staffswap_setup_admin_styles( $hook ) {

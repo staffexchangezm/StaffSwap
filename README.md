@@ -26,6 +26,9 @@ The theme is compatible with Elementor and other page builders through normal Wo
 	- `register`: `[staffswap_register]`
 	- `sign-in`: `[staffswap_login]`
 	- `my-profile`: `[staffswap_dashboard]`
+	- `resources`: `[staffswap_resources]`
+	- `blog`: normal WordPress posts archive
+	- `how-it-works`, `success-stories`, and `pricing`: starter informational pages
 7. Add a Resources page with `[staffswap_resources]` and a Profile page with `[staffswap_profile]` if they were not included by the setup screen. Set the home page in Settings > Reading if you want a different page. Saving Permalinks once after activation refreshes the custom listing routes. The `/swap/` archive is also available directly.
 
 ## Assets
@@ -41,6 +44,10 @@ Theme content is editable from Appearance > Customize > StaffSwap Homepage. Site
 ## Elementor cache refresh
 
 After Elementor is installed and active, use **Elementor > Tools > General > CSS & Data > Regenerate Files & Data**. In some Elementor versions this appears as **Elementor > Tools > Regenerate CSS & Data**. If Elementor is not installed or activated, neither menu exists; use the StaffSwap Customizer and normal WordPress cache controls instead. For the homepage, use the **Default** or **Elementor Full Width** page template, not **Elementor Canvas**, because Canvas intentionally removes the theme header and footer.
+
+## Add the menu
+
+After running StaffSwap Setup, go to **Appearance > Menus**, select **StaffSwap Main Menu**, and confirm **Primary Menu** is checked under Menu Settings. Click **Save Menu**. To edit the header with Elementor, install Elementor Pro or a header/footer extension such as ElementsKit, create a header template, add a WordPress **Nav Menu** widget, select **StaffSwap Main Menu**, and set its display condition to **Entire Site**. Do not leave an empty header template assigned, because an empty ElementsKit/Elementor header replaces the theme header. For a normal theme header, use **Default** or **Elementor Full Width**, not **Elementor Canvas**.
 
 ## Next production integrations
 
