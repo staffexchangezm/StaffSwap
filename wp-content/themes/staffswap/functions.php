@@ -37,6 +37,8 @@ function staffswap_home_setting( $key, $default ) {
 	if ( ! empty( $settings[ $key ] ) ) { return $settings[ $key ]; }
 	return get_theme_mod( 'staffswap_' . $key, $default );
 }
+function staffswap_builder_location( $location ) { return function_exists( 'elementor_theme_do_location' ) && elementor_theme_do_location( $location ); }
+function staffswap_has_builder_content( $post_id = 0 ) { return (bool) get_post_meta( $post_id ?: get_the_ID(), '_elementor_data', true ); }
 function staffswap_theme_activated() { update_option( 'staffswap_show_setup', '1' ); }
 add_action( 'after_switch_theme', 'staffswap_theme_activated' );
 
