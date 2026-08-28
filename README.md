@@ -12,6 +12,8 @@ StaffSwap is an installable WordPress foundation for StaffExchangeHub, a profess
 
 The theme is compatible with Elementor and other page builders through normal WordPress templates, menus, widgets, and shortcodes. Elementor is not bundled with this repository: install and activate the Elementor plugin separately before looking for Elementor admin menus. Use an Elementor Shortcode widget with `[staffswap_listings]`, `[staffswap_search]`, `[staffswap_create_form]`, `[staffswap_resources]`, `[staffswap_profile]`, or `[staffswap_contact listing="123"]`. The theme's header, footer, fonts, CSS variables, and scripts remain available to Elementor pages.
 
+The theme follows Elementor's standard location contract. If an Elementor Header or Footer template is assigned, `elementor_theme_do_location()` renders it; if no template is assigned, the native StaffSwap header and footer render automatically. This prevents empty builder templates from silently replacing the site chrome.
+
 ## Local setup
 
 1. Copy the `wp-content` directory into a WordPress installation.
@@ -35,6 +37,8 @@ The theme is compatible with Elementor and other page builders through normal Wo
 
 - `wp-content/themes/staffswap/style.css`: theme and component styles.
 - `wp-content/themes/staffswap/assets/js/main.js`: mobile navigation and small form interactions.
+- `wp-content/themes/staffswap/languages/staffswap.pot`: translation template for the theme text domain `staffswap`; create locale `.po`/`.mo` files from this template with Poedit or WP-CLI.
+- `wp-content/themes/staffswap/theme.json`: editor design tokens for WordPress and builder-aware content width, colors, spacing, and fonts.
 - External Google Fonts are enqueued by the theme; replace them with local font files for a fully self-hosted production deployment.
 
 New listings are submitted as `pending` for moderation. Administrators can complete match score, verification, urgency, housing, employer, and location details from the Swap Listings editor.

@@ -1,10 +1,12 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) { exit; }
-function staffswap_setup() { add_theme_support( 'title-tag' ); add_theme_support( 'post-thumbnails' ); add_theme_support( 'align-wide' ); register_nav_menus( array( 'primary' => __( 'Primary Menu', 'staffswap' ) ) ); }
+function staffswap_setup() { add_theme_support( 'title-tag' ); add_theme_support( 'post-thumbnails' ); add_theme_support( 'align-wide' ); add_theme_support( 'editor-styles' ); add_theme_support( 'elementor' ); add_editor_style( 'style.css' ); register_nav_menus( array( 'primary' => __( 'Primary Menu', 'staffswap' ) ) ); }
 add_action( 'after_setup_theme', 'staffswap_setup' );
+function staffswap_load_textdomain() { load_theme_textdomain( 'staffswap', get_template_directory() . '/languages' ); }
+add_action( 'after_setup_theme', 'staffswap_load_textdomain', 11 );
 function staffswap_assets() { wp_enqueue_style( 'staffswap-fonts', 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap', array(), null ); wp_enqueue_style( 'staffswap-style', get_stylesheet_uri(), array( 'staffswap-fonts' ), '1.0.1' ); wp_enqueue_script( 'staffswap-main', get_template_directory_uri() . '/assets/js/main.js', array(), '1.0.1', true ); }
 add_action( 'wp_enqueue_scripts', 'staffswap_assets' );
-function staffswap_fallback_menu() { echo '<ul><li><a href="' . esc_url( home_url( '/' ) ) . '">Home</a></li><li><a href="' . esc_url( home_url( '/swaps/' ) ) . '">Find Swaps</a></li><li><a href="' . esc_url( home_url( '/how-it-works/' ) ) . '">How It Works</a></li><li><a href="' . esc_url( home_url( '/success-stories/' ) ) . '">Success Stories</a></li><li><a href="' . esc_url( home_url( '/resources/' ) ) . '">Resources</a></li><li><a href="' . esc_url( home_url( '/blog/' ) ) . '">Blog</a></li><li><a href="' . esc_url( home_url( '/pricing/' ) ) . '">Pricing</a></li></ul>'; }
+function staffswap_fallback_menu() { echo '<ul><li><a href="' . esc_url( home_url( '/' ) ) . '">' . esc_html__( 'Home', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/swaps/' ) ) . '">' . esc_html__( 'Find Swaps', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/how-it-works/' ) ) . '">' . esc_html__( 'How It Works', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/success-stories/' ) ) . '">' . esc_html__( 'Success Stories', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/resources/' ) ) . '">' . esc_html__( 'Resources', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/blog/' ) ) . '">' . esc_html__( 'Blog', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/pricing/' ) ) . '">' . esc_html__( 'Pricing', 'staffswap' ) . '</a></li></ul>'; }
 
 function staffswap_customize_register( $wp_customize ) {
 	$wp_customize->add_section( 'staffswap_home', array( 'title' => __( 'StaffSwap Homepage', 'staffswap' ), 'priority' => 30 ) );

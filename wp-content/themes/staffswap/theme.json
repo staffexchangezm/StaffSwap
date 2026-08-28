@@ -1,0 +1,42 @@
+{
+  "$schema": "https://schemas.wp.org/wp/6.6/theme.json",
+  "version": 3,
+  "settings": {
+    "appearanceTools": true,
+    "layout": {
+      "contentSize": "1200px",
+      "wideSize": "1440px"
+    },
+    "color": {
+      "custom": true,
+      "palette": [
+        { "slug": "staffswap-navy", "color": "#0a2e6d", "name": "StaffSwap Navy" },
+        { "slug": "staffswap-green", "color": "#005f2e", "name": "StaffSwap Green" },
+        { "slug": "staffswap-action", "color": "#16a34a", "name": "StaffSwap Action" },
+        { "slug": "staffswap-surface", "color": "#f7f8fa", "name": "StaffSwap Surface" },
+        { "slug": "staffswap-ink", "color": "#1a1c1e", "name": "StaffSwap Ink" }
+      ]
+    },
+    "spacing": {
+      "units": [ "px", "%", "em", "rem", "vw", "vh" ],
+      "spacingSizes": [
+        { "slug": "staffswap-xs", "size": "8px", "name": "Extra small" },
+        { "slug": "staffswap-sm", "size": "16px", "name": "Small" },
+        { "slug": "staffswap-md", "size": "24px", "name": "Medium" },
+        { "slug": "staffswap-lg", "size": "32px", "name": "Large" },
+        { "slug": "staffswap-xl", "size": "48px", "name": "Extra large" }
+      ]
+    },
+    "typography": {
+      "fluid": true,
+      "fontFamilies": [
+        { "fontFamily": "Manrope, sans-serif", "slug": "staffswap-heading", "name": "StaffSwap Headings" },
+        { "fontFamily": "Inter, sans-serif", "slug": "staffswap-body", "name": "StaffSwap Body" }
+      ]
+    }
+  },
+  "styles": {
+    "color": { "background": "var:preset|color|staffswap-surface", "text": "var:preset|color|staffswap-ink" },
+    "typography": { "fontFamily": "var:preset|font-family|staffswap-body", "fontSize": "15px", "lineHeight": "1.55" }
+  }
+}

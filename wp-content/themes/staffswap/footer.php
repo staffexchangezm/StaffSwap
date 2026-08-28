@@ -1,1 +1,15 @@
-</main><footer class="site-footer"><div class="site-footer__inner"><div><div class="footer-brand">StaffExchangeHub</div><p>The professional exchange marketplace helping individuals and institutions find workplace swaps across Zambia.</p></div><div><h3>Platform</h3><p><a href="<?php echo esc_url( home_url( '/swaps/' ) ); ?>">Browse Swaps</a></p><p><a href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>">Create Listing</a></p></div><div><h3>Resources</h3><p><a href="<?php echo esc_url( home_url( '/resources/' ) ); ?>">Career Advice</a></p><p><a href="<?php echo esc_url( home_url( '/help/' ) ); ?>">Help Center</a></p></div><div><h3>Legal</h3><p><a href="<?php echo esc_url( home_url( '/privacy-policy/' ) ); ?>">Privacy Policy</a></p><p><a href="<?php echo esc_url( home_url( '/terms/' ) ); ?>">Terms of Service</a></p></div><div class="footer-bottom">&copy; <?php echo esc_html( gmdate( 'Y' ) ); ?> StaffExchangeHub. All rights reserved.</div></div></footer><?php wp_footer(); ?></body></html>
+</main>
+<?php if ( ! function_exists( 'elementor_theme_do_location' ) || ! elementor_theme_do_location( 'footer' ) ) : ?>
+<footer class="site-footer">
+	<div class="site-footer__inner">
+		<div><div class="footer-brand">StaffExchangeHub</div><p><?php echo esc_html__( 'The professional exchange marketplace helping individuals and institutions find workplace swaps across Zambia.', 'staffswap' ); ?></p></div>
+		<div><h3><?php echo esc_html__( 'Platform', 'staffswap' ); ?></h3><p><a href="<?php echo esc_url( home_url( '/swaps/' ) ); ?>"><?php echo esc_html__( 'Browse Swaps', 'staffswap' ); ?></a></p><p><a href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>"><?php echo esc_html__( 'Create Listing', 'staffswap' ); ?></a></p></div>
+		<div><h3><?php echo esc_html__( 'Resources', 'staffswap' ); ?></h3><p><a href="<?php echo esc_url( home_url( '/resources/' ) ); ?>"><?php echo esc_html__( 'Career Advice', 'staffswap' ); ?></a></p><p><a href="<?php echo esc_url( home_url( '/help/' ) ); ?>"><?php echo esc_html__( 'Help Center', 'staffswap' ); ?></a></p></div>
+		<div><h3><?php echo esc_html__( 'Legal', 'staffswap' ); ?></h3><p><a href="<?php echo esc_url( home_url( '/privacy-policy/' ) ); ?>"><?php echo esc_html__( 'Privacy Policy', 'staffswap' ); ?></a></p><p><a href="<?php echo esc_url( home_url( '/terms/' ) ); ?>"><?php echo esc_html__( 'Terms of Service', 'staffswap' ); ?></a></p></div>
+		<div class="footer-bottom">&copy; <?php echo esc_html( gmdate( 'Y' ) ); ?> <?php echo esc_html__( 'StaffExchangeHub. All rights reserved.', 'staffswap' ); ?></div>
+	</div>
+</footer>
+<?php endif; ?>
+<?php wp_footer(); ?>
+</body>
+</html>
