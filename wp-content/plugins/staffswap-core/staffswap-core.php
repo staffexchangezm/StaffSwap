@@ -21,6 +21,10 @@ function staffswap_create_pages() {
     $pages = array(
         'swaps' => array( 'title' => 'Find Swaps', 'content' => '[staffswap_listings]' ),
         'create-swap' => array( 'title' => 'Create a Swap Post', 'content' => '[staffswap_create_form]' ),
+        'search' => array( 'title' => 'Search Swaps', 'content' => '[staffswap_search]' ),
+        'register' => array( 'title' => 'Create Your Account', 'content' => '[staffswap_register]' ),
+        'sign-in' => array( 'title' => 'Sign In', 'content' => '[staffswap_login]' ),
+        'my-profile' => array( 'title' => 'My Profile', 'content' => '[staffswap_dashboard]' ),
     );
     foreach ( $pages as $slug => $page ) {
         if ( ! get_page_by_path( $slug ) ) {
@@ -72,6 +76,18 @@ function staffswap_listings_shortcode( $atts ) {
     <?php return ob_get_clean();
 }
 add_shortcode( 'staffswap_listings', 'staffswap_listings_shortcode' );
+
+function staffswap_login_shortcode() { if ( is_user_logged_in() ) { return '<div class="panel content-form"><h2>You are signed in</h2><p><a class="button button--primary" href="' . esc_url( home_url( '/my-profile/' ) ) . '">Open my profile</a></p></div>'; } ob_start(); ?><div class="panel content-form"><h1>Sign in</h1><p class="muted">Access your swap requests, saved matches, and messages.</p><?php wp_login_form( array( 'redirect' => home_url( '/my-profile/' ), 'label_username' => 'Email or username', 'label_password' => 'Password', 'label_log_in' => 'Sign in' ) ); ?><p>New here? <a href="<?php echo esc_url( home_url( '/register/' ) ); ?>">Create an account</a></p></div><?php return ob_get_clean(); }
+add_shortcode( 'staffswap_login', 'staffswap_login_shortcode' );
+
+function staffswap_register_shortcode() { if ( is_user_logged_in() ) { return '<div class="panel content-form"><h2>Your account is ready</h2><p><a class="button button--primary" href="' . esc_url( home_url( '/my-profile/' ) ) . '">Open my profile</a></p></div>'; } $message = ''; if ( isset( $_POST['staffswap_register'] ) && check_admin_referer( 'staffswap_register', 'staffswap_register_nonce' ) ) { $email = sanitize_email( wp_unslash( $_POST['email'] ?? '' ) ); $username = sanitize_user( wp_unslash( $_POST['username'] ?? '' ) ); $password = (string) ( $_POST['password'] ?? '' ); if ( ! is_email( $email ) || username_exists( $username ) || email_exists( $email ) || strlen( $password ) < 8 ) { $message = '<div class="notice"><p>Please use a valid email, a unique username, and a password of at least 8 characters.</p></div>'; } else { $user_id = wp_create_user( $username, $password, $email ); if ( ! is_wp_error( $user_id ) ) { wp_set_auth_cookie( $user_id ); wp_safe_redirect( home_url( '/my-profile/' ) ); exit; } $message = '<div class="notice"><p>We could not create that account. Please check the details and try again.</p></div>'; } } ob_start(); ?><div class="panel content-form"><h1>Create your account</h1><p class="muted">Join verified professionals planning their next workplace move.</p><?php echo $message; ?><form method="post"><div class="field"><label for="username">Username</label><input id="username" name="username" required></div><div class="field"><label for="email">Email address</label><input id="email" name="email" type="email" required></div><div class="field"><label for="password">Password</label><input id="password" name="password" type="password" minlength="8" required></div><?php wp_nonce_field( 'staffswap_register', 'staffswap_register_nonce' ); ?><input type="submit" name="staffswap_register" value="Create account"></form></div><?php return ob_get_clean(); }
+add_shortcode( 'staffswap_register', 'staffswap_register_shortcode' );
+
+function staffswap_dashboard_shortcode() { if ( ! is_user_logged_in() ) { return '<div class="panel content-form"><h2>Sign in to view your profile</h2><a class="button button--primary" href="' . esc_url( home_url( '/sign-in/' ) ) . '">Sign in</a></div>'; } $user = wp_get_current_user(); $query = new WP_Query( array( 'post_type' => 'swap_listing', 'author' => get_current_user_id(), 'post_status' => array( 'publish', 'pending' ), 'posts_per_page' => 10 ) ); ob_start(); ?><div class="content-form"><div class="page-heading"><div><p class="eyebrow">MEMBER AREA</p><h1><?php echo esc_html( $user->display_name ); ?></h1><p class="muted">Manage your profile and swap requests.</p></div><a class="button button--primary" href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>">Create listing</a></div><div class="panel"><h2>Your swap requests</h2><?php if ( $query->have_posts() ) : while ( $query->have_posts() ) : $query->the_post(); ?><p><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a> <span class="muted">(<?php echo esc_html( get_post_status_object( get_post_status() )->label ); ?>)</span></p><?php endwhile; wp_reset_postdata(); else : ?><p class="muted">You have not created a swap request yet.</p><?php endif; ?></div></div><?php return ob_get_clean(); }
+add_shortcode( 'staffswap_dashboard', 'staffswap_dashboard_shortcode' );
+
+function staffswap_search_shortcode() { ob_start(); ?><div class="content-form"><div class="page-heading"><div><p class="eyebrow">SEARCH THE NETWORK</p><h1>Find your next workplace</h1><p class="muted">Search by profession, current location, or desired location.</p></div></div><?php echo do_shortcode( '[staffswap_listings]' ); ?></div><?php return ob_get_clean(); }
+add_shortcode( 'staffswap_search', 'staffswap_search_shortcode' );
 
 function staffswap_create_form_shortcode() {
     if ( ! is_user_logged_in() ) { return '<div class="panel content-form"><h2>Join the exchange network</h2><p>You need an account to publish a swap listing.</p><a class="button button--primary" href="' . esc_url( wp_registration_url() ) . '">Create an account</a></div>'; }

@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Resources Centre - StaffExchangeHub</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 24px;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed": "#94f8ad",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-container": "#616d63",
+                        "error-container": "#ffdad6",
+                        "outline": "#6f7a6f",
+                        "error": "#ba1a1a",
+                        "on-primary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-fixed-variant": "#3e4a41",
+                        "on-primary-fixed": "#00210c",
+                        "on-secondary-fixed-variant": "#1f477b",
+                        "on-tertiary-fixed": "#131e17",
+                        "surface-container-low": "#f3f3f6",
+                        "secondary": "#3a5f94",
+                        "inverse-surface": "#2f3133",
+                        "secondary-fixed": "#d5e3ff",
+                        "surface-container-highest": "#e2e2e5",
+                        "on-tertiary-container": "#e1eee2",
+                        "primary": "#0A2E6D",
+                        "on-surface": "#1a1c1e",
+                        "background": "#f9f9fc",
+                        "on-surface-variant": "#3f493f",
+                        "surface-container-high": "#e8e8ea",
+                        "secondary-fixed-dim": "#a7c8ff",
+                        "tertiary": "#49554c",
+                        "surface": "#f9f9fc",
+                        "on-primary-fixed-variant": "#005227",
+                        "on-primary-container": "#a1ffb7",
+                        "tertiary-fixed": "#d9e6da",
+                        "primary-fixed-dim": "#78db92",
+                        "secondary-container": "#9fc2fe",
+                        "surface-variant": "#e2e2e5",
+                        "on-background": "#1a1c1e",
+                        "on-secondary-fixed": "#001b3c",
+                        "on-secondary-container": "#294f83",
+                        "surface-bright": "#f9f9fc",
+                        "outline-variant": "#becabc",
+                        "surface-dim": "#dadadc",
+                        "inverse-on-surface": "#f0f0f3",
+                        "surface-tint": "#006d36",
+                        "surface-container": "#eeeef0",
+                        "on-secondary": "#ffffff",
+                        "primary-container": "#007a3d",
+                        "on-error": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "inverse-primary": "#78db92",
+                        "tertiary-fixed-dim": "#bdcabe",
+                        "brand-primary": "#0A2E6D",
+                        "brand-search": "#F5F9FF",
+                        "brand-action": "#16A34A"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.5rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "md": "24px",
+                        "xs": "8px",
+                        "lg": "32px",
+                        "xl": "48px",
+                        "base": "4px",
+                        "sm": "16px",
+                        "container-max": "1200px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Manrope"],
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-sm": ["Manrope"],
+                        "label-lg": ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md selection:bg-primary-fixed selection:text-brand-primary">
+<!-- TopNavBar -->
+<header class="bg-brand-primary sticky top-0 z-50">
+<div class="flex justify-between items-center w-full px-gutter max-w-container-max mx-auto h-20">
+<div class="flex items-center gap-xs">
+<span class="font-headline-sm text-headline-sm font-bold text-white">StaffExchangeHub</span>
+</div>
+<nav class="hidden md:flex items-center gap-lg">
+<a class="text-white/80 hover:text-white transition-colors font-body-md" href="#">Home</a>
+<a class="text-white/80 hover:text-white transition-colors font-body-md" href="#">Find Swaps</a>
+<a class="text-white/80 hover:text-white transition-colors font-body-md" href="#">How It Works</a>
+<a class="text-white/80 hover:text-white transition-colors font-body-md" href="#">Success Stories</a>
+<a class="text-white font-bold border-b-2 border-brand-action pb-1 font-body-md" href="#">Resources</a>
+<a class="text-white/80 hover:text-white transition-colors font-body-md" href="#">Pricing</a>
+<div class="flex items-center gap-xs text-white/80 cursor-pointer">
+<span class="font-body-md">Help Centre</span>
+<span class="material-symbols-outlined text-[18px]">expand_more</span>
+</div>
+</nav>
+<div class="flex items-center gap-md">
+<div class="flex items-center gap-sm">
+<div class="relative cursor-pointer text-white/80 hover:text-white">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute -top-1 -right-1 bg-error text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">3</span>
+</div>
+<span class="material-symbols-outlined text-white/80 hover:text-white cursor-pointer">chat_bubble</span>
+</div>
+<div class="flex items-center gap-xs border-l border-white/20 pl-md">
+<img alt="Lydia Mwansa" class="w-10 h-10 rounded-full border-2 border-brand-action" data-alt="A professional headshot of a smiling female healthcare professional of African descent with braided hair, wearing a white medical scrub top. The background is a clean, softly blurred modern hospital setting with high-key lighting. The overall tone is bright, professional, and trustworthy, matching the corporate light-mode UI style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiAdnHWPhKtFocXYAZFY0cCcUJA0_yH6EbErWYON5BUHNvK9bSnxI6xQsrXNMMPU9N0T-SpuHWYCiNi6NxShqCPBBRxd_eiBQ-sLxsyDfLCcbyzk122uBTOuic4ZMYUa6TqSpLjeORYp1jfuFzN9oLu9oew5wvOeNizHb49i5KFFBIMK5c9thsCiVqNIVQgknV0-g7FDaRSXOQ4MmIp7T1gqpL3VLA8sjHbS3ba8w7iZERrF600dyqduw-Zz7yYbs5HUmtmtWZErQ"/>
+<div class="hidden sm:block">
+<p class="font-label-lg text-label-lg leading-tight text-white">Lydia Mwansa</p>
+<p class="text-white/60 text-[11px] font-medium">View My Profile</p>
+</div>
+</div>
+</div>
+</div>
+</header>
+<main class="max-w-container-max mx-auto px-gutter py-xl">
+<!-- Hero Section -->
+<section class="flex flex-col md:flex-row items-center gap-xl mb-xl">
+<div class="flex-1 space-y-md">
+<h1 class="font-headline-lg text-headline-lg text-on-surface">Resources Centre</h1>
+<p class="text-on-surface-variant font-body-lg max-w-2xl">
+                    Free guides, templates, lesson plans, policies, forms, and career resources for professionals in healthcare, education, and beyond.
+                </p>
+<div class="flex flex-col sm:flex-row gap-xs mt-lg max-w-xl">
+<div class="relative flex-grow">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full pl-12 pr-4 py-3 bg-brand-search border border-outline-variant rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none transition-all" placeholder="Search resources, templates, guides..." type="text"/>
+</div>
+<button class="bg-brand-action text-on-primary px-xl py-3 rounded-lg font-label-lg flex items-center justify-center gap-xs hover:opacity-90 transition-all">
+<span class="material-symbols-outlined">search</span>
+                        Search
+                    </button>
+</div>
+<div class="flex flex-wrap gap-md mt-lg">
+<div class="flex items-center gap-sm bg-brand-search px-md py-sm rounded-xl border border-outline-variant shadow-sm">
+<span class="material-symbols-outlined text-brand-action bg-brand-action/10 p-2 rounded-lg">download</span>
+<div>
+<p class="font-bold text-headline-sm text-brand-primary">12,500+</p>
+<p class="text-body-sm text-on-surface-variant">Downloads</p>
+</div>
+</div>
+<div class="flex items-center gap-sm bg-brand-search px-md py-sm rounded-xl border border-outline-variant shadow-sm">
+<span class="material-symbols-outlined text-brand-action bg-brand-action/10 p-2 rounded-lg">folder_open</span>
+<div>
+<p class="font-bold text-headline-sm text-brand-primary">500+</p>
+<p class="text-body-sm text-on-surface-variant">Resources</p>
+</div>
+</div>
+<div class="flex items-center gap-sm bg-brand-search px-md py-sm rounded-xl border border-outline-variant shadow-sm">
+<span class="material-symbols-outlined text-brand-action bg-brand-action/10 p-2 rounded-lg">group</span>
+<div>
+<p class="font-bold text-headline-sm text-brand-primary">20+</p>
+<p class="text-body-sm text-on-surface-variant">Professions</p>
+</div>
+</div>
+</div>
+</div>
+<div class="hidden md:block w-[400px]">
+<img alt="Resource Management Illustration" class="rounded-3xl shadow-2xl" data-alt="A high-end 3D digital illustration of a stack of clean white documents and checklists organized on a sleek desk surface. Beside the papers is a minimalist laptop and a small green potted plant, representing organization and growth. The scene is bathed in soft, diffused daylight with a palette of forest greens, soft whites, and cool greys, conveying professional efficiency and clarity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTJfMbTe33GkHqT7hQR8larppaBXTpH9AlrwxWMQouw8_R_Xy8rirAfmB_j-RwGZPfms_ZXZPjzi312YxIYZ12Fy85W3V-ANBQdaVVDGWeGrPt9fkFxpCKRPsTLR4JJDvXAhsNputECiUrTtiE50c9-nRpNqeceWSw6idEaYTnvUdq17uOh-czJ5G22u4fwXSQnIDkp2O9iu-atZBSN0jNUf7owm3LHJRxxrrlXk41sX099axdEaQHB9ulDCrz8oFRqWqKaqp6uwM"/>
+</div>
+</section>
+<!-- Categories & Side Column Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-xl">
+<!-- Main Content Area -->
+<div class="lg:col-span-9 space-y-xl">
+<!-- Browse by Category -->
+<section>
+<div class="flex justify-between items-end mb-md">
+<h2 class="font-headline-sm text-headline-sm">Browse by Category</h2>
+<a class="text-brand-primary font-label-lg flex items-center gap-xs hover:underline" href="#">View All Categories <span class="material-symbols-outlined text-[18px]">arrow_right_alt</span></a>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-sm">
+<!-- Category Item -->
+<div class="bg-surface-container-lowest border border-outline-variant p-sm rounded-xl hover:border-brand-action cursor-pointer transition-all hover:shadow-md group">
+<span class="material-symbols-outlined text-brand-action mb-xs block group-hover:scale-110 transition-transform">medical_services</span>
+<h3 class="font-label-lg text-on-surface">Health Workers</h3>
+<p class="text-[12px] text-on-surface-variant">1,258 Resources</p>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant p-sm rounded-xl hover:border-brand-action cursor-pointer transition-all hover:shadow-md group">
+<span class="material-symbols-outlined text-brand-action mb-xs block group-hover:scale-110 transition-transform">school</span>
+<h3 class="font-label-lg text-on-surface">Teachers</h3>
+<p class="text-[12px] text-on-surface-variant">1,032 Resources</p>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant p-sm rounded-xl hover:border-brand-action cursor-pointer transition-all hover:shadow-md group">
+<span class="material-symbols-outlined text-brand-action mb-xs block group-hover:scale-110 transition-transform">account_balance</span>
+<h3 class="font-label-lg text-on-surface">Banking &amp; Finance</h3>
+<p class="text-[12px] text-on-surface-variant">582 Resources</p>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant p-sm rounded-xl hover:border-brand-action cursor-pointer transition-all hover:shadow-md group">
+<span class="material-symbols-outlined text-brand-action mb-xs block group-hover:scale-110 transition-transform">engineering</span>
+<h3 class="font-label-lg text-on-surface">Engineering</h3>
+<p class="text-[12px] text-on-surface-variant">564 Resources</p>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant p-sm rounded-xl hover:border-brand-action cursor-pointer transition-all hover:shadow-md group">
+<span class="material-symbols-outlined text-brand-action mb-xs block group-hover:scale-110 transition-transform">computer</span>
+<h3 class="font-label-lg text-on-surface">ICT</h3>
+<p class="text-[12px] text-on-surface-variant">421 Resources</p>
+</div>
+</div>
+</section>
+<!-- Popular Resources Bento -->
+<section>
+<div class="flex justify-between items-end mb-md">
+<h2 class="font-headline-sm text-headline-sm">Popular Resources</h2>
+<a class="text-brand-primary font-label-lg flex items-center gap-xs hover:underline" href="#">View All Popular Resources <span class="material-symbols-outlined text-[18px]">arrow_right_alt</span></a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md">
+<!-- Nursing Resources -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-2xl p-md">
+<div class="flex items-center gap-xs mb-sm pb-sm border-b border-outline-variant">
+<span class="material-symbols-outlined text-brand-action">stethoscope</span>
+<h3 class="font-headline-sm text-[18px]">Nursing Resources</h3>
+</div>
+<ul class="space-y-sm">
+<li class="flex justify-between items-center group cursor-pointer">
+<span class="text-body-md group-hover:text-brand-primary transition-colors">Nursing Care Plan Template</span>
+<div class="flex items-center gap-xs">
+<span class="text-[12px] text-on-surface-variant">1,245</span>
+<span class="material-symbols-outlined text-brand-action text-[20px]">download</span>
+</div>
+</li>
+<li class="flex justify-between items-center group cursor-pointer">
+<span class="text-body-md group-hover:text-brand-primary transition-colors">Patient Assessment Form</span>
+<div class="flex items-center gap-xs">
+<span class="text-[12px] text-on-surface-variant">982</span>
+<span class="material-symbols-outlined text-brand-action text-[20px]">download</span>
+</div>
+</li>
+<li class="flex justify-between items-center group cursor-pointer">
+<span class="text-body-md group-hover:text-brand-primary transition-colors">Drug Calculation Guide</span>
+<div class="flex items-center gap-xs">
+<span class="text-[12px] text-on-surface-variant">876</span>
+<span class="material-symbols-outlined text-brand-action text-[20px]">download</span>
+</div>
+</li>
+</ul>
+<a class="mt-md block text-center text-brand-primary font-label-md py-xs bg-brand-search rounded hover:bg-brand-action/10 transition-colors" href="#">View All (125)</a>
+</div>
+<!-- Teaching Resources -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-2xl p-md">
+<div class="flex items-center gap-xs mb-sm pb-sm border-b border-outline-variant">
+<span class="material-symbols-outlined text-brand-action">book</span>
+<h3 class="font-headline-sm text-[18px]">Teaching Resources</h3>
+</div>
+<ul class="space-y-sm">
+<li class="flex justify-between items-center group cursor-pointer">
+<span class="text-body-md group-hover:text-brand-primary transition-colors">Weekly Lesson Plan Template</span>
+<div class="flex items-center gap-xs">
+<span class="text-[12px] text-on-surface-variant">1,187</span>
+<span class="material-symbols-outlined text-brand-action text-[20px]">download</span>
+</div>
+</li>
+<li class="flex justify-between items-center group cursor-pointer">
+<span class="text-body-md group-hover:text-brand-primary transition-colors">Scheme of Work Template</span>
+<div class="flex items-center gap-xs">
+<span class="text-[12px] text-on-surface-variant">952</span>
+<span class="material-symbols-outlined text-brand-action text-[20px]">download</span>
+</div>
+</li>
+<li class="flex justify-between items-center group cursor-pointer">
+<span class="text-body-md group-hover:text-brand-primary transition-colors">Mark Book Template</span>
+<div class="flex items-center gap-xs">
+<span class="text-[12px] text-on-surface-variant">834</span>
+<span class="material-symbols-outlined text-brand-action text-[20px]">download</span>
+</div>
+</li>
+</ul>
+<a class="mt-md block text-center text-brand-primary font-label-md py-xs bg-brand-search rounded hover:bg-brand-action/10 transition-colors" href="#">View All (98)</a>
+</div>
+<!-- Government Resources -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-2xl p-md">
+<div class="flex items-center gap-xs mb-sm pb-sm border-b border-outline-variant">
+<span class="material-symbols-outlined text-brand-action">description</span>
+<h3 class="font-headline-sm text-[18px]">Gov Resources</h3>
+</div>
+<ul class="space-y-sm">
+<li class="flex justify-between items-center group cursor-pointer">
+<span class="text-body-md group-hover:text-brand-primary transition-colors">Transfer Request Letter</span>
+<div class="flex items-center gap-xs">
+<span class="text-[12px] text-on-surface-variant">1,026</span>
+<span class="material-symbols-outlined text-brand-action text-[20px]">download</span>
+</div>
+</li>
+<li class="flex justify-between items-center group cursor-pointer">
+<span class="text-body-md group-hover:text-brand-primary transition-colors">Leave Application Template</span>
+<div class="flex items-center gap-xs">
+<span class="text-[12px] text-on-surface-variant">884</span>
+<span class="material-symbols-outlined text-brand-action text-[20px]">download</span>
+</div>
+</li>
+<li class="flex justify-between items-center group cursor-pointer">
+<span class="text-body-md group-hover:text-brand-primary transition-colors">Official Memo Template</span>
+<div class="flex items-center gap-xs">
+<span class="text-[12px] text-on-surface-variant">412</span>
+<span class="material-symbols-outlined text-brand-action text-[20px]">download</span>
+</div>
+</li>
+</ul>
+<a class="mt-md block text-center text-brand-primary font-label-md py-xs bg-brand-search rounded hover:bg-brand-action/10 transition-colors" href="#">View All (76)</a>
+</div>
+</div>
+</section>
+<!-- Career Development Full Width Banner -->
+<section class="bg-brand-primary text-on-primary rounded-3xl p-xl relative overflow-hidden flex flex-col md:flex-row gap-lg items-center">
+<div class="flex-1 space-y-md z-10">
+<div class="flex items-center gap-xs bg-white/10 w-fit px-sm py-1 rounded-full text-label-md border border-white/20">
+<span class="material-symbols-outlined text-[16px]">school</span>
+                            Career Development Centre
+                        </div>
+<h2 class="font-headline-lg text-headline-lg">Boost Your Professional Career</h2>
+<p class="text-white/80 font-body-md max-w-md">Access premium CV templates, interview guides, and cover letter formats tailored for professionals seeking new opportunities.</p>
+<div class="flex flex-wrap gap-md mt-lg">
+<button class="bg-brand-action text-white px-lg py-3 rounded-xl font-label-lg hover:opacity-90 transition-colors">Explore All Templates</button>
+<button class="border border-white/50 text-white px-lg py-3 rounded-xl font-label-lg hover:bg-white/10 transition-colors">Interview Mastery Guide</button>
+</div>
+</div>
+<div class="relative z-10">
+<img alt="Career Development" class="w-64 h-64 object-cover rounded-2xl shadow-xl border-4 border-white/10 rotate-3" data-alt="A clean, top-down photograph of a minimalist home office workspace. A sleek silver laptop sits next to a designer ceramic mug, a fine-point black pen, and a premium leather-bound notebook. The scene is bright with soft shadows and a high-key professional aesthetic, using a palette of white, light grey, and subtle forest green accents to reinforce professional growth and focus." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAgQcVtYVn1Ni--OLN-1Ii20tElD05MemAtVT7F1khZztwwHycDKs8NeU1MaslyWHvOzS6oCW1axz5yi1EwqtydOTRfWwVDbUyFHANtuKkYVYmBA-kCr7pSg4uUXMfbu-AClmXmF9aFhchtSkVsayK0H-3BiXoPWI2HEn8WB5XcII0ASaOxgixlkZKuk6YstuQvt8elhETmV4pdERNFwbCLCmr5Bxk5ApQuzh2ODyuDEjsW9_tmEfar8kX0LfNJdzd1P0aCzKsmPbk"/>
+</div>
+<!-- Background decor -->
+<div class="absolute -bottom-10 -right-10 w-64 h-64 bg-brand-action rounded-full opacity-10 blur-3xl"></div>
+</section>
+<!-- Workplace Swap Resources -->
+<section class="bg-brand-search p-xl rounded-3xl flex flex-col md:flex-row gap-xl">
+<div class="flex-1">
+<div class="flex items-center gap-sm mb-md">
+<div class="bg-brand-action text-white p-2 rounded-lg">
+<span class="material-symbols-outlined">handshake</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-brand-primary">Workplace Swap Resources</h2>
+</div>
+<div class="space-y-sm">
+<div class="bg-white p-md rounded-xl border border-outline-variant flex gap-md items-start hover:shadow-md transition-shadow cursor-pointer">
+<span class="material-symbols-outlined text-brand-action mt-1">article</span>
+<div>
+<h4 class="font-label-lg">Transfer Request Letter Template</h4>
+<p class="text-body-sm text-on-surface-variant">Professional template for formal transfer requests to management.</p>
+</div>
+</div>
+<div class="bg-white p-md rounded-xl border border-outline-variant flex gap-md items-start hover:shadow-md transition-shadow cursor-pointer">
+<span class="material-symbols-outlined text-brand-action mt-1">verified</span>
+<div>
+<h4 class="font-label-lg">Workplace Swap Agreement</h4>
+<p class="text-body-sm text-on-surface-variant">Mutual agreement document for both parties in a workplace swap.</p>
+</div>
+</div>
+</div>
+<a class="mt-lg inline-flex items-center text-brand-primary font-bold hover:gap-sm transition-all" href="#">View All (15) <span class="material-symbols-outlined">chevron_right</span></a>
+</div>
+<div class="flex-1 bg-white/50 rounded-2xl p-lg flex flex-col items-center justify-center text-center border border-outline-variant/50">
+<span class="material-symbols-outlined text-[64px] text-brand-action mb-md" style="font-variation-settings: 'FILL' 1;">cloud_upload</span>
+<h3 class="font-headline-sm mb-xs text-brand-primary">Contribute to Our Library</h3>
+<p class="text-body-md text-on-surface-variant mb-md">Share your knowledge and help other professionals. Upload your templates, guides, or lesson plans.</p>
+<button class="bg-brand-action text-on-primary px-xl py-3 rounded-lg font-label-lg hover:opacity-90 transition-all">Submit a Resource</button>
+</div>
+</section>
+</div>
+<!-- Sidebar / Right Column -->
+<aside class="lg:col-span-3 space-y-lg">
+<!-- Popular Searches -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-2xl p-md">
+<h3 class="font-label-lg text-brand-primary mb-md pb-sm border-b border-outline-variant">Popular Searches</h3>
+<div class="flex flex-wrap gap-xs">
+<span class="bg-brand-search p-xs rounded-lg text-[12px] text-brand-primary hover:bg-brand-action/20 cursor-pointer transition-colors border border-outline-variant/30">#NursingCarePlan</span>
+<span class="bg-brand-search p-xs rounded-lg text-[12px] text-brand-primary hover:bg-brand-action/20 cursor-pointer transition-colors border border-outline-variant/30">#LessonPlan</span>
+<span class="bg-brand-search p-xs rounded-lg text-[12px] text-brand-primary hover:bg-brand-action/20 cursor-pointer transition-colors border border-outline-variant/30">#TransferLetter</span>
+<span class="bg-brand-search p-xs rounded-lg text-[12px] text-brand-primary hover:bg-brand-action/20 cursor-pointer transition-colors border border-outline-variant/30">#CVTemplates</span>
+<span class="bg-brand-search p-xs rounded-lg text-[12px] text-brand-primary hover:bg-brand-action/20 cursor-pointer transition-colors border border-outline-variant/30">#JobDescriptions</span>
+</div>
+</div>
+<!-- Sponsored / Premium -->
+<div class="space-y-md">
+<p class="text-label-md text-outline uppercase tracking-wider">Sponsored</p>
+<div class="group cursor-pointer">
+<div class="relative rounded-xl overflow-hidden mb-xs h-32">
+<img alt="Nursing Uniforms" class="w-full h-full object-cover group-hover:scale-105 transition-transform" data-alt="A clean, minimalist product photograph of a neatly folded professional medical scrub set in a deep navy blue color, resting on a white marble surface. Beside the scrubs is a sleek modern stethoscope. The lighting is bright and airy, creating a high-end commercial aesthetic that emphasizes quality and professionalism in the healthcare sector." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHFCXAEunxOnapbdhx7AokeczCI_dwEHJxQ9amCKyM4klcBG7lnalnhCN9jNATgBpZG1OxLi7JmHmS320yqKCiSpv12MGAEiZ9s4-mjuAMNEY9IGIu8Mv4DX1bBmGugIbENSH1tuK_LKiOPJKHnQMx0vf0u6gR6VdysCK6xd-1tp76DAAjuBNCnE1i1NlSB3YUZ2a9mVtZhyTIFBVh7k1ck2aH_JMVgPe7RnEKJymWMvS7JF0oRDc6CtDCHhz4URrd8A7pLndweoU"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-sm">
+<span class="text-white font-label-lg">Nursing Uniforms</span>
+</div>
+</div>
+<p class="text-body-sm text-on-surface-variant line-clamp-2 mb-xs">Quality medical uniforms for professionals. Modern fit and durable materials.</p>
+<a class="text-brand-action font-label-md flex items-center gap-xs" href="#">Shop Now <span class="material-symbols-outlined text-[14px]">open_in_new</span></a>
+</div>
+<div class="group cursor-pointer">
+<div class="relative rounded-xl overflow-hidden mb-xs h-32">
+<img alt="Professional Development" class="w-full h-full object-cover group-hover:scale-105 transition-transform" data-alt="A focused, professional setting showing a modern digital tablet displaying a series of educational infographics and charts. A hand is seen using a stylus to navigate the screen. The scene is bright, with soft corporate lighting and a color palette of white, teal, and charcoal, representing advanced career training and modern learning technology." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHwbYg7lOEeA6MwA_TXvTnd5tKx7DcpAhKeZzAXvOwz0F7hpd0PnwQ9OJG1c-KfPX0sPuqq1Ia8O21IJO7Z9t1sLL47HJFCb3e9fkq62hntgV3-doh3pk4unnLN9XrxejC1ZbqrcRC1q0oRQzAq6VumnCgcDio0aKnkvMKmUafzCnhHgKYJSEIAjaP3gvtj3xEH-HGJjWUbQKTxp0SBc6Gdfgvrzzyyfy2Bu_Iy3lnZdPsK3mY8G84F7Sy25wSeWoD_E5TD_VvizI"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-sm">
+<span class="text-white font-label-lg">Skill Upgrade Courses</span>
+</div>
+</div>
+<p class="text-body-sm text-on-surface-variant line-clamp-2 mb-xs">Online courses to boost your career. Get certified in healthcare management.</p>
+<a class="text-brand-action font-label-md flex items-center gap-xs" href="#">Learn More <span class="material-symbols-outlined text-[14px]">open_in_new</span></a>
+</div>
+</div>
+<!-- Newsletter Sticky -->
+<div class="bg-brand-primary text-on-primary p-md rounded-2xl sticky top-24">
+<span class="material-symbols-outlined mb-sm text-brand-action">mail</span>
+<h3 class="font-headline-sm text-[18px] mb-xs">Stay Updated</h3>
+<p class="text-white/80 text-body-sm mb-md">Get notified when new resources and templates are added to our library.</p>
+<div class="space-y-xs">
+<input class="w-full px-sm py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/40 text-sm outline-none" placeholder="Email address" type="email"/>
+<button class="w-full bg-brand-action text-white font-label-lg py-2 rounded-lg hover:opacity-90 transition-colors">Subscribe Now</button>
+</div>
+</div>
+</aside>
+</div>
+<!-- Premium Upsell -->
+<section class="mt-xl bg-brand-primary text-white p-xl rounded-3xl flex flex-col md:flex-row justify-between items-center gap-lg border-l-8 border-brand-action shadow-xl">
+<div class="flex items-start gap-lg">
+<div class="bg-brand-action p-4 rounded-full">
+<span class="material-symbols-outlined text-white text-[32px]">workspace_premium</span>
+</div>
+<div>
+<h2 class="font-headline-sm text-headline-sm">Unlock Premium Resources</h2>
+<p class="text-white/80 font-body-md max-w-xl">Get unlimited access to expert-vetted resource packs, including advanced interview coaching, legal workplace agreement templates, and bulk-download options.</p>
+</div>
+</div>
+<button class="whitespace-nowrap bg-brand-action text-white px-xl py-3 rounded-xl font-label-lg hover:scale-105 transition-transform shadow-lg">Upgrade to Premium</button>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-brand-primary text-white py-xl border-t border-white/10">
+<div class="w-full py-xl px-gutter max-w-container-max mx-auto grid grid-cols-1 md:grid-cols-5 gap-md">
+<div class="md:col-span-2 space-y-md">
+<span class="font-headline-sm text-headline-sm font-bold text-white">StaffExchangeHub</span>
+<p class="text-white/70 font-body-sm max-w-sm">Connecting professionals across sectors. Find the perfect workplace swap and advance your career with our specialized resource tools.</p>
+<div class="flex gap-sm">
+<a class="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center hover:bg-brand-action hover:border-brand-action transition-all" href="#"><span class="material-symbols-outlined text-[16px]">public</span></a>
+<a class="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center hover:bg-brand-action hover:border-brand-action transition-all" href="#"><span class="material-symbols-outlined text-[16px]">person</span></a>
+<a class="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center hover:bg-brand-action hover:border-brand-action transition-all" href="#"><span class="material-symbols-outlined text-[16px]">work</span></a>
+</div>
+</div>
+<div>
+<h4 class="font-label-lg mb-md text-brand-action">Quick Links</h4>
+<ul class="space-y-sm">
+<li><a class="text-white/70 font-body-sm hover:text-brand-action underline transition-all" href="#">Find Swaps</a></li>
+<li><a class="text-white/70 font-body-sm hover:text-brand-action underline transition-all" href="#">How It Works</a></li>
+<li><a class="text-white/70 font-body-sm hover:text-brand-action underline transition-all" href="#">Pricing</a></li>
+</ul>
+</div>
+<div>
+<h4 class="font-label-lg mb-md text-brand-action">Resources</h4>
+<ul class="space-y-sm">
+<li><a class="text-white/70 font-body-sm hover:text-brand-action underline transition-all" href="#">Browse Swaps</a></li>
+<li><a class="text-white/70 font-body-sm hover:text-brand-action underline transition-all" href="#">Success Stories</a></li>
+<li><a class="text-white/70 font-body-sm hover:text-brand-action underline transition-all" href="#">Help Centre</a></li>
+</ul>
+</div>
+<div>
+<h4 class="font-label-lg mb-md text-brand-action">Legal</h4>
+<ul class="space-y-sm">
+<li><a class="text-white/70 font-body-sm hover:text-brand-action underline transition-all" href="#">Terms of Use</a></li>
+<li><a class="text-white/70 font-body-sm hover:text-brand-action underline transition-all" href="#">Privacy Policy</a></li>
+<li><a class="text-white/70 font-body-sm hover:text-brand-action underline transition-all" href="#">Safety Tips</a></li>
+</ul>
+</div>
+</div>
+<div class="max-w-container-max mx-auto px-gutter mt-xl pt-lg border-t border-white/10 text-center text-[12px] text-white/40">
+<p>© 2024 StaffExchangeHub.com. All rights reserved.</p>
+</div>
+</footer>
+</body></html>

@@ -3,519 +3,523 @@
 <html class="scroll-smooth" lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Swap Listings | StaffExchangeHub</title>
-<meta content="Find your ideal workplace swap. Professional marketplace for teachers, medical staff, and corporate professionals." name="description"/>
+<title>StaffExchangeHub | Swap Your Workplace, Change Your Life</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    "colors": {
-                        "tertiary-fixed": "#d9e6da",
-                        "on-primary-fixed": "#00210c",
-                        "on-secondary-fixed-variant": "#1f477b",
-                        "on-error-container": "#93000a",
-                        "secondary": "#3a5f94",
-                        "primary-container": "#007a3d",
-                        "tertiary": "#49554c",
-                        "inverse-primary": "#78db92",
-                        "tertiary-container": "#616d63",
-                        "outline-variant": "#becabc",
-                        "outline": "#6f7a6f",
-                        "on-secondary-fixed": "#001b3c",
-                        "primary-fixed-dim": "#78db92",
-                        "on-tertiary": "#ffffff",
-                        "inverse-on-surface": "#f0f0f3",
-                        "primary": "#005f2e",
-                        "on-surface": "#1a1c1e",
-                        "surface-container-low": "#f3f3f6",
-                        "on-tertiary-fixed-variant": "#3e4a41",
-                        "on-error": "#ffffff",
-                        "on-secondary-container": "#294f83",
-                        "on-secondary": "#ffffff",
-                        "tertiary-fixed-dim": "#bdcabe",
-                        "on-tertiary-container": "#e1eee2",
-                        "surface-container": "#eeeef0",
-                        "on-primary-fixed-variant": "#005227",
-                        "surface-variant": "#e2e2e5",
-                        "surface-container-lowest": "#ffffff",
-                        "surface": "#f9f9fc",
-                        "surface-tint": "#006d36",
-                        "secondary-fixed": "#d5e3ff",
-                        "surface-bright": "#f9f9fc",
-                        "secondary-fixed-dim": "#a7c8ff",
-                        "on-primary-container": "#a1ffb7",
-                        "inverse-surface": "#2f3133",
-                        "on-background": "#1a1c1e",
-                        "secondary-container": "#9fc2fe",
-                        "error-container": "#ffdad6",
-                        "background": "#f9f9fc",
-                        "surface-container-highest": "#e2e2e5",
-                        "primary-fixed": "#94f8ad",
-                        "error": "#ba1a1a",
-                        "on-tertiary-fixed": "#131e17",
-                        "surface-container-high": "#e8e8ea",
-                        "surface-dim": "#dadadc",
-                        "on-primary": "#ffffff",
-                        "on-surface-variant": "#3f493f"
-                    },
-                    "borderRadius": {
-                        "DEFAULT": "0.25rem",
-                        "lg": "0.5rem",
-                        "xl": "0.75rem",
-                        "full": "9999px"
-                    },
-                    "spacing": {
-                        "container-max": "1200px",
-                        "base": "4px",
-                        "gutter": "24px",
-                        "xs": "8px",
-                        "xl": "48px",
-                        "sm": "16px",
-                        "lg": "32px",
-                        "md": "24px"
-                    },
-                    "fontFamily": {
-                        "headline-lg": ["Manrope"],
-                        "headline-md": ["Manrope"],
-                        "body-md": ["Inter"],
-                        "display-lg": ["Manrope"],
-                        "body-lg": ["Inter"],
-                        "label-lg": ["Inter"],
-                        "body-sm": ["Inter"],
-                        "label-md": ["Inter"],
-                        "headline-sm": ["Manrope"]
-                    }
-                }
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-fixed": "#D9E2FF",
+                    "surface-container-lowest": "#ffffff",
+                    "tertiary-container": "#F5F9FF",
+                    "error-container": "#ffdad6",
+                    "outline": "#757780",
+                    "error": "#ba1a1a",
+                    "on-primary": "#ffffff",
+                    "on-error-container": "#93000a",
+                    "on-tertiary-fixed-variant": "#43474e",
+                    "on-primary-fixed": "#001945",
+                    "on-secondary-fixed-variant": "#3c4758",
+                    "on-tertiary-fixed": "#1a1c1e",
+                    "surface-container-low": "#f4f3f9",
+                    "secondary": "#545f71",
+                    "inverse-surface": "#2f3033",
+                    "secondary-fixed": "#d8e3f8",
+                    "surface-container-highest": "#e2e2e6",
+                    "on-tertiary-container": "#111d2d",
+                    "primary": "#0a2e6d",
+                    "on-surface": "#1a1c1e",
+                    "background": "#faf8ff",
+                    "on-surface-variant": "#44474e",
+                    "surface-container-high": "#e8e7ed",
+                    "secondary-fixed-dim": "#bcc7db",
+                    "tertiary": "#6e5d00",
+                    "surface": "#faf8ff",
+                    "on-primary-fixed-variant": "#004394",
+                    "on-primary-container": "#d9e2ff",
+                    "tertiary-fixed": "#ffe264",
+                    "primary-fixed-dim": "#adc6ff",
+                    "secondary-container": "#d8e3f8",
+                    "surface-variant": "#e2e2e6",
+                    "on-background": "#1a1c1e",
+                    "on-secondary-fixed": "#111d2e",
+                    "on-secondary-container": "#111d2e",
+                    "surface-bright": "#faf8ff",
+                    "outline-variant": "#c5c6d0",
+                    "surface-dim": "#dad9df",
+                    "inverse-on-surface": "#f1f0f4",
+                    "surface-tint": "#0a2e6d",
+                    "surface-container": "#eeedf3",
+                    "on-secondary": "#ffffff",
+                    "primary-container": "#004394",
+                    "on-error": "#ffffff",
+                    "on-tertiary": "#ffffff",
+                    "inverse-primary": "#adc6ff",
+                    "tertiary-fixed-dim": "#e2c600",
+                    "brand-success": "#16A34A"
+            },
+            "borderRadius": {
+                    "DEFAULT": "8px",
+                    "lg": "8px",
+                    "xl": "12px",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "gutter": "24px",
+                    "md": "24px",
+                    "xs": "8px",
+                    "lg": "32px",
+                    "xl": "48px",
+                    "base": "4px",
+                    "sm": "16px",
+                    "container-max": "1200px"
+            },
+            "fontFamily": {
+                    "headline-lg-mobile": ["Manrope"],
+                    "body-lg": ["Inter"],
+                    "display-lg": ["Manrope"],
+                    "body-sm": ["Inter"],
+                    "headline-md": ["Manrope"],
+                    "headline-lg": ["Manrope"],
+                    "body-md": ["Inter"],
+                    "headline-sm": ["Manrope"],
+                    "label-lg": ["Inter"],
+                    "label-md": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-lg-mobile": ["28px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                    "body-lg": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "display-lg": ["48px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-sm": ["13px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                    "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "headline-sm": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                    "label-lg": ["14px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                    "label-md": ["12px", {"lineHeight": "1.2", "fontWeight": "500"}]
             }
-        }
+          },
+        },
+      }
     </script>
 <style>
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-            vertical-align: middle;
         }
-        .listing-card:hover {
-            border-color: #005f2e;
-            box-shadow: 0px 6px 16px rgba(0,0,0,0.08);
-        }
-        .match-score-badge {
-            background: #eaf8ef;
-            color: #005f2e;
+        .hero-pattern {
+            background-image: radial-gradient(circle at 2px 2px, #c5c6d0 1px, transparent 0);
+            background-size: 24px 24px;
         }
     </style>
 </head>
-<body class="bg-background text-on-background font-body-md">
+<body class="bg-surface text-on-surface font-body-md overflow-x-hidden">
 <!-- TopNavBar -->
-<header class="bg-surface sticky top-0 z-50 border-b border-outline-variant">
-<div class="flex justify-between items-center h-16 px-gutter w-full max-w-container-max mx-auto">
-<div class="flex items-center gap-sm">
-<span class="font-headline-md text-headline-md font-bold text-primary">StaffExchangeHub</span>
+<header class="sticky top-0 z-50 bg-[#0A2E6D] border-b border-white/10 w-full h-20">
+<nav class="flex justify-between items-center w-full px-gutter max-w-container-max mx-auto h-full">
+<div class="flex items-center gap-xl">
+<span class="font-headline-sm text-headline-sm font-bold text-white">StaffExchangeHub</span>
+<div class="hidden md:flex items-center gap-lg">
+<a class="font-body-md text-body-md text-white font-bold border-b-2 border-white pb-1 transition-colors" href="#">Home</a>
+<a class="font-body-md text-body-md text-white/80 hover:text-white transition-colors" href="#">Find Swaps</a>
+<a class="font-body-md text-body-md text-white/80 hover:text-white transition-colors" href="#">How It Works</a>
+<a class="font-body-md text-body-md text-white/80 hover:text-white transition-colors" href="#">Success Stories</a>
+<a class="font-body-md text-body-md text-white/80 hover:text-white transition-colors" href="#">Pricing</a>
+<a class="font-body-md text-body-md text-white/80 hover:text-white transition-colors" href="#">Help Centre</a>
 </div>
-<nav class="hidden md:flex items-center gap-lg">
-<a class="text-on-surface-variant font-body-md hover:text-primary transition-colors" href="#">Home</a>
-<a class="text-primary font-bold border-b-2 border-primary pb-1 font-body-md" href="#">Find Swaps</a>
-<a class="text-on-surface-variant font-body-md hover:text-primary transition-colors" href="#">Pricing</a>
+</div>
+<div class="flex items-center gap-md">
+<button class="material-symbols-outlined text-white">notifications</button>
+<button class="material-symbols-outlined text-white">chat_bubble</button>
+<div class="h-10 w-10 rounded-full overflow-hidden border-2 border-white/20">
+<img alt="User profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAOy_zPIcoZJf4JINm_nMjPfD8_gyDtPe0oMyEtPgorMJD4yakiP7AiFhx4h1GOG1nDJGAhy2jqYw3T7VNHmakK4L_4JRwhoMuVRUbxiLSNOdmCAdTNERIYvWhLI44WVSO81r1xF5Tugws-EPndRIjmQEPwST3QV6gp3AcT6OwItrmE07SE0BlgS-PVXOw_3XSIq3w7RaiClZv5c6FcaJupwbN5_YP1culahV3-lq1fonSW1FmMyUMVnK66iKVaOMmaftJfX54g4q0"/>
+</div>
+</div>
 </nav>
-<div class="flex items-center gap-sm">
-<button class="px-sm py-xs text-primary font-label-lg hover:bg-surface-container transition-all rounded-lg">Sign In</button>
-<button class="px-md py-xs bg-primary text-on-primary font-label-lg rounded-lg hover:bg-primary-container transition-all">Join Now</button>
-</div>
-</div>
 </header>
-<main class="max-w-container-max mx-auto px-gutter py-lg flex flex-col md:flex-row gap-lg">
-<!-- Filter Sidebar -->
-<aside class="w-full md:w-[300px] shrink-0 space-y-md">
-<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md">
-<div class="flex items-center gap-xs mb-md">
-<span class="material-symbols-outlined text-secondary">filter_alt</span>
-<h2 class="font-headline-sm text-headline-sm text-on-surface">Filters</h2>
+<main>
+<!-- Hero Section -->
+<section class="relative pt-xl pb-24 overflow-hidden hero-pattern bg-[#F5F9FF]">
+<div class="max-w-container-max mx-auto px-gutter grid grid-cols-1 lg:grid-cols-2 gap-xl items-center">
+<div class="z-10">
+<h1 class="font-display-lg text-display-lg mb-sm text-on-surface">
+                    Swap Your Workplace.<br/>
+<span class="text-[#16A34A]">Change Your Life.</span>
+</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-lg mb-lg">
+                    Connect with verified professionals across Zambia who want to swap their workplace just like you. Secure, efficient, and professional workplace mobility.
+                </p>
+<div class="flex flex-wrap gap-md mb-lg">
+<button class="bg-[#16A34A] text-white px-lg py-sm rounded-lg font-label-lg hover:brightness-110 transition-all scale-95 hover:scale-100 duration-150">
+                        Create Swap Post
+                    </button>
+<button class="border border-outline text-primary px-lg py-sm rounded-lg font-label-lg hover:bg-white transition-all">
+                        Browse Swaps
+                    </button>
 </div>
-<div class="space-y-sm">
-<!-- Dropdown Filters -->
+<div class="flex items-center gap-sm">
+<div class="flex -space-x-3">
+<img alt="Professional" class="w-10 h-10 rounded-full border-2 border-white object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC6-KCS311Rbl7Ps7cSO6SwFuHQoHart6Jkq7JTALIQOQpzyjIew1H4_weEi8RPyPyZqEnqja1myQlBc1efKeHD4Aoi32Q6bFqr4MYtRzGz4K30Hk_ky0Q8StbyJjat1QAe7yPv0mGGobohfKAaXQtSVURKY3Kz5sK8p8rtgVUMIob0VcEtvqYLAHunV_BxhWyvkoW3m1wZyl6O1Pdd_kPWeiBmuKa5dABJHfybjZbX0pZGKtsw5QWHIIe17FMHef-toiWhRp-Gh6E"/>
+<img alt="Professional" class="w-10 h-10 rounded-full border-2 border-white object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3Wgh0aUi_Jocmjt_mrgPCz8yv-xmftDxosD6DxSIC7fGHKMr2qTE569butcDEG1Zlu50nWHDuh-VXBCjxdOO-pUv4Cj6DlBqDJr27t9jQuuupX57HPBtnJG8Jx6Geil-0xIg3MqwCTQvjMigbo-hoanvAGxV-Oy1LONr0ZMjf4pQFoll6h_jJDWi4P-rryd7yg__b6DlMRYw7xmTY1zFqfghdzQ9swCb08AO0-OvZS80LpZPwEcla7q37WtBW-pkLG8Ng9yEKpCc"/>
+<img alt="Professional" class="w-10 h-10 rounded-full border-2 border-white object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCojQcgJzIITeqsMB1EZVxChQbQFDIIwfKrh89bjmNnC-tUqdOXji9UEx3Yf_Tc56ZaE-uIrOYd7QoS94-1tHGKLPrVRbRIQj7toonUGaquy1XSZ2H8FUtkl30sD07DCJeol16uXVy6jbdIOcFI4eQS_1yxvDRl5-Pmthxl7s8dPVJn1HMXhGypPN-sXwe60rmm-zYk6KYLEv3_hYefKcJkmVglAs1nTk9syh5nVHqe9Axof5cL_KM7MYzIOQzfbB8FUqf8a_g5tag"/>
+</div>
+<span class="text-body-sm text-on-surface-variant">Join 12,000+ professionals who have already found their perfect swap</span>
+</div>
+</div>
+<div class="relative h-[500px]">
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="relative w-full h-full flex items-center justify-around">
+<div class="bg-surface-container-lowest p-md rounded-xl shadow-lg border border-outline-variant w-48 text-center -translate-y-12">
+<img alt="User 1" class="w-24 h-24 rounded-full mx-auto mb-sm object-cover border-2 border-[#16A34A]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCvzKx5spJRwd2t1UqUeK5KvhAqxnKom_S5Opx4gMygGz_tU9BFdxUncn19JrlNel5OEIhuwXlh2gEb8Yvcxh4Xt2na4N_UKkcwJEKtlnpMObMAXrjZTrSnxUUArwGR1NY_tiySnBWkZuEtLgqqlNkV9msGehZRs2ln3CVANzYBWTcV-z061UdSXYhDp7Lkr_rME6ZnQ82QtwGbfHnkvqfK80iMIgTZfeBErbiF7pcPrMQ4B4gUfV_Nz2dcvjpBwwHkozl0w2HCTvc"/>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Lusaka</h3>
+<p class="text-body-sm text-on-surface-variant">General Hospital</p>
+</div>
+<div class="flex flex-col items-center gap-xs">
+<span class="material-symbols-outlined text-[#16A34A] scale-150">swap_horiz</span>
+<span class="text-label-md font-bold text-[#16A34A]">95% MATCH</span>
+</div>
+<div class="bg-surface-container-lowest p-md rounded-xl shadow-lg border border-outline-variant w-48 text-center translate-y-12">
+<img alt="User 2" class="w-24 h-24 rounded-full mx-auto mb-sm object-cover border-2 border-primary" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXCpsJjd8S5FALoL-bdnobWwls9Xy-rrvzALZZMqmXNc6Ah3pOCNU7ciTqFzLVzGeT82KtTrFJsmCCn-SSXDaYglcdupR6HfJxvEYrlkOh7jrbVNY2wvGnkv9MCdTgKg2on66ZUhd44Prj9t_idKJJ8iPW5zYkf6pYnuYtbmQgkrpToYBqWqsqb69aR3uNvBW4p6JfiF0c8Jd7bM-RRTYlpwBiqStCq3BBR5Cl56hnB2im9BQ7exAi9FO1HRTgvhwd1h-HFbIS99A"/>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Ndola</h3>
+<p class="text-body-sm text-on-surface-variant">Regional Clinic</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Search Bar Overlay -->
+<div class="max-w-container-max mx-auto px-gutter mt-lg">
+<div class="bg-surface-container-lowest p-gutter rounded-xl shadow-xl border border-outline-variant grid grid-cols-1 md:grid-cols-5 gap-md items-end">
 <div class="space-y-xs">
-<label class="font-label-lg block text-on-surface">Current Location</label>
-<select class="w-full rounded-lg border-outline-variant text-body-md focus:border-primary focus:ring-primary">
-<option>Select Province</option>
-<option>Lusaka Province</option>
-<option>Copperbelt Province</option>
-<option>Southern Province</option>
+<label class="font-label-md text-on-surface-variant">Current Location</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline">location_on</span>
+<select class="w-full pl-xl pr-md py-sm border-outline-variant rounded-lg focus:ring-primary focus:border-primary text-on-surface">
+<option>Select province</option>
+<option>Lusaka</option>
+<option>Copperbelt</option>
 </select>
 </div>
-<div class="space-y-xs">
-<label class="font-label-lg block text-on-surface">Desired Location</label>
-<select class="w-full rounded-lg border-outline-variant text-body-md focus:border-primary focus:ring-primary">
-<option>Select Province</option>
-<option>Lusaka Province</option>
-<option>Copperbelt Province</option>
-<option>Southern Province</option>
-</select>
 </div>
 <div class="space-y-xs">
-<label class="font-label-lg block text-on-surface">Profession</label>
-<select class="w-full rounded-lg border-outline-variant text-body-md focus:border-primary focus:ring-primary">
-<option>Select Profession</option>
-<option>Medical Staff</option>
+<label class="font-label-md text-on-surface-variant">Desired Location</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline">map</span>
+<select class="w-full pl-xl pr-md py-sm border-outline-variant rounded-lg focus:ring-primary focus:border-primary text-on-surface">
+<option>Select province</option>
+<option>Lusaka</option>
+<option>Ndola</option>
+</select>
+</div>
+</div>
+<div class="space-y-xs">
+<label class="font-label-md text-on-surface-variant">Profession</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline">work</span>
+<select class="w-full pl-xl pr-md py-sm border-outline-variant rounded-lg focus:ring-primary focus:border-primary text-on-surface">
+<option>Select profession</option>
+<option>Nurse</option>
 <option>Teacher</option>
-<option>Banking</option>
 </select>
 </div>
+</div>
 <div class="space-y-xs">
-<label class="font-label-lg block text-on-surface">Employer Type</label>
-<select class="w-full rounded-lg border-outline-variant text-body-md focus:border-primary focus:ring-primary">
-<option>Select Type</option>
+<label class="font-label-md text-on-surface-variant">Employer Type</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline">corporate_fare</span>
+<select class="w-full pl-xl pr-md py-sm border-outline-variant rounded-lg focus:ring-primary focus:border-primary text-on-surface">
+<option>All Types</option>
 <option>Government</option>
 <option>Private</option>
-<option>NGO</option>
 </select>
 </div>
-<div class="space-y-xs">
-<label class="font-label-lg block text-on-surface">Experience Level</label>
-<select class="w-full rounded-lg border-outline-variant text-body-md focus:border-primary focus:ring-primary">
-<option>Any Experience</option>
-<option>1-3 Years</option>
-<option>4-7 Years</option>
-<option>8+ Years</option>
-</select>
 </div>
-<!-- Checkbox Filters -->
-<div class="pt-sm space-y-sm">
-<label class="font-label-lg block border-t border-outline-variant pt-sm text-on-surface">More Filters</label>
-<div class="flex items-center gap-sm">
-<input class="rounded text-primary focus:ring-primary" id="verified" type="checkbox"/>
-<label class="text-body-md" for="verified">Verified Users Only</label>
-</div>
-<div class="flex items-center gap-sm">
-<input class="rounded text-primary focus:ring-primary" id="housing" type="checkbox"/>
-<label class="text-body-md" for="housing">Housing Available</label>
-</div>
-<div class="flex items-center gap-sm">
-<input class="rounded text-primary focus:ring-primary" id="urgent" type="checkbox"/>
-<label class="text-body-md" for="urgent">Urgent Swaps Only</label>
-</div>
-<div class="flex items-center gap-sm">
-<input class="rounded text-primary focus:ring-primary" id="gender" type="checkbox"/>
-<label class="text-body-md" for="gender">Gender Preference</label>
-</div>
-</div>
-<div class="pt-md space-y-sm">
-<button class="w-full py-sm bg-primary text-on-primary rounded-lg font-label-lg hover:bg-primary-container transition-all">Apply Filters</button>
-<button class="w-full py-sm bg-surface-container-lowest text-primary border border-primary rounded-lg font-label-lg hover:bg-surface-container transition-all">Save Search</button>
+<button class="w-full bg-[#16A34A] text-white py-sm rounded-lg font-label-lg flex items-center justify-center gap-xs hover:brightness-110 transition-all shadow-md">
+<span class="material-symbols-outlined">search</span>
+                    Search Swaps
+                </button>
 </div>
 </div>
 </section>
-<!-- Advertisement Component -->
-<div class="bg-tertiary-fixed border border-outline-variant rounded-xl p-md relative overflow-hidden group">
-<div class="absolute top-0 right-0 p-xs">
-<span class="text-[10px] font-bold uppercase tracking-widest text-on-tertiary-fixed-variant opacity-60">Sponsored</span>
+<!-- How It Works Section -->
+<section class="py-xl bg-[#EAF8EF]">
+<div class="max-w-container-max mx-auto px-gutter">
+<h2 class="text-center font-headline-lg text-headline-lg mb-xl text-on-surface">How StaffExchangeHub Works</h2>
+<div class="grid grid-cols-1 md:grid-cols-5 gap-md relative">
+<div class="hidden md:block absolute top-12 left-24 right-24 h-0.5 border-t-2 border-dashed border-[#16A34A]/30 z-0"></div>
+<div class="flex flex-col items-center text-center gap-sm relative z-10">
+<div class="w-16 h-16 rounded-full bg-[#16A34A] flex items-center justify-center text-white font-bold text-headline-sm">1</div>
+<div class="space-y-xs">
+<span class="material-symbols-outlined text-[#16A34A] text-[32px]">person_add</span>
+<h4 class="font-label-lg text-on-surface">Create Profile</h4>
+<p class="text-body-sm text-on-surface-variant">Tell us about yourself, your current job and location.</p>
 </div>
-<div class="h-32 w-full bg-surface-container rounded-lg mb-sm overflow-hidden border border-outline-variant">
-<div class="w-full h-full bg-cover bg-center transition-transform duration-500 group-hover:scale-110" data-alt="A clean, professional studio photograph of a young African professional smiling confidently while holding a tablet in a bright office environment. The lighting is soft and corporate, utilizing a color palette of greens and blues that align with the platform's brand. The atmosphere is optimistic, symbolizing career growth and professional mobility." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBGogERAEuFIVoxeIfWgHDCCYT5NLpfjxok70uGEmUXg9SEpFoqBf5OlZWdTqfRkTRQ66t5gkJEhDUQwotWWoCSq9l0GlEV1h0FjIsHtsTJ0dV73rUO6FzIs7tpkhkC7bDLaamiOHwTB9HsVTHsaDP-ncvnhzjnvZFGlthB5Hm5NKGZhkY-AOj_jeouDOJpqX5glY8tmyZbNOg4P2QqwkGVJqrlkEvbZk_hbTFdlBP7XF0IlF0-NDHy7LGej4c88LlG19IAxxKBViA')"></div>
 </div>
-<h3 class="font-headline-sm text-headline-sm text-on-tertiary-fixed mb-xs">Get More Visibility for Your Swap Post</h3>
-<p class="text-body-sm text-on-tertiary-fixed-variant mb-md">Upgrade to Premium and reach more professionals looking to swap in your preferred location today.</p>
-<button class="text-primary font-bold text-label-lg hover:underline flex items-center gap-xs">
-                    Learn More <span class="material-symbols-outlined text-sm">arrow_forward</span>
-</button>
+<div class="flex flex-col items-center text-center gap-sm relative z-10">
+<div class="w-16 h-16 rounded-full bg-[#16A34A] flex items-center justify-center text-white font-bold text-headline-sm">2</div>
+<div class="space-y-xs">
+<span class="material-symbols-outlined text-[#16A34A] text-[32px]">post_add</span>
+<h4 class="font-label-lg text-on-surface">Post Swap Request</h4>
+<p class="text-body-sm text-on-surface-variant">Add details of where you want to go and why.</p>
 </div>
-</aside>
-<!-- Main Listings Area -->
-<div class="flex-1 space-y-md">
-<!-- Content Header -->
-<div class="flex flex-col md:flex-row md:items-end justify-between gap-sm border-b border-outline-variant pb-md">
+</div>
+<div class="flex flex-col items-center text-center gap-sm relative z-10">
+<div class="w-16 h-16 rounded-full bg-[#16A34A] flex items-center justify-center text-white font-bold text-headline-sm">3</div>
+<div class="space-y-xs">
+<span class="material-symbols-outlined text-[#16A34A] text-[32px]">group</span>
+<h4 class="font-label-lg text-on-surface">Find Matches</h4>
+<p class="text-body-sm text-on-surface-variant">We find compatible professionals who want to swap.</p>
+</div>
+</div>
+<div class="flex flex-col items-center text-center gap-sm relative z-10">
+<div class="w-16 h-16 rounded-full bg-[#16A34A] flex items-center justify-center text-white font-bold text-headline-sm">4</div>
+<div class="space-y-xs">
+<span class="material-symbols-outlined text-[#16A34A] text-[32px]">chat</span>
+<h4 class="font-label-lg text-on-surface">Connect &amp; Chat</h4>
+<p class="text-body-sm text-on-surface-variant">Agree on details and complete your swap securely.</p>
+</div>
+</div>
+<div class="flex flex-col items-center text-center gap-sm relative z-10">
+<div class="w-16 h-16 rounded-full bg-[#16A34A] flex items-center justify-center text-white font-bold text-headline-sm">5</div>
+<div class="space-y-xs">
+<span class="material-symbols-outlined text-[#16A34A] text-[32px]">task_alt</span>
+<h4 class="font-label-lg text-on-surface">Swap &amp; Succeed</h4>
+<p class="text-body-sm text-on-surface-variant">Enjoy your new work location and start fresh.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Featured Swap Opportunities -->
+<section class="py-xl">
+<div class="max-w-container-max mx-auto px-gutter">
+<div class="flex justify-between items-end mb-lg">
 <div>
-<h1 class="font-headline-lg text-headline-lg text-secondary">Swap Listings</h1>
-<p class="text-on-surface-variant text-body-md">Found 256 swap requests matching your profile</p>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Featured Swap Opportunities</h2>
+<p class="text-on-surface-variant">Recent verified postings from top professions</p>
 </div>
-<div class="flex items-center gap-md">
-<div class="flex items-center gap-xs">
-<label class="text-body-sm text-on-surface-variant shrink-0">Sort by:</label>
-<select class="text-body-md border-none bg-transparent focus:ring-0 font-semibold cursor-pointer">
-<option>Most Recent</option>
-<option>Match Score</option>
-<option>Urgency</option>
-</select>
+<a class="text-[#16A34A] font-label-lg flex items-center gap-xs hover:underline" href="#">
+                    View all listings <span class="material-symbols-outlined text-body-md">arrow_forward</span>
+</a>
 </div>
-<div class="flex border border-outline-variant rounded-lg overflow-hidden">
-<button class="p-xs bg-surface-container-high text-primary"><span class="material-symbols-outlined">format_list_bulleted</span></button>
-<button class="p-xs hover:bg-surface-container"><span class="material-symbols-outlined">grid_view</span></button>
-</div>
-</div>
-</div>
-<!-- Marketplace Alert Banner -->
-<div class="p-md rounded-xl bg-gradient-to-r from-tertiary-fixed to-surface-container-lowest border border-primary-fixed flex flex-col md:flex-row items-center justify-between gap-md">
-<div class="flex items-center gap-md">
-<div class="w-12 h-12 bg-primary-fixed rounded-full flex items-center justify-center text-primary">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">bolt</span>
-</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md">
+<!-- Listing Card 1 -->
+<div class="bg-surface-container-lowest p-md rounded-xl border border-outline-variant hover:shadow-md transition-shadow">
+<div class="flex items-start justify-between mb-sm">
+<div class="flex items-center gap-sm">
+<img alt="Doctor" class="w-12 h-12 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBTqfORpKSl5xO7ailFrSnCGBniWX7FpbuOTK45_RvtR4fS16I8cbiHjatzcs-a-n_L5cFwtQmle5qYvyZfocob7Y07YVOdV9YZMUc0kNk6WpIej62qdmCd_kdu9YZauKKl7bbvjzAbH62NSOO3CKT9FjUfTkAqGBxlKtf2kB5LsIb-CWI8ovX5A5slBH2JHqroFzRFngTbfYllgV71embLSNrgb2qCaw0M2O0DWDc2HJCmlcX2BycdiNQ4AWzCbzBH6syMJaiJK9s"/>
 <div>
-<h4 class="font-headline-sm text-headline-sm text-on-surface">Get better matches!</h4>
-<p class="text-body-md text-on-surface-variant">Create a swap post to get matched with professionals looking to swap with you.</p>
+<h4 class="font-headline-sm text-headline-sm text-on-surface">Registered Nurse</h4>
+<div class="flex items-center gap-xs text-[#16A34A] font-bold text-label-md">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">verified</span> Verified
+                                </div>
 </div>
 </div>
-<button class="px-md py-sm bg-primary text-on-primary rounded-lg font-label-lg hover:bg-primary-container transition-all whitespace-nowrap">Create Swap Post</button>
+<span class="bg-error-container text-on-error-container text-[10px] px-xs py-0.5 rounded font-bold uppercase tracking-wider">Urgent</span>
 </div>
-<!-- Listing Cards -->
-<div class="space-y-sm">
-<!-- Listing 1 -->
-<article class="listing-card bg-surface-container-lowest border border-outline-variant rounded-xl p-md transition-all">
-<div class="flex flex-col lg:flex-row gap-md items-start">
-<!-- Profile Column -->
-<div class="flex gap-sm w-full lg:w-64 shrink-0">
-<div class="w-14 h-14 rounded-full overflow-hidden border border-outline-variant">
-<img class="w-full h-full object-cover" data-alt="A professional headshot of an African female nurse named Lydia Mwansa, wearing professional medical scrubs and a warm, trustworthy smile. The background is a clean, slightly blurred clinical setting with high-key lighting, emphasizing professional reliability and care. The image style is polished and high-fidelity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3NIBkDkohQjDfbKpYxM8UsABP3jDSi3fLgXPcUSxoAi1E5rFCjMLNyPM8l-8KTuTPJd6kwCzZ98Kpm35Y9TLJQuzTKMjqKiG38aoZrf2339l6nfOFxDAJPrD8Jac6aqK_bjeJnsjEz179koIF6nz9jJimcCZJ8yzbhVNvoNe4jpOy4lih8N_o1IW3crlEGsa3SKxhkmONp-RShMK8gP0ToJUuhF5siJBU6cpdfRvwnE8n4jLF4y_CYmyzTqYRit6I8M26sKoj6oQ"/>
+<div class="space-y-xs mb-md text-on-surface-variant">
+<div class="flex items-center gap-xs"><span class="material-symbols-outlined text-sm text-outline">location_on</span> Lusaka → Ndola</div>
+<div class="flex items-center gap-xs"><span class="material-symbols-outlined text-sm text-outline">corporate_fare</span> University Teaching Hospital</div>
+<div class="flex items-center gap-xs"><span class="material-symbols-outlined text-sm text-outline">history</span> 5 years experience</div>
 </div>
+<div class="flex items-center gap-xs mb-md py-xs px-sm bg-[#EAF8EF] rounded-lg text-[#16A34A] font-bold text-label-md">
+<span class="material-symbols-outlined text-sm">home</span> Housing available
+                    </div>
+<div class="flex items-center justify-between mt-auto">
+<span class="text-body-sm text-outline">Posted 1 day ago</span>
+<button class="bg-primary text-white px-md py-xs rounded-lg font-label-md hover:opacity-90">View Match</button>
+</div>
+</div>
+<!-- Listing Card 2 -->
+<div class="bg-surface-container-lowest p-md rounded-xl border border-outline-variant hover:shadow-md transition-shadow">
+<div class="flex items-start justify-between mb-sm">
+<div class="flex items-center gap-sm">
+<img alt="Teacher" class="w-12 h-12 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuArSfrTGHnxLuEXwz6fOTaFVaBzSrfGU0-v611AMPoDXDF71Jo24crujOkzIk64yUhENkbmuD4rZb1gWak-_tOkOP_HXFCqTEpgBDrYEOo0RInkRKrPOsn0BIiWRTDXnp7VhLzFDrIMi0Vfnmhd8l92CzJTrXK8nRHVSJxcjAkDVmyDXPzT71RIFDoGqElztX5BNETqvR_fZrcnxFcslgT1kIObVxxqMsFNrRRdmjkaSMEdueylTRBURnlPqHLLNuQxDMEQBx9hklQ"/>
 <div>
-<div class="flex items-center gap-xs">
-<h3 class="font-headline-sm text-headline-sm text-on-surface">Lydia Mwansa</h3>
-<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;" title="Verified User">verified</span>
-</div>
-<p class="text-body-sm text-secondary font-semibold">Registered Nurse</p>
-<p class="text-label-md text-on-surface-variant">5 years experience</p>
+<h4 class="font-headline-sm text-headline-sm text-on-surface">Maths Teacher</h4>
+<div class="flex items-center gap-xs text-[#16A34A] font-bold text-label-md">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">verified</span> Verified
+                                </div>
 </div>
 </div>
-<!-- Swap Details -->
-<div class="flex-1 flex flex-col sm:flex-row items-center gap-sm md:gap-md w-full">
-<div class="flex-1 text-center sm:text-left bg-surface-container-low p-sm rounded-lg w-full">
-<span class="text-[10px] uppercase font-bold text-on-surface-variant">Current</span>
-<p class="font-body-md font-bold truncate">Univ. Teaching Hospital</p>
-<p class="text-body-sm text-on-surface-variant">Lusaka Province</p>
+<span class="bg-secondary-fixed text-on-secondary-fixed-variant text-[10px] px-xs py-0.5 rounded font-bold uppercase tracking-wider">New</span>
 </div>
-<div class="shrink-0 flex flex-col items-center">
-<span class="material-symbols-outlined text-primary text-lg rotate-90 sm:rotate-0">swap_horiz</span>
-<span class="text-[10px] font-bold text-primary">SWAP</span>
+<div class="space-y-xs mb-md text-on-surface-variant">
+<div class="flex items-center gap-xs"><span class="material-symbols-outlined text-sm text-outline">location_on</span> Kitwe → Livingstone</div>
+<div class="flex items-center gap-xs"><span class="material-symbols-outlined text-sm text-outline">corporate_fare</span> Government School</div>
+<div class="flex items-center gap-xs"><span class="material-symbols-outlined text-sm text-outline">history</span> 7 years experience</div>
 </div>
-<div class="flex-1 text-center sm:text-left bg-secondary-container bg-opacity-20 p-sm rounded-lg w-full">
-<span class="text-[10px] uppercase font-bold text-on-secondary-container">Desired</span>
-<p class="font-body-md font-bold truncate">Ndola Teaching Hospital</p>
-<p class="text-body-sm text-on-surface-variant">Copperbelt Province</p>
+<div class="flex items-center gap-xs mb-md py-xs px-sm bg-surface-container-low rounded-lg text-on-surface-variant font-bold text-label-md">
+<span class="material-symbols-outlined text-sm">code_off</span> Housing not included
+                    </div>
+<div class="flex items-center justify-between mt-auto">
+<span class="text-body-sm text-outline">Posted 2 days ago</span>
+<button class="bg-primary text-white px-md py-xs rounded-lg font-label-md hover:opacity-90">View Match</button>
 </div>
 </div>
-<!-- Match Score -->
-<div class="shrink-0 w-full lg:w-32 flex flex-col items-center justify-center p-sm rounded-xl match-score-badge border border-primary-fixed">
-<span class="text-2xl font-bold">95%</span>
-<span class="text-[10px] font-bold text-center leading-tight">Excellent Match</span>
-</div>
-</div>
-<!-- Bottom Bar -->
-<div class="mt-md pt-sm border-t border-outline-variant flex flex-wrap items-center justify-between gap-sm">
-<div class="flex flex-wrap gap-xs">
-<span class="px-sm py-1 bg-primary-fixed bg-opacity-30 text-primary text-[11px] font-bold rounded-full uppercase flex items-center gap-1">
-<span class="material-symbols-outlined text-[14px]">check_circle</span> Verified
-                            </span>
-<span class="px-sm py-1 bg-error-container text-error text-[11px] font-bold rounded-full uppercase flex items-center gap-1">
-<span class="material-symbols-outlined text-[14px]">alarm</span> Urgent
-                            </span>
-<span class="px-sm py-1 bg-on-secondary-fixed-variant bg-opacity-10 text-on-secondary-fixed-variant text-[11px] font-bold rounded-full uppercase">
-                                Housing Available
-                            </span>
-</div>
-<div class="flex items-center gap-md">
-<button class="text-error font-body-sm hover:underline flex items-center gap-1">
-<span class="material-symbols-outlined text-sm">report</span> Report Post
-                            </button>
-<div class="h-4 w-[1px] bg-outline-variant"></div>
-<button class="text-on-surface-variant hover:text-primary transition-all">
-<span class="material-symbols-outlined">bookmark</span>
-</button>
-<button class="text-on-surface-variant hover:text-on-surface transition-all">
-<span class="material-symbols-outlined">more_vert</span>
-</button>
-<button class="px-md py-xs border border-primary text-primary rounded-lg font-label-lg hover:bg-primary-fixed hover:bg-opacity-20 transition-all">View Profile</button>
-</div>
-</div>
-</article>
-<!-- Listing 2 -->
-<article class="listing-card bg-surface-container-lowest border border-outline-variant rounded-xl p-md transition-all">
-<div class="flex flex-col lg:flex-row gap-md items-start">
-<div class="flex gap-sm w-full lg:w-64 shrink-0">
-<div class="w-14 h-14 rounded-full overflow-hidden border border-outline-variant">
-<img class="w-full h-full object-cover" data-alt="A professional studio portrait of an African male teacher named Brian Chileshe, wearing a smart casual button-down shirt. He is leaning against a clean, modern bookshelf in a well-lit academic environment. The lighting is bright and professional, creating an atmosphere of institutional trust and education expertise." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCOkis6_3oWUMFqx8eSA6xVyxy0Z66bJJfsiaMXN9fHKdHGnbnCK4S4orgWxTQdhjK5HFZ5BnDkretQwwb4QOOMhYPwYqU0lfB1Au1ojO05PxX5EqQDn039M1uRgnUSWG6StYyEbOCNpHJFK7JOUVm6yLmwheKAmK2c6dVbnb0xLH3b8VmP-93tJPC7Wt_7qR_954fo09qklfS50lZrUN6AEm1FRnuTks27aJ6gPxEdEMcNbycl3pY3aPi5rQZ5-Q-9XRDlVrwecJw"/>
-</div>
+<!-- Listing Card 3 -->
+<div class="bg-surface-container-lowest p-md rounded-xl border border-outline-variant hover:shadow-md transition-shadow">
+<div class="flex items-start justify-between mb-sm">
+<div class="flex items-center gap-sm">
+<img alt="Banker" class="w-12 h-12 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDhou32Ft1HFc8uBeHcQFoX1w6Dp0AFunVwWPLppT6zdOGXmpJcG4RQuL5k-AoC8YKXHAtwqdIOiCICsknKLDmBoybXgSs7jySCs3wKmSsk2VIgcwfdZxX0blIQV2uwYGr6ljVJMY8XlA2btg9b0KRR-0Wpe4SkAPWQaYtHRgO16WG6lCb7e837a7QfoQ1WZTsUHpeeTinDUZZopcnfx_t-zvFWSmc31sqvpj23n7WGGW2YcfuMyDHjN-9gY8MtiKVEim9Ktahti6w"/>
 <div>
-<div class="flex items-center gap-xs">
-<h3 class="font-headline-sm text-headline-sm text-on-surface">Brian Chileshe</h3>
-<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">verified</span>
-</div>
-<p class="text-body-sm text-secondary font-semibold">Maths Teacher</p>
-<p class="text-label-md text-on-surface-variant">7 years experience</p>
+<h4 class="font-headline-sm text-headline-sm text-on-surface">Bank Officer</h4>
+<div class="flex items-center gap-xs text-[#16A34A] font-bold text-label-md">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">verified</span> Verified
+                                </div>
 </div>
 </div>
-<div class="flex-1 flex flex-col sm:flex-row items-center gap-md w-full">
-<div class="flex-1 text-center sm:text-left bg-surface-container-low p-sm rounded-lg w-full">
-<span class="text-[10px] uppercase font-bold text-on-surface-variant">Current</span>
-<p class="font-body-md font-bold truncate">Government School</p>
-<p class="text-body-sm text-on-surface-variant">Kitwe, Copperbelt</p>
+<span class="bg-error-container text-on-error-container text-[10px] px-xs py-0.5 rounded font-bold uppercase tracking-wider">Urgent</span>
 </div>
-<div class="shrink-0 flex flex-col items-center">
-<span class="material-symbols-outlined text-primary text-lg rotate-90 sm:rotate-0">swap_horiz</span>
+<div class="space-y-xs mb-md text-on-surface-variant">
+<div class="flex items-center gap-xs"><span class="material-symbols-outlined text-sm text-outline">location_on</span> Lusaka → Kabwe</div>
+<div class="flex items-center gap-xs"><span class="material-symbols-outlined text-sm text-outline">corporate_fare</span> Zambia National Bank</div>
+<div class="flex items-center gap-xs"><span class="material-symbols-outlined text-sm text-outline">history</span> 3 years experience</div>
 </div>
-<div class="flex-1 text-center sm:text-left bg-secondary-container bg-opacity-20 p-sm rounded-lg w-full">
-<span class="text-[10px] uppercase font-bold text-on-secondary-container">Desired</span>
-<p class="font-body-md font-bold truncate">Livingstone Secondary</p>
-<p class="text-body-sm text-on-surface-variant">Southern Province</p>
-</div>
-</div>
-<div class="shrink-0 w-full lg:w-32 flex flex-col items-center justify-center p-sm rounded-xl match-score-badge border border-primary-fixed">
-<span class="text-2xl font-bold">92%</span>
-<span class="text-[10px] font-bold text-center leading-tight">Good Match</span>
+<div class="flex items-center gap-xs mb-md py-xs px-sm bg-[#EAF8EF] rounded-lg text-[#16A34A] font-bold text-label-md">
+<span class="material-symbols-outlined text-sm">home</span> Housing available
+                    </div>
+<div class="flex items-center justify-between mt-auto">
+<span class="text-body-sm text-outline">Posted 3 days ago</span>
+<button class="bg-primary text-white px-md py-xs rounded-lg font-label-md hover:opacity-90">View Match</button>
 </div>
 </div>
-<div class="mt-md pt-sm border-t border-outline-variant flex flex-wrap items-center justify-between gap-sm">
-<div class="flex flex-wrap gap-xs">
-<span class="px-sm py-1 bg-primary-fixed bg-opacity-30 text-primary text-[11px] font-bold rounded-full uppercase flex items-center gap-1">
-<span class="material-symbols-outlined text-[14px]">check_circle</span> Verified
-                            </span>
-<span class="px-sm py-1 bg-surface-container text-on-surface-variant text-[11px] font-bold rounded-full uppercase">
-                                Not Urgent
-                            </span>
-<span class="px-sm py-1 bg-surface-container text-on-surface-variant text-[11px] font-bold rounded-full uppercase">
-                                Housing Not Included
-                            </span>
 </div>
+</div>
+</section>
+<!-- Stats Section -->
+<section class="py-lg bg-[#EAF8EF] text-primary">
+<div class="max-w-container-max mx-auto px-gutter grid grid-cols-2 md:grid-cols-5 gap-md text-center">
+<div class="space-y-xs">
+<div class="text-headline-lg font-extrabold">12,000+</div>
+<div class="text-label-md opacity-80 uppercase tracking-widest text-on-surface-variant">Active Professionals</div>
+</div>
+<div class="space-y-xs">
+<div class="text-headline-lg font-extrabold">3,200+</div>
+<div class="text-label-md opacity-80 uppercase tracking-widest text-on-surface-variant">Successful Swaps</div>
+</div>
+<div class="space-y-xs">
+<div class="text-headline-lg font-extrabold">150+</div>
+<div class="text-label-md opacity-80 uppercase tracking-widest text-on-surface-variant">Professions</div>
+</div>
+<div class="space-y-xs">
+<div class="text-headline-lg font-extrabold">10</div>
+<div class="text-label-md opacity-80 uppercase tracking-widest text-on-surface-variant">Provinces Covered</div>
+</div>
+<div class="space-y-xs">
+<div class="text-headline-lg font-extrabold">20+</div>
+<div class="text-label-md opacity-80 uppercase tracking-widest text-on-surface-variant">Categories</div>
+</div>
+</div>
+</section>
+<!-- Testimonial & Newsletter -->
+<section class="py-xl">
+<div class="max-w-container-max mx-auto px-gutter grid grid-cols-1 lg:grid-cols-2 gap-xl items-center">
+<div class="bg-surface-container-lowest p-xl rounded-2xl border border-outline-variant relative">
+<span class="material-symbols-outlined text-[#16A34A] text-5xl absolute -top-6 left-12 bg-white px-2">format_quote</span>
+<p class="font-body-lg text-body-lg text-on-surface mb-lg italic">
+                    "StaffExchangeHub made it easy for me to find a swap to Ndola. The process was simple, secure and fast! I can't recommend this platform enough for anyone looking for workplace mobility in Zambia."
+                </p>
 <div class="flex items-center gap-md">
-<button class="text-error font-body-sm hover:underline flex items-center gap-1">
-<span class="material-symbols-outlined text-sm">report</span> Report Post
-                            </button>
-<div class="h-4 w-[1px] bg-outline-variant"></div>
-<button class="text-on-surface-variant hover:text-primary transition-all">
-<span class="material-symbols-outlined">bookmark</span>
-</button>
-<button class="px-md py-xs border border-primary text-primary rounded-lg font-label-lg hover:bg-primary-fixed hover:bg-opacity-20 transition-all">View Profile</button>
-</div>
-</div>
-</article>
-<!-- Listing 3 -->
-<article class="listing-card bg-surface-container-lowest border border-outline-variant rounded-xl p-md transition-all">
-<div class="flex flex-col lg:flex-row gap-md items-start">
-<div class="flex gap-sm w-full lg:w-64 shrink-0">
-<div class="w-14 h-14 rounded-full overflow-hidden border border-outline-variant">
-<img class="w-full h-full object-cover" data-alt="A sharp, professional portrait of an African bank officer named Robert Tembo, wearing a crisp business suit and tie. He is standing in a modern, glass-walled corporate office environment with soft morning light. The aesthetic is clean, high-end, and corporate, emphasizing career stability and professional success in the banking sector." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCROk0adK0ZQJX77egawqxrHJPWWWHRiaXH3SZqOrtq41tXQOubRX2VV1OML-I3GIR7I7PpVThGcK8wbQWrmsx4VhivuMf8ONaNmihE3iO-nbVBDRTvZmm7f2GhkvlOTfTWIXP3xEckj7ka7tfur6dA1khosICWtV9fUnMh4zwfGwjO8p65eIOwnJZBQLjAamv9w-1-UK-8JDrIceC0Zgxy6j9rmIA1b1LJgpMcqDp9Wmna69HJk9IGVL0aXrihmaUhKxtQ8OjBm2I"/>
-</div>
+<img alt="Lydia Mwansa" class="w-14 h-14 rounded-full object-cover border-2 border-outline-variant" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD_bOukug7eHwy3QpQc9coOfexDjcvKyV2jwIO4oXvYys9lO3y7fuDut5ialWnvWQ0OfI6IglMgY8K_dkpbN_5Mzz4u8znUETQ7N50DFDLl0VB45hvY5ybps4LJBW02LDi9aZ_TRLAFpjbXIUB8WVxjtDPPlqwCC_y-Jjm4zQPckSzsXL24ZKwFY9FJLy4PE8Kqd3H9vfaSeFfi0f3xAigHa3i11aB9oPIEe_Hmq3OGJ5I8bmew0g4SVLEMxRUzOZILic8EAEyLH4g"/>
 <div>
-<div class="flex items-center gap-xs">
-<h3 class="font-headline-sm text-headline-sm text-on-surface">Robert Tembo</h3>
-<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">verified</span>
-</div>
-<p class="text-body-sm text-secondary font-semibold">Bank Officer</p>
-<p class="text-label-md text-on-surface-variant">4 years experience</p>
-</div>
-</div>
-<div class="flex-1 flex flex-col sm:flex-row items-center gap-md w-full">
-<div class="flex-1 text-center sm:text-left bg-surface-container-low p-sm rounded-lg w-full">
-<span class="text-[10px] uppercase font-bold text-on-surface-variant">Current</span>
-<p class="font-body-md font-bold truncate">Zambia National Bank</p>
-<p class="text-body-sm text-on-surface-variant">Lusaka Province</p>
-</div>
-<div class="shrink-0 flex flex-col items-center">
-<span class="material-symbols-outlined text-primary text-lg rotate-90 sm:rotate-0">swap_horiz</span>
-</div>
-<div class="flex-1 text-center sm:text-left bg-secondary-container bg-opacity-20 p-sm rounded-lg w-full">
-<span class="text-[10px] uppercase font-bold text-on-secondary-container">Desired</span>
-<p class="font-body-md font-bold truncate">ZANACO Bank</p>
-<p class="text-body-sm text-on-surface-variant">Central Province</p>
+<h5 class="font-bold text-on-surface">Lydia Mwansa</h5>
+<p class="text-body-sm text-on-surface-variant">Nurse, Ndola</p>
+<div class="flex text-[#16A34A]">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
 </div>
 </div>
-<div class="shrink-0 w-full lg:w-32 flex flex-col items-center justify-center p-sm rounded-xl match-score-badge border border-primary-fixed">
-<span class="text-2xl font-bold">90%</span>
-<span class="text-[10px] font-bold text-center leading-tight">Good Match</span>
 </div>
 </div>
-<div class="mt-md pt-sm border-t border-outline-variant flex flex-wrap items-center justify-between gap-sm">
-<div class="flex flex-wrap gap-xs">
-<span class="px-sm py-1 bg-primary-fixed bg-opacity-30 text-primary text-[11px] font-bold rounded-full uppercase flex items-center gap-1">
-<span class="material-symbols-outlined text-[14px]">check_circle</span> Verified
-                            </span>
-<span class="px-sm py-1 bg-error-container text-error text-[11px] font-bold rounded-full uppercase flex items-center gap-1">
-<span class="material-symbols-outlined text-[14px]">alarm</span> Urgent
-                            </span>
-<span class="px-sm py-1 bg-on-secondary-fixed-variant bg-opacity-10 text-on-secondary-fixed-variant text-[11px] font-bold rounded-full uppercase">
-                                Housing Available
-                            </span>
-</div>
-<div class="flex items-center gap-md">
-<button class="text-error font-body-sm hover:underline flex items-center gap-1">
-<span class="material-symbols-outlined text-sm">report</span> Report Post
-                            </button>
-<div class="h-4 w-[1px] bg-outline-variant"></div>
-<button class="text-on-surface-variant hover:text-primary transition-all">
-<span class="material-symbols-outlined">bookmark</span>
-</button>
-<button class="px-md py-xs border border-primary text-primary rounded-lg font-label-lg hover:bg-primary-fixed hover:bg-opacity-20 transition-all">View Profile</button>
+<div class="bg-[#0A2E6D] text-white p-xl rounded-2xl shadow-xl">
+<h3 class="font-headline-lg text-headline-lg mb-sm">Get Swap Alerts</h3>
+<p class="text-white/80 mb-lg">Be the first to know about new matching opportunities in your field and preferred location.</p>
+<form class="flex flex-col md:flex-row gap-sm">
+<input class="flex-grow rounded-lg border-transparent focus:ring-[#16A34A] py-sm px-md text-on-surface" placeholder="Enter your email" type="email"/>
+<button class="bg-[#16A34A] text-white font-bold px-lg py-sm rounded-lg hover:brightness-110 transition-all shadow-md">Subscribe</button>
+</form>
+<p class="text-xs text-white/60 mt-md">No spam. Unsubscribe anytime.</p>
 </div>
 </div>
-</article>
-</div>
-<!-- Pagination -->
-<div class="flex items-center justify-center gap-sm pt-lg">
-<button class="w-10 h-10 flex items-center justify-center border border-outline-variant rounded-lg hover:bg-surface-container transition-all">
-<span class="material-symbols-outlined">chevron_left</span>
-</button>
-<button class="w-10 h-10 flex items-center justify-center bg-primary text-on-primary rounded-lg font-bold">1</button>
-<button class="w-10 h-10 flex items-center justify-center border border-outline-variant rounded-lg hover:bg-surface-container transition-all font-semibold">2</button>
-<button class="w-10 h-10 flex items-center justify-center border border-outline-variant rounded-lg hover:bg-surface-container transition-all font-semibold">3</button>
-<span class="px-xs text-on-surface-variant">...</span>
-<button class="w-10 h-10 flex items-center justify-center border border-outline-variant rounded-lg hover:bg-surface-container transition-all font-semibold">12</button>
-<button class="w-10 h-10 flex items-center justify-center border border-outline-variant rounded-lg hover:bg-surface-container transition-all">
-<span class="material-symbols-outlined">chevron_right</span>
-</button>
-</div>
-</div>
+</section>
 </main>
 <!-- Footer -->
-<footer class="bg-on-secondary-fixed text-secondary-fixed mt-xl">
-<div class="w-full py-xl px-gutter max-w-container-max mx-auto grid grid-cols-1 md:grid-cols-4 gap-xl">
-<div class="space-y-md">
-<span class="font-headline-sm text-headline-sm text-secondary-fixed">StaffExchangeHub</span>
-<p class="text-body-sm opacity-80 leading-relaxed">The professional exchange marketplace helping individuals and institutions find workplace swaps across Zambia.</p>
+<footer class="bg-[#0A2E6D] text-white">
+<div class="w-full py-xl px-gutter max-w-container-max mx-auto grid grid-cols-1 md:grid-cols-5 gap-md">
+<div class="col-span-1 md:col-span-1">
+<span class="font-headline-sm text-headline-sm font-bold text-white mb-md block">StaffExchangeHub</span>
+<p class="text-body-sm text-white/70 mb-md">The leading platform for workplace swaps in Zambia. We connect professionals to exchange their jobs and build better lives.</p>
 <div class="flex gap-sm">
-<span class="material-symbols-outlined cursor-pointer hover:text-secondary-fixed-dim">face_nod</span>
-<span class="material-symbols-outlined cursor-pointer hover:text-secondary-fixed-dim">public</span>
-<span class="material-symbols-outlined cursor-pointer hover:text-secondary-fixed-dim">mail</span>
+<span class="material-symbols-outlined text-white/80 hover:text-white cursor-pointer">public</span>
+<span class="material-symbols-outlined text-white/80 hover:text-white cursor-pointer">alternate_email</span>
+<span class="material-symbols-outlined text-white/80 hover:text-white cursor-pointer">share</span>
 </div>
 </div>
-<div class="space-y-md">
-<h4 class="font-label-lg uppercase tracking-wider text-secondary-fixed-dim">Platform</h4>
-<ul class="space-y-xs font-body-sm">
-<li><a class="opacity-80 hover:opacity-100 hover:underline transition-all" href="#">Browse Swaps</a></li>
-<li><a class="opacity-80 hover:opacity-100 hover:underline transition-all" href="#">Create Listing</a></li>
-<li><a class="opacity-80 hover:opacity-100 hover:underline transition-all" href="#">Success Stories</a></li>
+<div class="space-y-sm">
+<h6 class="font-label-lg uppercase tracking-wider text-white/50">Platform</h6>
+<ul class="space-y-xs text-body-sm text-white/80">
+<li><a class="hover:text-white transition-all" href="#">Find Swaps</a></li>
+<li><a class="hover:text-white transition-all" href="#">Create Swap Post</a></li>
+<li><a class="hover:text-white transition-all" href="#">Browse Swaps</a></li>
+<li><a class="hover:text-white transition-all" href="#">How It Works</a></li>
+<li><a class="hover:text-white transition-all" href="#">Success Stories</a></li>
 </ul>
 </div>
-<div class="space-y-md">
-<h4 class="font-label-lg uppercase tracking-wider text-secondary-fixed-dim">Resources</h4>
-<ul class="space-y-xs font-body-sm">
-<li><a class="opacity-80 hover:opacity-100 hover:underline transition-all" href="#">Career Advice</a></li>
-<li><a class="opacity-80 hover:opacity-100 hover:underline transition-all" href="#">Help Center</a></li>
-<li><a class="opacity-80 hover:opacity-100 hover:underline transition-all" href="#">Templates &amp; Forms</a></li>
+<div class="space-y-sm">
+<h6 class="font-label-lg uppercase tracking-wider text-white/50">Account</h6>
+<ul class="space-y-xs text-body-sm text-white/80">
+<li><a class="hover:text-white transition-all" href="#">Sign Up</a></li>
+<li><a class="hover:text-white transition-all" href="#">Log In</a></li>
+<li><a class="hover:text-white transition-all" href="#">My Dashboard</a></li>
+<li><a class="hover:text-white transition-all" href="#">Messages</a></li>
+<li><a class="hover:text-white transition-all" href="#">Saved Searches</a></li>
 </ul>
 </div>
-<div class="space-y-md">
-<h4 class="font-label-lg uppercase tracking-wider text-secondary-fixed-dim">Legal</h4>
-<ul class="space-y-xs font-body-sm">
-<li><a class="opacity-80 hover:opacity-100 hover:underline transition-all" href="#">Privacy Policy</a></li>
-<li><a class="opacity-80 hover:opacity-100 hover:underline transition-all" href="#">Terms of Service</a></li>
-<li><a class="opacity-80 hover:opacity-100 hover:underline transition-all" href="#">Cookie Policy</a></li>
+<div class="space-y-sm">
+<h6 class="font-label-lg uppercase tracking-wider text-white/50">Information</h6>
+<ul class="space-y-xs text-body-sm text-white/80">
+<li><a class="hover:text-white transition-all" href="#">Pricing</a></li>
+<li><a class="hover:text-white transition-all" href="#">Help Centre</a></li>
+<li><a class="hover:text-white transition-all" href="#">Safety Tips</a></li>
+<li><a class="hover:text-white transition-all" href="#">Terms of Use</a></li>
+<li><a class="hover:text-white transition-all" href="#">Privacy Policy</a></li>
 </ul>
 </div>
+<div class="space-y-sm">
+<h6 class="font-label-lg uppercase tracking-wider text-white/50">Download Our App</h6>
+<p class="text-body-sm text-white/70 mb-md">Get the StaffExchangeHub app on your mobile device.</p>
+<div class="space-y-sm">
+<div class="bg-white/10 p-2 rounded-lg border border-white/20 flex items-center gap-xs cursor-pointer hover:bg-white/20 transition-colors">
+<span class="material-symbols-outlined text-4xl">play_books</span>
+<div class="text-[10px] uppercase font-bold leading-none">Get it on <span class="block text-sm normal-case">Google Play</span></div>
 </div>
-<div class="border-t border-secondary-fixed border-opacity-10 py-md px-gutter w-full max-w-container-max mx-auto text-center font-body-sm opacity-60">
-            © 2024 StaffExchangeHub. All rights reserved.
-        </div>
+<div class="bg-white/10 p-2 rounded-lg border border-white/20 flex items-center gap-xs cursor-pointer hover:bg-white/20 transition-colors">
+<span class="material-symbols-outlined text-4xl">amp_stories</span>
+<div class="text-[10px] uppercase font-bold leading-none">Download on the <span class="block text-sm normal-case">App Store</span></div>
+</div>
+</div>
+</div>
+</div>
+<div class="border-t border-white/10 w-full py-md text-center text-body-sm text-white/40">
+        © 2024 StaffExchangeHub.com. All rights reserved.
+    </div>
 </footer>
 <script>
-        // Micro-interactions
-        document.querySelectorAll('.listing-card').forEach(card => {
-            card.addEventListener('mouseenter', () => {
-                card.style.transform = 'translateY(-2px)';
-            });
-            card.addEventListener('mouseleave', () => {
-                card.style.transform = 'translateY(0)';
-            });
+    // Simple micro-interaction for cards
+    document.querySelectorAll('.listing-card').forEach(card => {
+        card.addEventListener('mouseenter', () => {
+            card.style.transform = 'translateY(-4px)';
         });
-    </script>
+        card.addEventListener('mouseleave', () => {
+            card.style.transform = 'translateY(0)';
+        });
+    });
+</script>
 </body></html>
