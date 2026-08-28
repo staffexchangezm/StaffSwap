@@ -15,6 +15,8 @@ The theme is compatible with Elementor and other page builders through normal Wo
 
 The theme follows Elementor's standard location contract. If an Elementor Header or Footer template is assigned, `elementor_theme_do_location()` renders it; if no template is assigned, the native StaffSwap header and footer render automatically. This prevents empty builder templates from silently replacing the site chrome.
 
+Dedicated native and Elementor-ready route templates are included for `swaps`, `search`, `create-swap`, `register`, `sign-in`, `my-profile`, and `resources`. Each route renders its designed StaffSwap UI when no Elementor content exists, and hands the content area to Elementor when the page has builder data or is in preview mode.
+
 All custom page templates are builder-aware. Pricing, How It Works, and Success Stories use the page's Elementor content when it exists; blog and swap listing archives can be replaced through Elementor's Archive location; single blog posts and swap listings can be replaced through the Single location. Without a builder template, each page falls back to its StaffSwap-designed native UI.
 
 ## Local setup

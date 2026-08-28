@@ -1,0 +1,1 @@
+<?php get_header(); if ( staffswap_has_builder_content() ) : while ( have_posts() ) : the_post(); the_content(); endwhile; get_footer(); return; endif; ?><?php echo do_shortcode( '[staffswap_resources]' ); ?><?php get_footer(); ?>
