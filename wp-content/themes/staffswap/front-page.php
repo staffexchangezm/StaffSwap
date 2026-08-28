@@ -1,4 +1,3 @@
-<?php get_footer(); ?>
 <?php
 get_header();
 $hero_title = staffswap_home_setting( 'hero_title', 'Swap Your Workplace. Change Your Life.' );
