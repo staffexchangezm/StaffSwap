@@ -1,0 +1,1 @@
+<?php get_header(); ?><div class="page-heading"><div><p class="eyebrow">THE MARKETPLACE</p><h1>Swap Listings</h1><p class="muted">Browse verified workplace exchange requests.</p></div><a class="button button--primary" href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>">Create a swap post</a></div><?php echo do_shortcode( '[staffswap_listings]' ); ?><?php get_footer(); ?>
