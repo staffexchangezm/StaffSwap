@@ -1,5 +1,5 @@
 </main>
-<?php if ( ! function_exists( 'elementor_theme_do_location' ) || ! elementor_theme_do_location( 'footer' ) ) : ?>
+<?php if ( ! staffswap_builder_location( 'footer' ) ) : ?>
 <footer class="site-footer">
 	<div class="site-footer__inner">
 		<div><div class="footer-brand">StaffExchangeHub</div><p><?php echo esc_html__( 'The professional exchange marketplace helping individuals and institutions find workplace swaps across Zambia.', 'staffswap' ); ?></p></div>

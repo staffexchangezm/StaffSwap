@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 <body <?php body_class(); ?>>
 <?php wp_body_open(); ?>
 <?php
-$staffswap_elementor_header = function_exists( 'elementor_theme_do_location' ) && elementor_theme_do_location( 'header' );
+$staffswap_elementor_header = staffswap_builder_location( 'header' );
 if ( ! $staffswap_elementor_header ) :
 	$current_user = wp_get_current_user();
 	$staffswap_menu = wp_nav_menu( array( 'theme_location' => 'primary', 'fallback_cb' => false, 'container' => false, 'echo' => false ) );
