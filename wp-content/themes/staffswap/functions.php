@@ -46,6 +46,8 @@ function staffswap_builder_location( $location ) {
 	return (bool) $rendered && false;
 }
 function staffswap_has_builder_content( $post_id = 0 ) { return (bool) get_post_meta( $post_id ?: get_the_ID(), '_elementor_data', true ) || isset( $_GET['elementor-preview'] ) || ( class_exists( '\Elementor\Plugin' ) && isset( \Elementor\Plugin::$instance->editor ) && \Elementor\Plugin::$instance->editor->is_edit_mode() ); }
+function staffswap_enable_elementor_content_types() { foreach ( array( 'page', 'post', 'swap_listing', 'staff_resource' ) as $post_type ) { add_post_type_support( $post_type, 'elementor' ); } }
+add_action( 'init', 'staffswap_enable_elementor_content_types', 30 );
 function staffswap_theme_activated() { update_option( 'staffswap_show_setup', '1' ); }
 add_action( 'after_switch_theme', 'staffswap_theme_activated' );
 

@@ -10,6 +10,7 @@ StaffSwap is an installable WordPress foundation for StaffExchangeHub, a profess
 - `wp-content/plugins/staffswap-profiles`: member profession, location, and employer fields with `[staffswap_profile]` display output.
 - `wp-content/plugins/staffswap-messaging`: private `staff_message` content type and `[staffswap_contact listing="123"]` contact form.
 - `wp-content/plugins/staffswap-woocommerce`: optional WooCommerce bridge with `[staffswap_upgrade]`, a StaffSwap Plus product, checkout CTA, and payment-complete membership flag.
+- `wp-content/themes/staffswap/elementor-templates/staffswap-homepage.json`: importable Elementor homepage starter with hero, workflow, and CTA sections.
 
 The theme is compatible with Elementor and other page builders through normal WordPress templates, menus, widgets, and shortcodes. Elementor is not bundled with this repository: install and activate the Elementor plugin separately before looking for Elementor admin menus. Use an Elementor Shortcode widget with `[staffswap_listings]`, `[staffswap_search]`, `[staffswap_create_form]`, `[staffswap_resources]`, `[staffswap_profile]`, or `[staffswap_contact listing="123"]`. The theme's header, footer, fonts, CSS variables, and scripts remain available to Elementor pages.
 
@@ -18,6 +19,8 @@ The theme follows Elementor's standard location contract. If an Elementor Header
 Dedicated native and Elementor-ready route templates are included for `swaps`, `search`, `create-swap`, `register`, `sign-in`, `my-profile`, and `resources`. Each route renders its designed StaffSwap UI when no Elementor content exists, and hands the content area to Elementor when the page has builder data or is in preview mode.
 
 All custom page templates are builder-aware. Pricing, How It Works, and Success Stories use the page's Elementor content when it exists; blog and swap listing archives can be replaced through Elementor's Archive location; single blog posts and swap listings can be replaced through the Single location. Without a builder template, each page falls back to its StaffSwap-designed native UI.
+
+For a designed Elementor starting point, import `elementor-templates/staffswap-homepage.json` from **Templates > Saved Templates > Import Templates**, then insert it into the Home page. Use an Elementor Shortcode widget with `[staffswap_listings limit="3"]` for dynamic featured listings.
 
 ## Local setup
 

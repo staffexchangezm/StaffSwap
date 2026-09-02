@@ -1,0 +1,39 @@
+{
+  "version": "0.4",
+  "title": "StaffSwap Homepage",
+  "type": "page",
+  "content": [
+    {
+      "id": "hero01",
+      "elType": "section",
+      "settings": { "background_background": "classic", "background_color": "#f8fbff", "padding": { "unit": "px", "top": "72", "right": "24", "bottom": "72", "left": "24", "isLinked": false } },
+      "elements": [
+        { "id": "hero-col", "elType": "column", "settings": { "_column_size": 100 }, "elements": [
+          { "id": "hero-html", "elType": "widget", "widgetType": "html", "settings": { "html": "<div class=\"landing-hero\" style=\"margin:0;width:100%;padding:0;background:none\"><div class=\"landing-hero__copy\"><p class=\"eyebrow\">WORKPLACE MOBILITY, MADE CLEAR</p><h1>Swap Your Workplace. Change Your Life.</h1><p>Connect with verified professionals across Zambia who want to swap their workplace just like you. Secure, efficient, and professional workplace mobility.</p><div class=\"hero-actions\"><a class=\"button button--primary\" href=\"/create-swap/\">Create Swap Post</a><a class=\"button button--outline\" href=\"/swaps/\">Browse Swaps</a></div><div class=\"trust-line\"><span class=\"trust-avatars\"><i>LM</i><i>BC</i><i>RT</i></span><span>Join 12,000+ professionals who have already found their perfect swap.</span></div></div><div class=\"swap-visual\"><div class=\"swap-node swap-node--from\"><div class=\"swap-avatar\">LM</div><strong>Lusaka</strong><small>General Hospital</small></div><div class=\"swap-connector\"><b>&harr;</b><small>95% MATCH</small></div><div class=\"swap-node swap-node--to\"><div class=\"swap-avatar swap-avatar--blue\">BM</div><strong>Ndola</strong><small>Regional Clinic</small></div></div></div>" }, "elements": [] }
+        ] }
+      ]
+    },
+    {
+      "id": "steps01",
+      "elType": "section",
+      "settings": { "background_background": "classic", "background_color": "#eaf8ef", "padding": { "unit": "px", "top": "48", "right": "24", "bottom": "48", "left": "24", "isLinked": false } },
+      "elements": [
+        { "id": "steps-col", "elType": "column", "settings": { "_column_size": 100 }, "elements": [
+          { "id": "steps-html", "elType": "widget", "widgetType": "html", "settings": { "html": "<div class=\"section-heading section-heading--center\"><p class=\"eyebrow\">A CLEARER WAY FORWARD</p><h2>How StaffExchangeHub Works</h2></div><div class=\"steps\"><div class=\"step\"><span>01</span><h3>Create Profile</h3><p>Tell us about yourself, your current job and location.</p></div><div class=\"step\"><span>02</span><h3>Post Swap Request</h3><p>Add details of where you want to go and why.</p></div><div class=\"step\"><span>03</span><h3>Find Matches</h3><p>We find compatible professionals who want to swap.</p></div><div class=\"step\"><span>04</span><h3>Connect &amp; Chat</h3><p>Agree on details and communicate securely.</p></div><div class=\"step\"><span>05</span><h3>Swap &amp; Succeed</h3><p>Enjoy your new work location and start fresh.</p></div></div>" }, "elements": [] }
+        ] }
+      ]
+    },
+    {
+      "id": "cta01",
+      "elType": "section",
+      "settings": { "padding": { "unit": "px", "top": "48", "right": "24", "bottom": "48", "left": "24", "isLinked": false } },
+      "elements": [
+        { "id": "cta-col", "elType": "column", "settings": { "_column_size": 100 }, "elements": [
+          { "id": "cta-html", "elType": "widget", "widgetType": "html", "settings": { "html": "<div class=\"split-callout\" style=\"margin:0\"><div><p class=\"eyebrow\" style=\"color:#9aebb0\">READY TO MOVE?</p><h2>Your next professional opportunity may already be looking for you.</h2></div><a class=\"button button--primary\" href=\"/create-swap/\">Create a swap post</a></div>" }, "elements": [] }
+        ] }
+      ]
+    }
+  ],
+  "page_settings": [],
+  "metadata": { "template_type": "page" }
+}
