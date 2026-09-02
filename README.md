@@ -5,10 +5,10 @@ StaffSwap is an installable WordPress foundation for StaffExchangeHub, a profess
 ## Included
 
 - `wp-content/themes/staffswap`: responsive marketplace theme with landing page, navigation, footer, forms, listing cards, and a dedicated listing view.
-- `wp-content/plugins/staffswap-core`: `swap_listing` custom post type, secure listing metadata, admin editing fields, filterable `[staffswap_listings]` shortcode, and authenticated `[staffswap_create_form]` submission flow.
-- `wp-content/plugins/staffswap-resources`: searchable `staff_resource` content type, resource categories, and `[staffswap_resources]` Resources Centre layout.
+- `wp-content/plugins/staffswap-core`: `swap_listing` custom post type, secure listing metadata, admin editing fields, filterable `[staffswap_listings]` shortcode, authenticated `[staffswap_create_form]` submission flow, `[staffswap_save_button]`, and `[staffswap_saved_listings]`.
+- `wp-content/plugins/staffswap-resources`: searchable `staff_resource` content type, resource categories, `[staffswap_resources]` Resources Centre layout, secure download tracking, and `[staffswap_resource_download]`.
 - `wp-content/plugins/staffswap-profiles`: member profession, location, and employer fields with `[staffswap_profile]` display output.
-- `wp-content/plugins/staffswap-messaging`: private `staff_message` content type and `[staffswap_contact listing="123"]` contact form.
+- `wp-content/plugins/staffswap-messaging`: private `staff_message` content type, `[staffswap_contact listing="123"]` contact form, and `[staffswap_inbox]` inbox. Activating it creates a Messages page.
 - `wp-content/plugins/staffswap-woocommerce`: optional WooCommerce bridge with `[staffswap_upgrade]`, a StaffSwap Plus product, checkout CTA, and payment-complete membership flag.
 - `wp-content/themes/staffswap/elementor-templates/staffswap-homepage.json`: importable Elementor homepage starter with hero, workflow, and CTA sections.
 
