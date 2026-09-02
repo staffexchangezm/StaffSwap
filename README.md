@@ -2,6 +2,8 @@
 
 StaffSwap is an installable WordPress foundation for StaffExchangeHub, a professional workplace exchange marketplace based on the supplied UI samples.
 
+For the complete installation, Elementor, WooCommerce, database, import, cache, and troubleshooting procedure, see [SETUP.md](SETUP.md).
+
 ## Included
 
 - `wp-content/themes/staffswap`: responsive marketplace theme with landing page, navigation, footer, forms, listing cards, and a dedicated listing view.
@@ -54,6 +56,8 @@ New listings are submitted as `pending` for moderation. Administrators can compl
 Theme content is editable from Appearance > Customize > StaffSwap Homepage. Site administrators can update the hero title, description, CTA labels, homepage stats, and primary action color without editing code.
 
 WooCommerce is optional. When active, the bridge creates a virtual StaffSwap Plus product and `[staffswap_upgrade]` links to checkout. Completed payments set `staffswap_plus_active` on the customer. Future premium visibility rules can use that user flag without coupling swap listings to WooCommerce internals.
+
+StaffSwap Core creates versioned relational tables for matches, saved searches, and activity events using the site's WordPress database prefix. See [SETUP.md](SETUP.md) for the schema contract and migration rules.
 
 ## Elementor cache refresh
 

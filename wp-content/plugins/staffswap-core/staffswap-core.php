@@ -9,6 +9,20 @@
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
+define( 'STAFFSWAP_DB_VERSION', '1.0.0' );
+function staffswap_db_table( $name ) { global $wpdb; return $wpdb->prefix . 'staffswap_' . sanitize_key( $name ); }
+function staffswap_db_install() {
+    global $wpdb;
+    require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+    $charset = $wpdb->get_charset_collate();
+    $sql = "CREATE TABLE " . staffswap_db_table( 'matches' ) . " ( id bigint(20) unsigned NOT NULL AUTO_INCREMENT, listing_id bigint(20) unsigned NOT NULL, candidate_listing_id bigint(20) unsigned NOT NULL, score decimal(5,2) NOT NULL DEFAULT 0, status varchar(20) NOT NULL DEFAULT 'suggested', created_at datetime NOT NULL, updated_at datetime NOT NULL, PRIMARY KEY (id), UNIQUE KEY listing_pair (listing_id,candidate_listing_id), KEY listing_id (listing_id), KEY candidate_listing_id (candidate_listing_id), KEY status (status) ) $charset;
+    CREATE TABLE " . staffswap_db_table( 'saved_searches' ) . " ( id bigint(20) unsigned NOT NULL AUTO_INCREMENT, user_id bigint(20) unsigned NOT NULL, name varchar(190) NOT NULL, filters longtext NOT NULL, alert_frequency varchar(20) NOT NULL DEFAULT 'weekly', last_notified_at datetime NULL, created_at datetime NOT NULL, PRIMARY KEY (id), KEY user_id (user_id), KEY alert_frequency (alert_frequency) ) $charset;
+    CREATE TABLE " . staffswap_db_table( 'events' ) . " ( id bigint(20) unsigned NOT NULL AUTO_INCREMENT, user_id bigint(20) unsigned NULL, event_type varchar(50) NOT NULL, object_id bigint(20) unsigned NULL, payload longtext NULL, created_at datetime NOT NULL, PRIMARY KEY (id), KEY user_id (user_id), KEY event_type (event_type), KEY object_id (object_id), KEY created_at (created_at) ) $charset;";
+    dbDelta( $sql ); update_option( 'staffswap_db_version', STAFFSWAP_DB_VERSION );
+}
+function staffswap_db_maybe_upgrade() { if ( get_option( 'staffswap_db_version' ) !== STAFFSWAP_DB_VERSION ) { staffswap_db_install(); } }
+add_action( 'admin_init', 'staffswap_db_maybe_upgrade' );
+
 function staffswap_register_listing() {
     register_post_type( 'swap_listing', array(
         'labels' => array( 'name' => 'Swap Listings', 'singular_name' => 'Swap Listing', 'add_new_item' => 'Add Swap Listing' ),
@@ -32,7 +46,7 @@ function staffswap_create_pages() {
         }
     }
 }
-register_activation_hook( __FILE__, function() { staffswap_register_listing(); staffswap_create_pages(); flush_rewrite_rules(); } );
+register_activation_hook( __FILE__, function() { staffswap_register_listing(); staffswap_db_install(); staffswap_create_pages(); flush_rewrite_rules(); } );
 register_deactivation_hook( __FILE__, 'flush_rewrite_rules' );
 
 function staffswap_listing_fields() { return array( 'profession' => 'Profession', 'current_location' => 'Current Location', 'current_employer' => 'Current Employer', 'desired_location' => 'Desired Location', 'desired_employer' => 'Desired Employer', 'experience' => 'Experience (years)', 'match_score' => 'Match Score', 'housing' => 'Housing available', 'urgent' => 'Urgent listing', 'verified' => 'Verified professional' ); }
@@ -100,6 +114,10 @@ function staffswap_create_form_shortcode() {
     <?php return ob_get_clean();
 }
 add_shortcode( 'staffswap_create_form', 'staffswap_create_form_shortcode' );
+
+function staffswap_record_event( $event_type, $object_id = 0, $payload = array(), $user_id = 0 ) { global $wpdb; $wpdb->insert( staffswap_db_table( 'events' ), array( 'user_id' => $user_id ? absint( $user_id ) : ( get_current_user_id() ?: null ), 'event_type' => sanitize_key( $event_type ), 'object_id' => $object_id ? absint( $object_id ) : null, 'payload' => wp_json_encode( $payload ), 'created_at' => current_time( 'mysql', true ) ), array( '%d', '%s', '%d', '%s', '%s' ) ); }
+function staffswap_save_search_shortcode() { if ( ! is_user_logged_in() ) { return ''; } if ( isset( $_POST['staffswap_save_search'] ) && check_admin_referer( 'staffswap_save_search', 'staffswap_saved_search_nonce' ) ) { global $wpdb; $filters = array(); foreach ( array( 'profession', 'current_location', 'desired_location', 'verified', 'housing', 'urgent' ) as $key ) { if ( ! empty( $_REQUEST[ $key ] ) ) { $filters[ $key ] = sanitize_text_field( wp_unslash( $_REQUEST[ $key ] ) ); } } $wpdb->insert( staffswap_db_table( 'saved_searches' ), array( 'user_id' => get_current_user_id(), 'name' => sanitize_text_field( wp_unslash( $_POST['search_name'] ?? 'My swap search' ) ), 'filters' => wp_json_encode( $filters ), 'alert_frequency' => 'weekly', 'created_at' => current_time( 'mysql', true ) ), array( '%d', '%s', '%s', '%s', '%s' ) ); staffswap_record_event( 'saved_search_created', 0, $filters ); } ob_start(); ?><form method="post" class="staffswap-save-search"><input name="search_name" placeholder="Name this search" aria-label="Search name"><input type="submit" name="staffswap_save_search" value="Save search"><?php wp_nonce_field( 'staffswap_save_search', 'staffswap_saved_search_nonce' ); ?></form><?php return ob_get_clean(); }
+add_shortcode( 'staffswap_save_search', 'staffswap_save_search_shortcode' );
 
 function staffswap_saved_listing_ids() { return is_user_logged_in() ? array_map( 'absint', (array) get_user_meta( get_current_user_id(), 'staffswap_saved_listings', true ) ) : array(); }
 function staffswap_toggle_saved_listing() { if ( ! is_user_logged_in() ) { wp_safe_redirect( wp_login_url( wp_get_referer() ?: home_url( '/' ) ) ); exit; } $listing_id = absint( $_GET['listing_id'] ?? 0 ); if ( ! $listing_id || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ?? '' ) ), 'staffswap_save_listing_' . $listing_id ) ) { wp_die( 'Invalid save request.' ); } $saved = staffswap_saved_listing_ids(); if ( in_array( $listing_id, $saved, true ) ) { $saved = array_values( array_diff( $saved, array( $listing_id ) ) ); } else { $saved[] = $listing_id; } update_user_meta( get_current_user_id(), 'staffswap_saved_listings', $saved ); wp_safe_redirect( wp_get_referer() ?: get_permalink( $listing_id ) ); exit; }
