@@ -186,10 +186,12 @@ The schema version is stored in the `staffswap_db_version` option. Database chan
 If checkout says **There are no payment methods available**, check the following:
 
 1. Go to **WooCommerce > Settings > Payments** and confirm the intended gateway is enabled.
-2. If using the StaffSwap Lipila gateway, enter the Lipila Secret Key and save the settings. The gateway is disabled by default.
+2. If using the StaffSwap Lipila gateway, enter the Lipila Secret Key and save the settings. The gateway is disabled by default. The key must be a live/test key from the matching Lipila environment; a wrong or expired key returns an authentication error.
 3. Confirm the store currency, selling location, and customer billing country are supported by the gateway.
 4. For StaffSwap Lipila, use a classic Checkout page containing the shortcode `[woocommerce_checkout]`. The custom gateway currently supports the classic WooCommerce checkout, not the WooCommerce Checkout Block.
 5. Clear any cache and test in a private browser window.
+
+If a payment attempt still fails, open the failed order under **WooCommerce > Orders** and read the order notes. StaffSwap records the Lipila HTTP status there without exposing the secret key. HTTP `401` means the configured key is invalid, expired, or from the wrong environment; other `4xx` responses usually indicate a rejected amount, currency, phone number, or request field.
 
 Built-in gateways such as Stripe, PayPal, or bank transfer should appear in both the normal WooCommerce checkout and the Checkout Block when their own requirements are complete. A gateway can be enabled in settings but still be unavailable when its currency, country, minimum order, or checkout compatibility requirements are not met.
 
