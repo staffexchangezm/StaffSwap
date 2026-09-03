@@ -81,6 +81,9 @@ function staffswap_offer_action() {
 	if ( ! is_user_logged_in() || ! isset( $_POST['staffswap_offer_action'] ) ) {
 		return;
 	}
+	if ( function_exists( 'staffswap_has_active_membership' ) && ! staffswap_has_active_membership() ) {
+		return;
+	}
 	$offer_id = absint( $_POST['offer_id'] ?? 0 );
 	$action = sanitize_key( wp_unslash( $_POST['staffswap_offer_action'] ) );
 	if ( ! $offer_id || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['staffswap_offer_action_nonce'] ?? '' ) ), 'staffswap_offer_action_' . $offer_id ) || ! in_array( $action, array( 'accepted', 'declined', 'countered' ), true ) ) {
@@ -125,3 +128,17 @@ function staffswap_offers_page() {
 }
 register_activation_hook( __FILE__, 'staffswap_offers_page' );
 add_action( 'admin_init', 'staffswap_offers_page' );
+
+function staffswap_membership_gate_shortcode( $shortcode, $atts, $action ) {
+	if ( is_user_logged_in() && function_exists( 'staffswap_has_active_membership' ) && ! staffswap_has_active_membership() ) {
+		return function_exists( 'staffswap_membership_required_notice' ) ? staffswap_membership_required_notice( $action ) : '<div class="panel"><h2>Membership required</h2><p>Activate your membership to ' . esc_html( $action ) . '.</p></div>';
+	}
+	return 'staffswap_contact' === $shortcode ? staffswap_contact_form_shortcode( $atts ) : staffswap_offer_form_shortcode( $atts );
+}
+
+function staffswap_gated_contact_shortcode( $atts ) { return staffswap_membership_gate_shortcode( 'staffswap_contact', $atts, 'contact a swap partner' ); }
+function staffswap_gated_offer_form_shortcode( $atts ) { return staffswap_membership_gate_shortcode( 'staffswap_offer_form', $atts, 'send a formal swap offer' ); }
+remove_shortcode( 'staffswap_contact' );
+add_shortcode( 'staffswap_contact', 'staffswap_gated_contact_shortcode' );
+remove_shortcode( 'staffswap_offer_form' );
+add_shortcode( 'staffswap_offer_form', 'staffswap_gated_offer_form_shortcode' );

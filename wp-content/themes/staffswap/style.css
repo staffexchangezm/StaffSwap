@@ -1,3 +1,5 @@
+@media(max-width:420px){.member-metrics{grid-template-columns:1fr}}
+.membership-required{max-width:620px;margin:0 auto;text-align:center;border-top:4px solid #f59e0b}.membership-required .eyebrow{color:#b45309}.membership-required h2{margin:6px 0}.membership-required p:not(.eyebrow){color:var(--muted)}
 /*
 Theme Name: StaffSwap
 Theme URI: https://staffexchangehub.com

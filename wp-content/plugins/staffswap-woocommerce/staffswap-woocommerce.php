@@ -5,6 +5,8 @@
  * Version: 1.0.0
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
+function staffswap_has_active_membership( $user_id = 0 ) { $user_id = $user_id ? absint( $user_id ) : get_current_user_id(); return (bool) ( $user_id && '1' === get_user_meta( $user_id, 'staffswap_plus_active', true ) ); }
+function staffswap_membership_required_notice( $action = 'use this feature' ) { return '<div class="panel membership-required"><p class="eyebrow">STAFFSWAP PLUS</p><h2>Membership required</h2><p>You need an active membership to ' . esc_html( $action ) . '.</p><a class="button button--primary" href="' . esc_url( home_url( '/pricing/' ) ) . '">View membership plans</a></div>'; }
 function staffswap_wc_plans() { return array( 'month' => array( 'title' => 'StaffSwap VIP Gold - 1 Month', 'price' => '99', 'sku' => 'STAFFSWAP-VIP-1M', 'duration' => '1 month' ), 'quarter' => array( 'title' => 'StaffSwap VIP Gold - 3 Months', 'price' => '249', 'sku' => 'STAFFSWAP-VIP-3M', 'duration' => '3 months' ), 'lifetime' => array( 'title' => 'StaffSwap VIP Gold - Lifetime', 'price' => '799', 'sku' => 'STAFFSWAP-VIP-LIFE', 'duration' => 'lifetime' ) ); }
 function staffswap_wc_product( $plan = 'month' ) {
 	if ( ! class_exists( 'WooCommerce' ) ) { return 0; }

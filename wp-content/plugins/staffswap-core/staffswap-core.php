@@ -280,6 +280,7 @@ add_shortcode( 'staffswap_search', 'staffswap_search_shortcode' );
 
 function staffswap_create_form_shortcode() {
     if ( ! is_user_logged_in() ) { return '<div class="panel content-form"><h2>Join the exchange network</h2><p>You need an account to publish a swap listing.</p><a class="button button--primary" href="' . esc_url( wp_registration_url() ) . '">Create an account</a></div>'; }
+    if ( function_exists( 'staffswap_has_active_membership' ) && ! staffswap_has_active_membership() ) { return function_exists( 'staffswap_membership_required_notice' ) ? staffswap_membership_required_notice( 'publish a swap listing' ) : '<div class="panel"><h2>Membership required</h2><p>Activate your membership to publish a swap listing.</p></div>'; }
     if ( isset( $_POST['staffswap_create_listing'] ) && check_admin_referer( 'staffswap_create_listing', 'staffswap_create_nonce' ) ) {
         $is_verified = 'verified' === get_user_meta( get_current_user_id(), 'staffswap_verified_status', true );
         $post_id = wp_insert_post( array( 'post_type' => 'swap_listing', 'post_title' => sanitize_text_field( wp_unslash( $_POST['name'] ) ), 'post_content' => sanitize_textarea_field( wp_unslash( $_POST['notes'] ?? '' ) ), 'post_status' => $is_verified ? 'publish' : 'pending', 'post_author' => get_current_user_id() ), true );
