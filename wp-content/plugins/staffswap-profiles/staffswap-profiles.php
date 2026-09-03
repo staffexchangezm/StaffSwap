@@ -73,3 +73,31 @@ function staffswap_verification_shortcode() {
 	ob_start(); echo $notice; ?><section class="panel content-form"><h1>Verification</h1><p class="muted">Status: <strong><?php echo esc_html( ucfirst( $status ) ); ?></strong></p><form method="post" enctype="multipart/form-data"><div class="field"><label for="nrc_document">National Registration Card (NRC)</label><input id="nrc_document" name="nrc_document" type="file" accept=".jpg,.jpeg,.png,.pdf" required></div><div class="field"><label for="payslip_document">Recent ministry payslip</label><input id="payslip_document" name="payslip_document" type="file" accept=".jpg,.jpeg,.png,.pdf" required></div><div class="field"><label for="license_document">Professional practicing license (optional)</label><input id="license_document" name="license_document" type="file" accept=".jpg,.jpeg,.png,.pdf"></div><?php wp_nonce_field( 'staffswap_submit_verification', 'staffswap_verification_nonce' ); ?><input type="submit" name="staffswap_submit_verification" value="Submit for verification"></form></section><?php return ob_get_clean();
 }
 add_shortcode( 'staffswap_verification', 'staffswap_verification_shortcode' );
+
+function staffswap_verification_admin_menu() {
+	add_users_page( 'Verification Queue', 'Verification Queue', 'manage_options', 'staffswap-verification-queue', 'staffswap_verification_queue_screen' );
+}
+add_action( 'admin_menu', 'staffswap_verification_admin_menu' );
+
+function staffswap_verification_queue_action() {
+	if ( ! current_user_can( 'manage_options' ) || ! isset( $_POST['staffswap_verification_action'] ) ) {
+		return;
+	}
+	$user_id = absint( $_POST['user_id'] ?? 0 );
+	$action = sanitize_key( wp_unslash( $_POST['staffswap_verification_action'] ) );
+	if ( ! $user_id || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['staffswap_verification_queue_nonce'] ?? '' ) ), 'staffswap_verification_queue_' . $user_id ) || ! in_array( $action, array( 'verified', 'unverified' ), true ) ) {
+		return;
+	}
+	update_user_meta( $user_id, 'staffswap_verified_status', $action );
+	wp_safe_redirect( add_query_arg( array( 'page' => 'staffswap-verification-queue', 'updated' => '1' ), admin_url( 'users.php' ) ) );
+	exit;
+}
+add_action( 'admin_init', 'staffswap_verification_queue_action' );
+
+function staffswap_verification_queue_screen() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+	$users = get_users( array( 'meta_key' => 'staffswap_verified_status', 'meta_value' => 'pending', 'orderby' => 'registered', 'order' => 'ASC' ) );
+	?><div class="wrap"><h1>StaffSwap Verification Queue</h1><?php if ( isset( $_GET['updated'] ) ) : ?><div class="notice notice-success is-dismissible"><p>Verification status updated.</p></div><?php endif; ?><p>Review NRC and payslip documents before approving a member profile.</p><table class="widefat striped"><thead><tr><th>Member</th><th>Profession</th><th>NRC</th><th>Payslip</th><th>License</th><th>Action</th></tr></thead><tbody><?php if ( $users ) : foreach ( $users as $user ) : ?><tr><td><strong><?php echo esc_html( $user->display_name ); ?></strong><br><a href="<?php echo esc_url( get_edit_user_link( $user->ID ) ); ?>"><?php echo esc_html( $user->user_email ); ?></a></td><td><?php echo esc_html( get_user_meta( $user->ID, 'staffswap_profession', true ) ?: 'Not provided' ); ?></td><?php foreach ( array( 'nrc_document', 'payslip_document', 'license_document' ) as $document ) : $url = get_user_meta( $user->ID, 'staffswap_' . $document, true ); ?><td><?php if ( $url ) : ?><a href="<?php echo esc_url( $url ); ?>" target="_blank" rel="noopener">View document</a><?php else : ?>-<?php endif; ?></td><?php endforeach; ?><td><form method="post"><input type="hidden" name="user_id" value="<?php echo esc_attr( $user->ID ); ?>"><?php wp_nonce_field( 'staffswap_verification_queue_' . $user->ID, 'staffswap_verification_queue_nonce' ); ?><button type="submit" class="button button-primary" name="staffswap_verification_action" value="verified">Approve</button> <button type="submit" class="button" name="staffswap_verification_action" value="unverified">Reject</button></form></td></tr><?php endforeach; else : ?><tr><td colspan="6">No verification submissions are waiting for review.</td></tr><?php endif; ?></tbody></table></div><?php
+}
