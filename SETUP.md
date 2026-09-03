@@ -181,6 +181,18 @@ The schema version is stored in the `staffswap_db_version` option. Database chan
 5. Test checkout in a sandbox/payment-test mode.
 6. A completed order marks the purchaser with `staffswap_plus_active = 1`.
 
+### Checkout payment troubleshooting
+
+If checkout says **There are no payment methods available**, check the following:
+
+1. Go to **WooCommerce > Settings > Payments** and confirm the intended gateway is enabled.
+2. If using the StaffSwap Lipila gateway, enter the Lipila Secret Key and save the settings. The gateway is disabled by default.
+3. Confirm the store currency, selling location, and customer billing country are supported by the gateway.
+4. For StaffSwap Lipila, use a classic Checkout page containing the shortcode `[woocommerce_checkout]`. The custom gateway currently supports the classic WooCommerce checkout, not the WooCommerce Checkout Block.
+5. Clear any cache and test in a private browser window.
+
+Built-in gateways such as Stripe, PayPal, or bank transfer should appear in both the normal WooCommerce checkout and the Checkout Block when their own requirements are complete. A gateway can be enabled in settings but still be unavailable when its currency, country, minimum order, or checkout compatibility requirements are not met.
+
 The bridge does not replace WooCommerce checkout or payment processing. Configure those in WooCommerce itself.
 
 ## 10. Demo content
