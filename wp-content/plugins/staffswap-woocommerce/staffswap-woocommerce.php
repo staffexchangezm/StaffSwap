@@ -82,3 +82,17 @@ function staffswap_lipila_callback() {
 	status_header( 200 ); echo 'OK'; exit;
 }
 add_action( 'woocommerce_api_staffswap_lipila_callback', 'staffswap_lipila_callback' );
+
+function staffswap_lipila_check_order_status( $order_id ) {
+	$order = wc_get_order( $order_id );
+	if ( ! $order || $order->is_paid() || 'staffswap_lipila' !== $order->get_payment_method() ) { return; }
+	$reference = $order->get_meta( '_staffswap_lipila_reference' );
+	$settings = get_option( 'woocommerce_staffswap_lipila_settings', array() );
+	$api_key = $settings['api_key'] ?? '';
+	if ( ! $reference || ! $api_key ) { return; }
+	$response = wp_remote_get( add_query_arg( 'referenceId', rawurlencode( $reference ), 'https://api.lipila.dev/api/v1/collections/check-status' ), array( 'timeout' => 20, 'headers' => array( 'accept' => 'application/json', 'x-api-key' => $api_key ) ) );
+	if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) { return; }
+	$body = json_decode( wp_remote_retrieve_body( $response ), true );
+	if ( isset( $body['status'] ) && 'successful' === strtolower( sanitize_text_field( $body['status'] ) ) ) { $order->payment_complete( $reference ); $order->add_order_note( 'Lipila Mobile Money payment confirmed by status check.' ); }
+}
+add_action( 'woocommerce_thankyou_staffswap_lipila', 'staffswap_lipila_check_order_status' );
