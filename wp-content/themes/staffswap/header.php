@@ -23,7 +23,27 @@ if ( ! $staffswap_elementor_header ) :
 			<div class="header-actions">
 				<a class="header-icon" href="<?php echo esc_url( home_url( '/offers/' ) ); ?>" aria-label="<?php echo esc_attr__( 'Offers', 'staffswap' ); ?>"><span class="dashicons dashicons-bell" aria-hidden="true"></span><b>3</b></a>
 				<a class="header-icon" href="<?php echo esc_url( home_url( '/messages/' ) ); ?>" aria-label="<?php echo esc_attr__( 'Messages', 'staffswap' ); ?>"><span class="dashicons dashicons-email-alt" aria-hidden="true"></span></a>
-				<?php if ( is_user_logged_in() ) : ?><a class="profile-cluster" href="<?php echo esc_url( home_url( '/profile-settings/' ) ); ?>"><span class="profile-avatar"><?php echo esc_html( strtoupper( substr( $current_user->display_name, 0, 1 ) ) ); ?></span><span><strong><?php echo esc_html( $current_user->display_name ); ?></strong><small><?php echo esc_html__( 'View my profile', 'staffswap' ); ?></small></span></a><?php else : ?><a class="profile-cluster" href="<?php echo esc_url( home_url( '/sign-in/' ) ); ?>"><span class="profile-avatar"><span class="dashicons dashicons-admin-users" aria-hidden="true"></span></span><span><strong><?php echo esc_html__( 'Welcome', 'staffswap' ); ?></strong><small><?php echo esc_html__( 'Sign in to your profile', 'staffswap' ); ?></small></span></a><?php endif; ?>
+				<div class="profile-menu" data-profile-menu>
+					<button class="profile-cluster" type="button" data-profile-trigger aria-expanded="false" aria-haspopup="true">
+						<span class="profile-avatar"><?php if ( is_user_logged_in() ) : ?><?php echo esc_html( strtoupper( substr( $current_user->display_name, 0, 1 ) ) ); ?><?php else : ?><span class="dashicons dashicons-admin-users" aria-hidden="true"></span><?php endif; ?></span>
+						<span><strong><?php echo is_user_logged_in() ? esc_html( $current_user->display_name ) : esc_html__( 'Welcome', 'staffswap' ); ?></strong><small><?php echo is_user_logged_in() ? esc_html__( 'Open account menu', 'staffswap' ) : esc_html__( 'Sign in or register', 'staffswap' ); ?></small></span><span class="dashicons dashicons-arrow-down-alt2 profile-menu__chevron" aria-hidden="true"></span>
+					</button>
+					<div class="profile-menu__dropdown" data-profile-dropdown hidden>
+						<?php if ( is_user_logged_in() ) : ?>
+							<p class="profile-menu__label"><?php echo esc_html__( 'Your workspace', 'staffswap' ); ?></p>
+							<a href="<?php echo esc_url( home_url( '/my-profile/' ) ); ?>"><span class="dashicons dashicons-dashboard" aria-hidden="true"></span><?php echo esc_html__( 'Dashboard', 'staffswap' ); ?></a>
+							<a href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>"><span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span><?php echo esc_html__( 'Create listing', 'staffswap' ); ?></a>
+							<a href="<?php echo esc_url( home_url( '/messages/' ) ); ?>"><span class="dashicons dashicons-email-alt" aria-hidden="true"></span><?php echo esc_html__( 'Messages', 'staffswap' ); ?></a>
+							<a href="<?php echo esc_url( home_url( '/offers/' ) ); ?>"><span class="dashicons dashicons-megaphone" aria-hidden="true"></span><?php echo esc_html__( 'Offers', 'staffswap' ); ?></a>
+							<a href="<?php echo esc_url( home_url( '/verification/' ) ); ?>"><span class="dashicons dashicons-yes-alt" aria-hidden="true"></span><?php echo esc_html__( 'Verification', 'staffswap' ); ?></a>
+							<a class="profile-menu__logout" href="<?php echo esc_url( wp_logout_url( home_url( '/' ) ) ); ?>"><span class="dashicons dashicons-external" aria-hidden="true"></span><?php echo esc_html__( 'Log out', 'staffswap' ); ?></a>
+						<?php else : ?>
+							<p class="profile-menu__label"><?php echo esc_html__( 'Join the exchange network', 'staffswap' ); ?></p>
+							<a href="<?php echo esc_url( home_url( '/sign-in/' ) ); ?>"><span class="dashicons dashicons-unlock" aria-hidden="true"></span><?php echo esc_html__( 'Sign in', 'staffswap' ); ?></a>
+							<a href="<?php echo esc_url( home_url( '/register/' ) ); ?>"><span class="dashicons dashicons-id-alt" aria-hidden="true"></span><?php echo esc_html__( 'Create account', 'staffswap' ); ?></a>
+						<?php endif; ?>
+					</div>
+				</div>
 			</div>
 		</div>
 	</header>
