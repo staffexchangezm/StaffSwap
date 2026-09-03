@@ -101,3 +101,29 @@ function staffswap_verification_queue_screen() {
 	$users = get_users( array( 'meta_key' => 'staffswap_verified_status', 'meta_value' => 'pending', 'orderby' => 'registered', 'order' => 'ASC' ) );
 	?><div class="wrap"><h1>StaffSwap Verification Queue</h1><?php if ( isset( $_GET['updated'] ) ) : ?><div class="notice notice-success is-dismissible"><p>Verification status updated.</p></div><?php endif; ?><p>Review NRC and payslip documents before approving a member profile.</p><table class="widefat striped"><thead><tr><th>Member</th><th>Profession</th><th>NRC</th><th>Payslip</th><th>License</th><th>Action</th></tr></thead><tbody><?php if ( $users ) : foreach ( $users as $user ) : ?><tr><td><strong><?php echo esc_html( $user->display_name ); ?></strong><br><a href="<?php echo esc_url( get_edit_user_link( $user->ID ) ); ?>"><?php echo esc_html( $user->user_email ); ?></a></td><td><?php echo esc_html( get_user_meta( $user->ID, 'staffswap_profession', true ) ?: 'Not provided' ); ?></td><?php foreach ( array( 'nrc_document', 'payslip_document', 'license_document' ) as $document ) : $url = get_user_meta( $user->ID, 'staffswap_' . $document, true ); ?><td><?php if ( $url ) : ?><a href="<?php echo esc_url( $url ); ?>" target="_blank" rel="noopener">View document</a><?php else : ?>-<?php endif; ?></td><?php endforeach; ?><td><form method="post"><input type="hidden" name="user_id" value="<?php echo esc_attr( $user->ID ); ?>"><?php wp_nonce_field( 'staffswap_verification_queue_' . $user->ID, 'staffswap_verification_queue_nonce' ); ?><button type="submit" class="button button-primary" name="staffswap_verification_action" value="verified">Approve</button> <button type="submit" class="button" name="staffswap_verification_action" value="unverified">Reject</button></form></td></tr><?php endforeach; else : ?><tr><td colspan="6">No verification submissions are waiting for review.</td></tr><?php endif; ?></tbody></table></div><?php
 }
+
+function staffswap_profile_settings_page() {
+	if ( ! get_page_by_path( 'profile-settings' ) ) {
+		wp_insert_post( array( 'post_title' => 'Profile Settings', 'post_name' => 'profile-settings', 'post_content' => '[staffswap_profile_settings]', 'post_status' => 'publish', 'post_type' => 'page' ) );
+	}
+}
+register_activation_hook( __FILE__, 'staffswap_profile_settings_page' );
+add_action( 'admin_init', 'staffswap_profile_settings_page' );
+
+function staffswap_profile_settings_shortcode() {
+	if ( ! is_user_logged_in() ) { return '<div class="panel"><p>Please sign in to update your profile.</p></div>'; }
+	$user_id = get_current_user_id();
+	$user = wp_get_current_user();
+	$fields = array( 'man_number' => 'Employee Man-Number', 'profession' => 'Profession / Cadre', 'salary_scale' => 'Salary Scale', 'employer' => 'Employer / Institution', 'years_service' => 'Years of Service', 'location' => 'Current Province & Town', 'desired_location' => 'Desired Province & Town', 'professional_license' => 'Professional License Number' );
+	$notice = '';
+	if ( isset( $_POST['staffswap_save_frontend_profile'] ) && check_admin_referer( 'staffswap_save_frontend_profile', 'staffswap_profile_settings_nonce' ) ) {
+		$display_name = sanitize_text_field( wp_unslash( $_POST['display_name'] ?? '' ) );
+		if ( $display_name ) { wp_update_user( array( 'ID' => $user_id, 'display_name' => $display_name ) ); }
+		foreach ( $fields as $key => $label ) { update_user_meta( $user_id, 'staffswap_' . $key, sanitize_text_field( wp_unslash( $_POST[ $key ] ?? '' ) ) ); }
+		update_user_meta( $user_id, 'staffswap_staff_housing', isset( $_POST['staff_housing'] ) ? '1' : '' );
+		$notice = '<div class="notice"><p>Profile settings saved. Your future listings and matches will use these details.</p></div>';
+		$user = wp_get_current_user();
+	}
+	ob_start(); echo $notice; ?><section class="content-form"><div class="page-heading"><div><p class="eyebrow">MEMBER PROFILE</p><h1>Profile settings</h1><p class="muted">Keep your professional and relocation details current.</p></div></div><form method="post" class="panel"><div class="form-grid"><div class="field"><label for="display_name">Official full name</label><input id="display_name" name="display_name" value="<?php echo esc_attr( $user->display_name ); ?>" required></div><?php foreach ( $fields as $key => $label ) : ?><div class="field"><label for="<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $label ); ?></label><input id="<?php echo esc_attr( $key ); ?>" name="<?php echo esc_attr( $key ); ?>" value="<?php echo esc_attr( get_user_meta( $user_id, 'staffswap_' . $key, true ) ); ?>" <?php echo 'years_service' === $key ? 'type="number" min="0"' : ''; ?>></div><?php endforeach; ?><label class="check full"><input type="checkbox" name="staff_housing" value="1" <?php checked( get_user_meta( $user_id, 'staffswap_staff_housing', true ), '1' ); ?>> Staff accommodation is available for handover</label></div><?php wp_nonce_field( 'staffswap_save_frontend_profile', 'staffswap_profile_settings_nonce' ); ?><input type="submit" name="staffswap_save_frontend_profile" value="Save profile settings"></form></section><?php return ob_get_clean();
+}
+add_shortcode( 'staffswap_profile_settings', 'staffswap_profile_settings_shortcode' );
