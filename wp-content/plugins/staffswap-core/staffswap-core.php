@@ -368,3 +368,32 @@ function staffswap_member_dashboard_shortcode() {
 }
 remove_shortcode( 'staffswap_dashboard' );
 add_shortcode( 'staffswap_dashboard', 'staffswap_member_dashboard_shortcode' );
+
+function staffswap_profile_workspace_shortcode() {
+    if ( ! is_user_logged_in() ) {
+        return '<div class="panel content-form"><h2>Sign in to view your workspace</h2><a class="button button--primary" href="' . esc_url( home_url( '/sign-in/' ) ) . '">Sign in</a></div>';
+    }
+    $user = wp_get_current_user();
+    $tab = sanitize_key( wp_unslash( $_GET['profile_tab'] ?? 'dashboard' ) );
+    $tabs = array( 'dashboard', 'search', 'messages', 'offers', 'verification', 'planner', 'documents' );
+    if ( ! in_array( $tab, $tabs, true ) ) { $tab = 'dashboard'; }
+    $content = '';
+    if ( 'search' === $tab ) { $content = do_shortcode( '[staffswap_search]' ); }
+    elseif ( 'messages' === $tab ) { $content = do_shortcode( '[staffswap_inbox]' ); }
+    elseif ( 'offers' === $tab ) { $content = do_shortcode( '[staffswap_offers]' ); }
+    elseif ( 'verification' === $tab ) { $content = do_shortcode( '[staffswap_verification]' ); }
+    elseif ( 'planner' === $tab ) { $content = do_shortcode( '[staffswap_relocation_planner]' ); }
+    elseif ( 'documents' === $tab ) { $content = do_shortcode( '[staffswap_transfer_letter]' ); }
+    else {
+        global $wpdb;
+        $query = new WP_Query( array( 'post_type' => 'swap_listing', 'author' => get_current_user_id(), 'post_status' => array( 'publish', 'pending' ), 'posts_per_page' => 10 ) );
+        $match_count = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM ' . staffswap_db_table( 'matches' ) . ' m INNER JOIN ' . $wpdb->posts . ' p ON p.ID = m.listing_id WHERE p.post_author = %d AND m.status = %s', get_current_user_id(), 'suggested' ) );
+        $offer_count = post_type_exists( 'staffswap_offer' ) ? (int) ( new WP_Query( array( 'post_type' => 'staffswap_offer', 'post_status' => 'publish', 'meta_key' => '_staffswap_offer_recipient', 'meta_value' => get_current_user_id(), 'meta_query' => array( array( 'key' => '_staffswap_offer_status', 'value' => 'proposed' ) ), 'fields' => 'ids', 'posts_per_page' => -1 ) ) )->found_posts : 0;
+        $verification = get_user_meta( get_current_user_id(), 'staffswap_verified_status', true ) ?: 'unverified';
+        ob_start(); ?><section class="member-metrics"><article><span>Active listings</span><strong><?php echo esc_html( $query->found_posts ); ?></strong><small>Published or in review</small></article><article><span>Reciprocal matches</span><strong><?php echo esc_html( $match_count ); ?></strong><small>Routes ready to compare</small></article><article><span>Incoming offers</span><strong><?php echo esc_html( $offer_count ); ?></strong><small>Awaiting your response</small></article><article><span>Verification</span><strong><?php echo esc_html( ucfirst( $verification ) ); ?></strong><small>Profile trust status</small></article></section><section class="panel"><div class="section-heading"><div><p class="eyebrow">YOUR LISTINGS</p><h2>Active swap requests</h2></div><a class="text-link" href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>">Create listing</a></div><?php if ( $query->have_posts() ) : ?><div class="member-listings"><?php while ( $query->have_posts() ) : $query->the_post(); ?><article><div><strong><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></strong><span><?php echo esc_html( get_post_status_object( get_post_status() )->label ); ?></span></div><a href="<?php the_permalink(); ?>">Manage</a></article><?php endwhile; wp_reset_postdata(); ?></div><?php else : ?><p class="muted">No active listings yet. Publish your route to activate the matchmaker.</p><?php endif; ?></section><?php $content = ob_get_clean();
+    }
+    $labels = array( 'dashboard' => 'Dashboard', 'search' => 'Search Swaps', 'messages' => 'Messages', 'offers' => 'Offers', 'verification' => 'Verification', 'planner' => 'Planner', 'documents' => 'Documents' );
+    ob_start(); ?><div class="member-workspace member-workspace--tabs"><header class="member-workspace__header"><div><p class="eyebrow">MEMBER WORKSPACE</p><h1><?php echo esc_html( $user->display_name ); ?></h1><p class="muted"><?php echo esc_html( get_user_meta( $user->ID, 'staffswap_profession', true ) ?: 'Complete your professional profile' ); ?> · <?php echo esc_html( get_user_meta( $user->ID, 'staffswap_location', true ) ?: 'Location pending' ); ?></p></div><a class="button button--primary" href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>">Publish Direct Swap Listing</a></header><nav class="member-workspace__nav" aria-label="Member workspace"><?php foreach ( $labels as $key => $label ) : ?><a href="<?php echo esc_url( add_query_arg( 'profile_tab', $key, home_url( '/my-profile/' ) ) ); ?>" class="<?php echo $tab === $key ? 'is-active' : ''; ?>" aria-current="<?php echo $tab === $key ? 'page' : 'false'; ?>"><?php echo esc_html( $label ); ?></a><?php endforeach; ?></nav><div class="member-workspace__pane"><?php echo $content; ?></div></div><?php return ob_get_clean();
+}
+remove_shortcode( 'staffswap_dashboard' );
+add_shortcode( 'staffswap_dashboard', 'staffswap_profile_workspace_shortcode' );

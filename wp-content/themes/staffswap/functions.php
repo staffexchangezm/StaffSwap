@@ -1,11 +1,32 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) { exit; }
-function staffswap_setup() { add_theme_support( 'title-tag' ); add_theme_support( 'post-thumbnails' ); add_theme_support( 'align-wide' ); add_theme_support( 'editor-styles' ); add_theme_support( 'elementor' ); add_editor_style( 'style.css' ); register_nav_menus( array( 'primary' => __( 'Primary Menu', 'staffswap' ) ) ); }
+function staffswap_setup() { add_theme_support( 'title-tag' ); add_theme_support( 'post-thumbnails' ); add_theme_support( 'custom-logo', array( 'height' => 48, 'width' => 220, 'flex-height' => true, 'flex-width' => true ) ); add_theme_support( 'align-wide' ); add_theme_support( 'editor-styles' ); add_theme_support( 'elementor' ); add_editor_style( 'style.css' ); register_nav_menus( array( 'primary' => __( 'Primary Menu', 'staffswap' ) ) ); }
 add_action( 'after_setup_theme', 'staffswap_setup' );
 function staffswap_load_textdomain() { load_theme_textdomain( 'staffswap', get_template_directory() . '/languages' ); }
 add_action( 'after_setup_theme', 'staffswap_load_textdomain', 11 );
-function staffswap_assets() { wp_enqueue_style( 'staffswap-fonts', 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap', array(), null ); wp_enqueue_style( 'dashicons' ); wp_enqueue_style( 'staffswap-style', get_stylesheet_uri(), array( 'staffswap-fonts', 'dashicons' ), '1.0.2' ); wp_enqueue_script( 'staffswap-main', get_template_directory_uri() . '/assets/js/main.js', array(), '1.0.1', true ); }
+function staffswap_assets() { wp_enqueue_style( 'staffswap-fonts', 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap', array(), null ); wp_enqueue_style( 'dashicons' ); wp_enqueue_style( 'staffswap-style', get_stylesheet_uri(), array( 'staffswap-fonts', 'dashicons' ), filemtime( get_stylesheet_directory() . '/style.css' ) ); wp_enqueue_script( 'staffswap-main', get_template_directory_uri() . '/assets/js/main.js', array(), filemtime( get_template_directory() . '/assets/js/main.js' ), true ); }
 add_action( 'wp_enqueue_scripts', 'staffswap_assets' );
+function staffswap_account_menu_shortcode() {
+	$user = wp_get_current_user();
+	ob_start(); ?>
+	<div class="profile-menu" data-profile-menu>
+		<button class="profile-cluster" type="button" data-profile-trigger aria-expanded="false" aria-haspopup="true">
+			<span class="profile-avatar"><?php if ( is_user_logged_in() ) : ?><?php echo esc_html( strtoupper( substr( $user->display_name, 0, 1 ) ) ); ?><?php else : ?><span class="dashicons dashicons-admin-users" aria-hidden="true"></span><?php endif; ?></span>
+			<span><strong><?php echo is_user_logged_in() ? esc_html( $user->display_name ) : esc_html__( 'Welcome', 'staffswap' ); ?></strong><small><?php echo is_user_logged_in() ? esc_html__( 'Open account menu', 'staffswap' ) : esc_html__( 'Sign in or register', 'staffswap' ); ?></small></span><span class="dashicons dashicons-arrow-down-alt2 profile-menu__chevron" aria-hidden="true"></span>
+		</button>
+		<div class="profile-menu__dropdown" data-profile-dropdown hidden>
+			<?php if ( is_user_logged_in() ) : ?>
+				<p class="profile-menu__label"><?php echo esc_html__( 'Your workspace', 'staffswap' ); ?></p>
+				<a href="<?php echo esc_url( home_url( '/my-profile/' ) ); ?>"><span class="dashicons dashicons-dashboard" aria-hidden="true"></span><?php echo esc_html__( 'Dashboard', 'staffswap' ); ?></a><a href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>"><span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span><?php echo esc_html__( 'Create listing', 'staffswap' ); ?></a><a href="<?php echo esc_url( home_url( '/messages/' ) ); ?>"><span class="dashicons dashicons-email-alt" aria-hidden="true"></span><?php echo esc_html__( 'Messages', 'staffswap' ); ?></a><a href="<?php echo esc_url( home_url( '/offers/' ) ); ?>"><span class="dashicons dashicons-megaphone" aria-hidden="true"></span><?php echo esc_html__( 'Offers', 'staffswap' ); ?></a><a href="<?php echo esc_url( home_url( '/verification/' ) ); ?>"><span class="dashicons dashicons-yes-alt" aria-hidden="true"></span><?php echo esc_html__( 'Verification', 'staffswap' ); ?></a><a class="profile-menu__logout" href="<?php echo esc_url( wp_logout_url( home_url( '/' ) ) ); ?>"><span class="dashicons dashicons-external" aria-hidden="true"></span><?php echo esc_html__( 'Log out', 'staffswap' ); ?></a>
+			<?php else : ?>
+				<p class="profile-menu__label"><?php echo esc_html__( 'Join the exchange network', 'staffswap' ); ?></p>
+				<a href="<?php echo esc_url( home_url( '/sign-in/' ) ); ?>"><span class="dashicons dashicons-unlock" aria-hidden="true"></span><?php echo esc_html__( 'Sign in', 'staffswap' ); ?></a><a href="<?php echo esc_url( home_url( '/register/' ) ); ?>"><span class="dashicons dashicons-id-alt" aria-hidden="true"></span><?php echo esc_html__( 'Create account', 'staffswap' ); ?></a>
+			<?php endif; ?>
+		</div>
+	</div>
+	<?php return ob_get_clean();
+}
+add_shortcode( 'staffswap_account_menu', 'staffswap_account_menu_shortcode' );
 function staffswap_fallback_menu() { echo '<ul><li><a href="' . esc_url( home_url( '/' ) ) . '">' . esc_html__( 'Home', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/swaps/' ) ) . '">' . esc_html__( 'Find Swaps', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/how-it-works/' ) ) . '">' . esc_html__( 'How It Works', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/success-stories/' ) ) . '">' . esc_html__( 'Success Stories', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/resources/' ) ) . '">' . esc_html__( 'Resources', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/blog/' ) ) . '">' . esc_html__( 'Blog', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/pricing/' ) ) . '">' . esc_html__( 'Pricing', 'staffswap' ) . '</a></li></ul>'; }
 
 function staffswap_customize_register( $wp_customize ) {
@@ -23,6 +44,7 @@ function staffswap_customize_register( $wp_customize ) {
 	}
 	$wp_customize->add_setting( 'staffswap_primary_color', array( 'default' => '#005f2e', 'sanitize_callback' => 'sanitize_hex_color' ) );
 	$wp_customize->add_control( new WP_Customize_Color_Control( $wp_customize, 'staffswap_primary_color', array( 'label' => 'Primary action color', 'section' => 'staffswap_home' ) ) );
+	$wp_customize->add_control( new WP_Customize_Cropped_Image_Control( $wp_customize, 'custom_logo', array( 'label' => __( 'Header logo', 'staffswap' ), 'section' => 'title_tagline', 'priority' => 8 ) ) );
 }
 add_action( 'customize_register', 'staffswap_customize_register' );
 
