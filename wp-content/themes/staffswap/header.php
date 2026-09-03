@@ -17,7 +17,7 @@ if ( ! $staffswap_elementor_header ) :
 	?>
 	<header class="site-header site-header--brand">
 		<div class="site-header__inner">
-			<a class="brand brand--light" href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php echo esc_html( staffswap_home_setting( 'site_name', 'StaffExchangeHub' ) ); ?></a>
+			<a class="brand brand--light" href="<?php echo esc_url( home_url( '/' ) ); ?>" aria-label="<?php echo esc_attr( staffswap_home_setting( 'site_name', 'StaffExchangeHub' ) ); ?>"><?php if ( function_exists( 'the_custom_logo' ) && has_custom_logo() ) : ?><?php the_custom_logo(); ?><?php else : ?><?php echo esc_html( staffswap_home_setting( 'site_name', 'StaffExchangeHub' ) ); ?><?php endif; ?></a>
 			<button class="menu-toggle" type="button" data-mobile-menu aria-label="<?php echo esc_attr__( 'Toggle menu', 'staffswap' ); ?>"><?php echo esc_html__( 'Menu', 'staffswap' ); ?></button>
 			<nav class="primary-nav" aria-label="<?php echo esc_attr__( 'Primary navigation', 'staffswap' ); ?>"><?php if ( ! empty( trim( $staffswap_menu ) ) ) { echo $staffswap_menu; } else { staffswap_fallback_menu(); } ?></nav>
 			<div class="header-actions">

@@ -1,6 +1,6 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) { exit; }
-function staffswap_setup() { add_theme_support( 'title-tag' ); add_theme_support( 'post-thumbnails' ); add_theme_support( 'align-wide' ); add_theme_support( 'editor-styles' ); add_theme_support( 'elementor' ); add_editor_style( 'style.css' ); register_nav_menus( array( 'primary' => __( 'Primary Menu', 'staffswap' ) ) ); }
+function staffswap_setup() { add_theme_support( 'title-tag' ); add_theme_support( 'post-thumbnails' ); add_theme_support( 'custom-logo', array( 'height' => 48, 'width' => 220, 'flex-height' => true, 'flex-width' => true ) ); add_theme_support( 'align-wide' ); add_theme_support( 'editor-styles' ); add_theme_support( 'elementor' ); add_editor_style( 'style.css' ); register_nav_menus( array( 'primary' => __( 'Primary Menu', 'staffswap' ) ) ); }
 add_action( 'after_setup_theme', 'staffswap_setup' );
 function staffswap_load_textdomain() { load_theme_textdomain( 'staffswap', get_template_directory() . '/languages' ); }
 add_action( 'after_setup_theme', 'staffswap_load_textdomain', 11 );
@@ -44,6 +44,7 @@ function staffswap_customize_register( $wp_customize ) {
 	}
 	$wp_customize->add_setting( 'staffswap_primary_color', array( 'default' => '#005f2e', 'sanitize_callback' => 'sanitize_hex_color' ) );
 	$wp_customize->add_control( new WP_Customize_Color_Control( $wp_customize, 'staffswap_primary_color', array( 'label' => 'Primary action color', 'section' => 'staffswap_home' ) ) );
+	$wp_customize->add_control( new WP_Customize_Cropped_Image_Control( $wp_customize, 'custom_logo', array( 'label' => __( 'Header logo', 'staffswap' ), 'section' => 'title_tagline', 'priority' => 8 ) ) );
 }
 add_action( 'customize_register', 'staffswap_customize_register' );
 
