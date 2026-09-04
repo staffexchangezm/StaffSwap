@@ -36,7 +36,8 @@ function staffswap_secure_inbox_shortcode() {
 	}
 	if ( isset( $_POST['staffswap_send_reply'] ) && check_admin_referer( 'staffswap_reply_' . absint( $_POST['listing_id'] ?? 0 ), 'staffswap_reply_nonce' ) ) {
 		$listing_id = absint( $_POST['listing_id'] ?? 0 ); $recipient = absint( $_POST['recipient_id'] ?? 0 ); $reply = sanitize_textarea_field( wp_unslash( $_POST['reply'] ?? '' ) );
-		if ( $listing_id && $recipient && $reply && get_post_type( $listing_id ) === 'swap_listing' && $recipient !== $user_id ) { $reply_id = wp_insert_post( array( 'post_type' => 'staff_message', 'post_title' => 'Message about: ' . get_the_title( $listing_id ), 'post_content' => $reply, 'post_status' => 'publish', 'post_author' => $user_id ) ); if ( $reply_id ) { update_post_meta( $reply_id, '_staffswap_recipient', $recipient ); update_post_meta( $reply_id, '_staffswap_listing', $listing_id ); update_post_meta( $reply_id, '_staffswap_read', '0' ); } }
+		$conversation = get_posts( array( 'post_type' => 'staff_message', 'post_status' => 'publish', 'author' => $recipient, 'posts_per_page' => 1, 'fields' => 'ids', 'meta_query' => array( 'relation' => 'AND', array( 'key' => '_staffswap_recipient', 'value' => $user_id ), array( 'key' => '_staffswap_listing', 'value' => $listing_id ) ) ) );
+		if ( $listing_id && $recipient && $reply && $conversation && get_post_type( $listing_id ) === 'swap_listing' && $recipient !== $user_id ) { $reply_id = wp_insert_post( array( 'post_type' => 'staff_message', 'post_title' => 'Message about: ' . get_the_title( $listing_id ), 'post_content' => $reply, 'post_status' => 'publish', 'post_author' => $user_id ) ); if ( $reply_id ) { update_post_meta( $reply_id, '_staffswap_recipient', $recipient ); update_post_meta( $reply_id, '_staffswap_listing', $listing_id ); update_post_meta( $reply_id, '_staffswap_read', '0' ); } }
 	}
 	$received = get_posts( array( 'post_type' => 'staff_message', 'post_status' => 'publish', 'posts_per_page' => 50, 'orderby' => 'date', 'order' => 'DESC', 'meta_query' => array( array( 'key' => '_staffswap_recipient', 'value' => $user_id ) ) ) );
 	$groups = array(); foreach ( $received as $message ) { $listing_id = absint( get_post_meta( $message->ID, '_staffswap_listing', true ) ); $groups[ $listing_id ?: $message->ID ][] = $message; }
@@ -67,15 +68,27 @@ function staffswap_offer_form_shortcode( $atts ) {
 				update_post_meta( $offer_id, '_staffswap_offer_listing', $listing->ID );
 				update_post_meta( $offer_id, '_staffswap_offer_recipient', $listing->post_author );
 				update_post_meta( $offer_id, '_staffswap_offer_effective_date', $effective_date );
+				$expires_at = sanitize_text_field( wp_unslash( $_POST['expires_at'] ?? '' ) );
+				update_post_meta( $offer_id, '_staffswap_offer_expires_at', $expires_at && strtotime( $expires_at ) >= strtotime( 'today' ) ? $expires_at : gmdate( 'Y-m-d', strtotime( '+14 days' ) ) );
 				update_post_meta( $offer_id, '_staffswap_offer_housing', isset( $_POST['housing_handover'] ) ? 'handover' : 'independent' );
 				update_post_meta( $offer_id, '_staffswap_offer_status', 'proposed' );
 				$notice = '<div class="notice"><p>Swap offer sent. You can track its status in Offers.</p></div>';
 			}
 		}
 	}
-	ob_start(); echo $notice; ?><section class="panel" style="margin-top:16px"><h2>Send a formal swap offer</h2><form method="post"><div class="field"><label for="effective_date">Proposed effective date</label><input id="effective_date" name="effective_date" type="date" required></div><label class="check"><input name="housing_handover" type="checkbox" value="1"> Include staff housing handover</label><div class="field"><label for="offer_notes">Notes or contingencies</label><textarea id="offer_notes" name="notes" rows="3"></textarea></div><?php wp_nonce_field( 'staffswap_send_offer_' . $listing->ID, 'staffswap_offer_nonce' ); ?><input type="submit" name="staffswap_send_offer" value="Submit offer"></form></section><?php return ob_get_clean();
+	ob_start(); echo $notice; ?><section class="panel" style="margin-top:16px"><h2>Send a formal swap offer</h2><form method="post"><div class="field"><label for="effective_date">Proposed effective date</label><input id="effective_date" name="effective_date" type="date" required></div><div class="field"><label for="expires_at">Offer expires on</label><input id="expires_at" name="expires_at" type="date" min="<?php echo esc_attr( gmdate( 'Y-m-d' ) ); ?>"></div><label class="check"><input name="housing_handover" type="checkbox" value="1"> Include staff housing handover</label><div class="field"><label for="offer_notes">Notes or contingencies</label><textarea id="offer_notes" name="notes" rows="3"></textarea></div><?php wp_nonce_field( 'staffswap_send_offer_' . $listing->ID, 'staffswap_offer_nonce' ); ?><input type="submit" name="staffswap_send_offer" value="Submit offer"></form></section><?php return ob_get_clean();
 }
 add_shortcode( 'staffswap_offer_form', 'staffswap_offer_form_shortcode' );
+
+function staffswap_offer_current_status( $offer_id ) {
+	$status = get_post_meta( $offer_id, '_staffswap_offer_status', true );
+	$expires_at = get_post_meta( $offer_id, '_staffswap_offer_expires_at', true );
+	if ( 'proposed' === $status && $expires_at && strtotime( $expires_at . ' 23:59:59 UTC' ) < time() ) {
+		update_post_meta( $offer_id, '_staffswap_offer_status', 'expired' );
+		return 'expired';
+	}
+	return $status ?: 'proposed';
+}
 
 function staffswap_offer_action() {
 	if ( ! is_user_logged_in() || ! isset( $_POST['staffswap_offer_action'] ) ) {
@@ -86,10 +99,17 @@ function staffswap_offer_action() {
 	}
 	$offer_id = absint( $_POST['offer_id'] ?? 0 );
 	$action = sanitize_key( wp_unslash( $_POST['staffswap_offer_action'] ) );
-	if ( ! $offer_id || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['staffswap_offer_action_nonce'] ?? '' ) ), 'staffswap_offer_action_' . $offer_id ) || ! in_array( $action, array( 'accepted', 'declined', 'countered' ), true ) ) {
+	if ( ! $offer_id || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['staffswap_offer_action_nonce'] ?? '' ) ), 'staffswap_offer_action_' . $offer_id ) || ! in_array( $action, array( 'accepted', 'declined', 'countered', 'withdrawn', 'completed', 'cancelled' ), true ) ) {
 		return;
 	}
-	if ( (int) get_post_meta( $offer_id, '_staffswap_offer_recipient', true ) !== get_current_user_id() || 'proposed' !== get_post_meta( $offer_id, '_staffswap_offer_status', true ) ) {
+	$offer = get_post( $offer_id );
+	$is_recipient = (int) get_post_meta( $offer_id, '_staffswap_offer_recipient', true ) === get_current_user_id();
+	$is_sender = $offer && (int) $offer->post_author === get_current_user_id();
+	$status = staffswap_offer_current_status( $offer_id );
+	$can_close = in_array( $action, array( 'completed', 'cancelled' ), true ) && 'accepted' === $status && ( $is_sender || $is_recipient );
+	$can_withdraw = 'withdrawn' === $action && 'proposed' === $status && $is_sender;
+	$can_respond = in_array( $action, array( 'accepted', 'declined', 'countered' ), true ) && 'proposed' === $status && $is_recipient;
+	if ( ! $offer || ! ( $can_close || $can_withdraw || $can_respond ) ) {
 		return;
 	}
 	update_post_meta( $offer_id, '_staffswap_offer_status', $action );
@@ -108,9 +128,12 @@ function staffswap_offer_action() {
 			update_post_meta( $counter_id, '_staffswap_offer_listing', $listing_id );
 			update_post_meta( $counter_id, '_staffswap_offer_recipient', get_post_field( 'post_author', $offer_id ) );
 			update_post_meta( $counter_id, '_staffswap_offer_effective_date', sanitize_text_field( wp_unslash( $_POST['counter_effective_date'] ?? '' ) ) );
+			update_post_meta( $counter_id, '_staffswap_offer_expires_at', gmdate( 'Y-m-d', strtotime( '+14 days' ) ) );
+			update_post_meta( $counter_id, '_staffswap_offer_parent', $offer_id );
 			update_post_meta( $counter_id, '_staffswap_offer_status', 'proposed' );
 		}
 	}
+	if ( function_exists( 'staffswap_record_event' ) ) { staffswap_record_event( 'offer_' . $action, $offer_id, array( 'listing_id' => $listing_id ), get_current_user_id() ); }
 }
 add_action( 'init', 'staffswap_offer_action' );
 
@@ -120,6 +143,24 @@ function staffswap_offers_shortcode() {
 	ob_start(); ?><section class="content-form"><div class="page-heading"><div><p class="eyebrow">FORMAL AGREEMENTS</p><h1>Offers &amp; swaps</h1></div></div><div class="panel"><h2>Incoming offers</h2><?php if ( $offers->have_posts() ) : while ( $offers->have_posts() ) : $offers->the_post(); $offer_id = get_the_ID(); $status = get_post_meta( $offer_id, '_staffswap_offer_status', true ); ?><article class="message-row"><strong><?php the_title(); ?></strong><p>Effective date: <?php echo esc_html( get_post_meta( $offer_id, '_staffswap_offer_effective_date', true ) ); ?>. Housing: <?php echo esc_html( get_post_meta( $offer_id, '_staffswap_offer_housing', true ) ); ?>.</p><p><?php echo esc_html( get_the_content() ); ?></p><p>Status: <strong><?php echo esc_html( ucfirst( $status ) ); ?></strong></p><?php if ( 'proposed' === $status ) : ?><form method="post"><input type="hidden" name="offer_id" value="<?php echo esc_attr( $offer_id ); ?>"><input type="date" name="counter_effective_date" aria-label="Counter-offer effective date"><textarea name="counter_notes" rows="2" placeholder="Counter-offer notes"></textarea><?php wp_nonce_field( 'staffswap_offer_action_' . $offer_id, 'staffswap_offer_action_nonce' ); ?><button type="submit" name="staffswap_offer_action" value="accepted">Accept</button> <button type="submit" name="staffswap_offer_action" value="declined">Decline</button> <button type="submit" name="staffswap_offer_action" value="countered">Counter-offer</button></form><?php endif; ?></article><?php endwhile; wp_reset_postdata(); else : ?><p class="muted">No incoming offers yet.</p><?php endif; ?></div></section><?php return ob_get_clean();
 }
 add_shortcode( 'staffswap_offers', 'staffswap_offers_shortcode' );
+
+function staffswap_offer_item( $offer, $can_respond = false ) {
+	$offer_id = $offer->ID;
+	$status = staffswap_offer_current_status( $offer_id );
+	$expires_at = get_post_meta( $offer_id, '_staffswap_offer_expires_at', true );
+	$parent_id = absint( get_post_meta( $offer_id, '_staffswap_offer_parent', true ) );
+	ob_start(); ?><article class="message-row"><strong><?php echo esc_html( get_the_title( $offer_id ) ); ?></strong><p>Effective date: <?php echo esc_html( get_post_meta( $offer_id, '_staffswap_offer_effective_date', true ) ); ?>. Housing: <?php echo esc_html( get_post_meta( $offer_id, '_staffswap_offer_housing', true ) ); ?>.</p><?php if ( $expires_at ) : ?><p class="muted">Offer expires: <?php echo esc_html( $expires_at ); ?></p><?php endif; ?><?php if ( $parent_id ) : ?><p class="muted">Counter-offer to: <?php echo esc_html( get_the_title( $parent_id ) ); ?></p><?php endif; ?><p><?php echo esc_html( $offer->post_content ); ?></p><p>Status: <strong><?php echo esc_html( ucfirst( $status ) ); ?></strong></p><?php if ( 'proposed' === $status && $can_respond ) : ?><form method="post"><input type="hidden" name="offer_id" value="<?php echo esc_attr( $offer_id ); ?>"><input type="date" name="counter_effective_date" aria-label="Counter-offer effective date"><textarea name="counter_notes" rows="2" placeholder="Counter-offer notes"></textarea><?php wp_nonce_field( 'staffswap_offer_action_' . $offer_id, 'staffswap_offer_action_nonce' ); ?><button type="submit" name="staffswap_offer_action" value="accepted">Accept</button> <button type="submit" name="staffswap_offer_action" value="declined">Decline</button> <button type="submit" name="staffswap_offer_action" value="countered">Counter-offer</button></form><?php elseif ( 'proposed' === $status ) : ?><form method="post"><?php wp_nonce_field( 'staffswap_offer_action_' . $offer_id, 'staffswap_offer_action_nonce' ); ?><input type="hidden" name="offer_id" value="<?php echo esc_attr( $offer_id ); ?>"><button type="submit" name="staffswap_offer_action" value="withdrawn">Withdraw offer</button></form><?php elseif ( 'accepted' === $status ) : ?><form method="post"><?php wp_nonce_field( 'staffswap_offer_action_' . $offer_id, 'staffswap_offer_action_nonce' ); ?><input type="hidden" name="offer_id" value="<?php echo esc_attr( $offer_id ); ?>"><button type="submit" name="staffswap_offer_action" value="completed">Mark swap completed</button> <button type="submit" name="staffswap_offer_action" value="cancelled">Cancel agreement</button></form><?php endif; ?></article><?php return ob_get_clean();
+}
+
+function staffswap_offers_workspace_shortcode() {
+	if ( ! is_user_logged_in() ) { return '<div class="panel"><p>Please sign in to view offers.</p></div>'; }
+	$user_id = get_current_user_id();
+	$incoming = get_posts( array( 'post_type' => 'staffswap_offer', 'post_status' => 'publish', 'posts_per_page' => 30, 'meta_key' => '_staffswap_offer_recipient', 'meta_value' => $user_id, 'orderby' => 'date', 'order' => 'DESC' ) );
+	$sent = get_posts( array( 'post_type' => 'staffswap_offer', 'post_status' => 'publish', 'posts_per_page' => 30, 'author' => $user_id, 'orderby' => 'date', 'order' => 'DESC' ) );
+	ob_start(); ?><section class="content-form"><div class="page-heading"><div><p class="eyebrow">FORMAL AGREEMENTS</p><h1>Offers &amp; swaps</h1></div></div><div class="panel"><h2>Incoming offers</h2><?php if ( $incoming ) : foreach ( $incoming as $offer ) { echo staffswap_offer_item( $offer, true ); } else : ?><p class="muted">No incoming offers yet.</p><?php endif; ?></div><div class="panel" style="margin-top:16px"><h2>Sent offers</h2><?php if ( $sent ) : foreach ( $sent as $offer ) { echo staffswap_offer_item( $offer ); } else : ?><p class="muted">You have not sent an offer yet.</p><?php endif; ?></div></section><?php return ob_get_clean();
+}
+remove_shortcode( 'staffswap_offers' );
+add_shortcode( 'staffswap_offers', 'staffswap_offers_workspace_shortcode' );
 
 function staffswap_offers_page() {
 	if ( ! get_page_by_path( 'offers' ) ) {

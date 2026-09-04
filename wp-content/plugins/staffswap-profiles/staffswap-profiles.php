@@ -42,6 +42,30 @@ function staffswap_verification_page() {
 register_activation_hook( __FILE__, 'staffswap_verification_page' );
 add_action( 'admin_init', 'staffswap_verification_page' );
 
+function staffswap_private_document_directory() {
+	return trailingslashit( dirname( ABSPATH ) ) . 'staffswap-private-documents';
+}
+
+function staffswap_private_document_url( $user_id, $document ) {
+	return wp_nonce_url( add_query_arg( array( 'action' => 'staffswap_verification_document', 'user_id' => absint( $user_id ), 'document' => sanitize_key( $document ) ), admin_url( 'admin-post.php' ) ), 'staffswap_verification_document_' . absint( $user_id ) . '_' . sanitize_key( $document ) );
+}
+
+function staffswap_download_private_document() {
+	if ( ! is_user_logged_in() ) { wp_die( 'You are not allowed to view this document.', 403 ); }
+	$user_id = absint( $_GET['user_id'] ?? 0 );
+	$document = sanitize_key( wp_unslash( $_GET['document'] ?? '' ) );
+	if ( ! $user_id || ! in_array( $document, array( 'nrc_document', 'payslip_document', 'license_document' ), true ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ?? '' ) ), 'staffswap_verification_document_' . $user_id . '_' . $document ) || ( get_current_user_id() !== $user_id && ! current_user_can( 'manage_options' ) ) ) { wp_die( 'You are not allowed to view this document.', 403 ); }
+	$file = get_user_meta( $user_id, 'staffswap_' . $document, true );
+	if ( ! is_array( $file ) || empty( $file['path'] ) || ! is_readable( $file['path'] ) ) { wp_die( 'Document not found.', 404 ); }
+	nocache_headers();
+	header( 'Content-Type: ' . ( $file['type'] ?? 'application/octet-stream' ) );
+	header( 'Content-Length: ' . filesize( $file['path'] ) );
+	header( 'Content-Disposition: inline; filename="' . sanitize_file_name( $file['name'] ?? basename( $file['path'] ) ) . '"' );
+	readfile( $file['path'] );
+	exit;
+}
+add_action( 'admin_post_staffswap_verification_document', 'staffswap_download_private_document' );
+
 function staffswap_verification_shortcode() {
 	if ( ! is_user_logged_in() ) {
 		return '<div class="panel"><p>Please sign in to submit verification documents.</p></div>';
@@ -49,23 +73,31 @@ function staffswap_verification_shortcode() {
 	$user_id = get_current_user_id();
 	$notice = '';
 	if ( isset( $_POST['staffswap_submit_verification'] ) && check_admin_referer( 'staffswap_submit_verification', 'staffswap_verification_nonce' ) ) {
-		require_once ABSPATH . 'wp-admin/includes/file.php';
 		$uploads = array( 'nrc_document', 'payslip_document', 'license_document' );
 		$uploaded = 0;
+		$directory = staffswap_private_document_directory();
+		if ( ! wp_mkdir_p( $directory ) || ! is_writable( $directory ) ) {
+			$notice = '<div class="notice"><p>Verification upload storage is unavailable. Please contact support.</p></div>';
+		}
 		foreach ( $uploads as $field ) {
+			if ( $notice ) { break; }
 			if ( empty( $_FILES[ $field ]['name'] ) ) {
 				continue;
 			}
-			$file = wp_handle_upload( $_FILES[ $field ], array( 'test_form' => false, 'mimes' => array( 'jpg|jpeg' => 'image/jpeg', 'png' => 'image/png', 'pdf' => 'application/pdf' ) ) );
-			if ( ! empty( $file['url'] ) ) {
-				update_user_meta( $user_id, 'staffswap_' . $field, esc_url_raw( $file['url'] ) );
-				$uploaded++;
+			$file = $_FILES[ $field ];
+			$type = wp_check_filetype_and_ext( $file['tmp_name'], $file['name'], array( 'jpg|jpeg' => 'image/jpeg', 'png' => 'image/png', 'pdf' => 'application/pdf' ) );
+			if ( UPLOAD_ERR_OK === (int) $file['error'] && ! empty( $type['type'] ) && (int) $file['size'] <= 5 * MB_IN_BYTES && is_uploaded_file( $file['tmp_name'] ) ) {
+				$path = trailingslashit( $directory ) . wp_generate_uuid4() . '.' . $type['ext'];
+				if ( move_uploaded_file( $file['tmp_name'], $path ) ) {
+					update_user_meta( $user_id, 'staffswap_' . $field, array( 'path' => $path, 'name' => sanitize_file_name( $file['name'] ), 'type' => $type['type'] ) );
+					$uploaded++;
+				}
 			}
 		}
-		if ( $uploaded >= 2 ) {
+		if ( ! $notice && get_user_meta( $user_id, 'staffswap_nrc_document', true ) && get_user_meta( $user_id, 'staffswap_payslip_document', true ) ) {
 			update_user_meta( $user_id, 'staffswap_verified_status', 'pending' );
 			$notice = '<div class="notice"><p>Your documents have been submitted for review.</p></div>';
-		} else {
+		} elseif ( ! $notice ) {
 			$notice = '<div class="notice"><p>Please upload both your NRC and a recent payslip. We accept PDF, JPG, and PNG files.</p></div>';
 		}
 	}
@@ -99,7 +131,7 @@ function staffswap_verification_queue_screen() {
 		return;
 	}
 	$users = get_users( array( 'meta_key' => 'staffswap_verified_status', 'meta_value' => 'pending', 'orderby' => 'registered', 'order' => 'ASC' ) );
-	?><div class="wrap"><h1>StaffSwap Verification Queue</h1><?php if ( isset( $_GET['updated'] ) ) : ?><div class="notice notice-success is-dismissible"><p>Verification status updated.</p></div><?php endif; ?><p>Review NRC and payslip documents before approving a member profile.</p><table class="widefat striped"><thead><tr><th>Member</th><th>Profession</th><th>NRC</th><th>Payslip</th><th>License</th><th>Action</th></tr></thead><tbody><?php if ( $users ) : foreach ( $users as $user ) : ?><tr><td><strong><?php echo esc_html( $user->display_name ); ?></strong><br><a href="<?php echo esc_url( get_edit_user_link( $user->ID ) ); ?>"><?php echo esc_html( $user->user_email ); ?></a></td><td><?php echo esc_html( get_user_meta( $user->ID, 'staffswap_profession', true ) ?: 'Not provided' ); ?></td><?php foreach ( array( 'nrc_document', 'payslip_document', 'license_document' ) as $document ) : $url = get_user_meta( $user->ID, 'staffswap_' . $document, true ); ?><td><?php if ( $url ) : ?><a href="<?php echo esc_url( $url ); ?>" target="_blank" rel="noopener">View document</a><?php else : ?>-<?php endif; ?></td><?php endforeach; ?><td><form method="post"><input type="hidden" name="user_id" value="<?php echo esc_attr( $user->ID ); ?>"><?php wp_nonce_field( 'staffswap_verification_queue_' . $user->ID, 'staffswap_verification_queue_nonce' ); ?><button type="submit" class="button button-primary" name="staffswap_verification_action" value="verified">Approve</button> <button type="submit" class="button" name="staffswap_verification_action" value="unverified">Reject</button></form></td></tr><?php endforeach; else : ?><tr><td colspan="6">No verification submissions are waiting for review.</td></tr><?php endif; ?></tbody></table></div><?php
+	?><div class="wrap"><h1>StaffSwap Verification Queue</h1><?php if ( isset( $_GET['updated'] ) ) : ?><div class="notice notice-success is-dismissible"><p>Verification status updated.</p></div><?php endif; ?><p>Review NRC and payslip documents before approving a member profile.</p><table class="widefat striped"><thead><tr><th>Member</th><th>Profession</th><th>NRC</th><th>Payslip</th><th>License</th><th>Action</th></tr></thead><tbody><?php if ( $users ) : foreach ( $users as $user ) : ?><tr><td><strong><?php echo esc_html( $user->display_name ); ?></strong><br><a href="<?php echo esc_url( get_edit_user_link( $user->ID ) ); ?>"><?php echo esc_html( $user->user_email ); ?></a></td><td><?php echo esc_html( get_user_meta( $user->ID, 'staffswap_profession', true ) ?: 'Not provided' ); ?></td><?php foreach ( array( 'nrc_document', 'payslip_document', 'license_document' ) as $document ) : $file = get_user_meta( $user->ID, 'staffswap_' . $document, true ); ?><td><?php if ( is_array( $file ) && ! empty( $file['path'] ) ) : ?><a href="<?php echo esc_url( staffswap_private_document_url( $user->ID, $document ) ); ?>" target="_blank" rel="noopener">View document</a><?php else : ?>-<?php endif; ?></td><?php endforeach; ?><td><form method="post"><input type="hidden" name="user_id" value="<?php echo esc_attr( $user->ID ); ?>"><?php wp_nonce_field( 'staffswap_verification_queue_' . $user->ID, 'staffswap_verification_queue_nonce' ); ?><button type="submit" class="button button-primary" name="staffswap_verification_action" value="verified">Approve</button> <button type="submit" class="button" name="staffswap_verification_action" value="unverified">Reject</button></form></td></tr><?php endforeach; else : ?><tr><td colspan="6">No verification submissions are waiting for review.</td></tr><?php endif; ?></tbody></table></div><?php
 }
 
 function staffswap_profile_settings_page() {
@@ -127,3 +159,15 @@ function staffswap_profile_settings_shortcode() {
 	ob_start(); echo $notice; ?><section class="content-form"><div class="page-heading"><div><p class="eyebrow">MEMBER PROFILE</p><h1>Profile settings</h1><p class="muted">Keep your professional and relocation details current.</p></div></div><form method="post" class="panel"><div class="form-grid"><div class="field"><label for="display_name">Official full name</label><input id="display_name" name="display_name" value="<?php echo esc_attr( $user->display_name ); ?>" required></div><?php foreach ( $fields as $key => $label ) : ?><div class="field"><label for="<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $label ); ?></label><input id="<?php echo esc_attr( $key ); ?>" name="<?php echo esc_attr( $key ); ?>" value="<?php echo esc_attr( get_user_meta( $user_id, 'staffswap_' . $key, true ) ); ?>" <?php echo 'years_service' === $key ? 'type="number" min="0"' : ''; ?>></div><?php endforeach; ?><label class="check full"><input type="checkbox" name="staff_housing" value="1" <?php checked( get_user_meta( $user_id, 'staffswap_staff_housing', true ), '1' ); ?>> Staff accommodation is available for handover</label></div><?php wp_nonce_field( 'staffswap_save_frontend_profile', 'staffswap_profile_settings_nonce' ); ?><input type="submit" name="staffswap_save_frontend_profile" value="Save profile settings"></form></section><?php return ob_get_clean();
 }
 add_shortcode( 'staffswap_profile_settings', 'staffswap_profile_settings_shortcode' );
+
+function staffswap_profile_completion_shortcode() {
+	if ( ! is_user_logged_in() ) { return ''; }
+	$fields = array( 'man_number' => 'Employee Man-Number', 'profession' => 'Profession / Cadre', 'employer' => 'Employer / Institution', 'years_service' => 'Years of Service', 'location' => 'Current Province & Town', 'desired_location' => 'Desired Province & Town', 'professional_license' => 'Professional License Number' );
+	$missing = array();
+	foreach ( $fields as $key => $label ) {
+		if ( ! get_user_meta( get_current_user_id(), 'staffswap_' . $key, true ) ) { $missing[] = $label; }
+	}
+	$percentage = (int) round( ( count( $fields ) - count( $missing ) ) / count( $fields ) * 100 );
+	ob_start(); ?><section class="panel" style="margin-bottom:16px"><h2>Profile completion: <?php echo esc_html( $percentage ); ?>%</h2><?php if ( $missing ) : ?><p class="muted">Add <?php echo esc_html( implode( ', ', $missing ) ); ?> to improve your listing and match quality.</p><a class="button button--outline" href="<?php echo esc_url( home_url( '/profile-settings/' ) ); ?>">Complete profile</a><?php else : ?><p class="muted">Your professional profile is complete.</p><?php endif; ?></section><?php return ob_get_clean();
+}
+add_shortcode( 'staffswap_profile_completion', 'staffswap_profile_completion_shortcode' );
