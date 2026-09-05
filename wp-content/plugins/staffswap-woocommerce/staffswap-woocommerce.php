@@ -115,6 +115,10 @@ function staffswap_wc_activate_membership_from_order( $order_id ) {
 	$activated_plan = sanitize_key( $order->get_meta( '_staffswap_membership_activated_plan', true ) );
 	if ( $activated_user_id === $user_id && $activated_plan === $plan ) { return; }
 	if ( $activated_user_id && ( $activated_user_id !== $user_id || $activated_plan !== $plan ) ) {
+		$had_conflict = '1' === $order->get_meta( '_staffswap_membership_activation_conflict', true );
+		$order->delete_meta_data( '_staffswap_membership_activated_user' );
+		$order->delete_meta_data( '_staffswap_membership_activated_plan' );
+		$order->update_meta_data( '_staffswap_membership_activation_conflict', '1' );
 		$prior_source_order = absint( get_user_meta( $activated_user_id, 'staffswap_membership_source_order', true ) );
 		$latest_paid_membership = staffswap_wc_latest_paid_membership_order( $activated_user_id );
 		if ( $prior_source_order === $order->get_id() ) {
@@ -130,12 +134,9 @@ function staffswap_wc_activate_membership_from_order( $order_id ) {
 				delete_user_meta( $activated_user_id, 'staffswap_membership_source_order' );
 			}
 		}
-		if ( '1' !== $order->get_meta( '_staffswap_membership_activation_conflict', true ) ) {
+		if ( ! $had_conflict ) {
 			$order->add_order_note( 'StaffSwap membership activation reassigned after order account or plan changed.' );
 		}
-		$order->delete_meta_data( '_staffswap_membership_activated_user' );
-		$order->delete_meta_data( '_staffswap_membership_activated_plan' );
-		$order->update_meta_data( '_staffswap_membership_activation_conflict', '1' );
 		$order->save();
 	}
 	update_user_meta( $user_id, 'staffswap_plus_active', '1' );
