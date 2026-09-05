@@ -93,7 +93,14 @@ function staffswap_wc_activate_membership_from_order( $order_id ) {
 	$activated_user_id = (int) $order->get_meta( '_staffswap_membership_activated_user', true );
 	$activated_plan = sanitize_key( $order->get_meta( '_staffswap_membership_activated_plan', true ) );
 	if ( $activated_user_id === $user_id && $activated_plan === $plan ) { return; }
-	if ( $already_activated ) { return; }
+	if ( $already_activated ) {
+		$order->delete_meta_data( '_staffswap_membership_activated' );
+		$order->delete_meta_data( '_staffswap_membership_activated_user' );
+		$order->delete_meta_data( '_staffswap_membership_activated_plan' );
+		delete_post_meta( $order->get_id(), '_staffswap_membership_activation_lock' );
+		$order->add_order_note( 'StaffSwap membership activation metadata was reset after customer or plan details changed.' );
+		$order->save();
+	}
 	$lock_value = $user_id . ':' . $plan;
 	if ( ! add_post_meta( $order->get_id(), '_staffswap_membership_activation_lock', $lock_value, true ) ) { return; }
 	$activation_saved = false;
