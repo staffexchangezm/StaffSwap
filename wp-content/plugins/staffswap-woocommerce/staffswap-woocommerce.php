@@ -80,12 +80,7 @@ function staffswap_wc_membership_plan_for_order( $order ) {
 }
 function staffswap_wc_membership_user_for_order( $order ) {
 	if ( ! $order ) { return 0; }
-	$user_id = (int) $order->get_user_id();
-	if ( $user_id ) { return $user_id; }
-	$email = sanitize_email( $order->get_billing_email() );
-	if ( ! $email ) { return 0; }
-	$user = get_user_by( 'email', $email );
-	return ( $user && ! empty( $user->ID ) ) ? (int) $user->ID : 0;
+	return (int) $order->get_user_id();
 }
 function staffswap_wc_activate_membership_from_order( $order_id ) {
 	$order = wc_get_order( $order_id );
@@ -93,19 +88,27 @@ function staffswap_wc_activate_membership_from_order( $order_id ) {
 	$plan = staffswap_wc_membership_plan_for_order( $order );
 	if ( ! $plan ) { return; }
 	$user_id = staffswap_wc_membership_user_for_order( $order );
-	if ( ! $user_id ) { return; }
+	if ( ! $user_id ) { $order->add_order_note( 'StaffSwap membership activation skipped: no linked customer account on the order.' ); return; }
 	$already_activated = '1' === $order->get_meta( '_staffswap_membership_activated', true );
 	$activated_user_id = (int) $order->get_meta( '_staffswap_membership_activated_user', true );
 	$activated_plan = sanitize_key( $order->get_meta( '_staffswap_membership_activated_plan', true ) );
 	if ( $activated_user_id === $user_id && $activated_plan === $plan ) { return; }
 	if ( $already_activated ) { return; }
-	if ( ! add_post_meta( $order->get_id(), '_staffswap_membership_activation_lock', $user_id . ':' . $plan, true ) ) { return; }
-	update_user_meta( $user_id, 'staffswap_plus_active', '1' );
-	update_user_meta( $user_id, 'staffswap_vip_plan', $plan );
-	$order->update_meta_data( '_staffswap_membership_activated', '1' );
-	$order->update_meta_data( '_staffswap_membership_activated_user', $user_id );
-	$order->update_meta_data( '_staffswap_membership_activated_plan', $plan );
-	$order->save();
+	$lock_value = $user_id . ':' . $plan;
+	if ( ! add_post_meta( $order->get_id(), '_staffswap_membership_activation_lock', $lock_value, true ) ) { return; }
+	$activation_saved = false;
+	try {
+		update_user_meta( $user_id, 'staffswap_plus_active', '1' );
+		update_user_meta( $user_id, 'staffswap_vip_plan', $plan );
+		$order->update_meta_data( '_staffswap_membership_activated', '1' );
+		$order->update_meta_data( '_staffswap_membership_activated_user', $user_id );
+		$order->update_meta_data( '_staffswap_membership_activated_plan', $plan );
+		$order->save();
+		$activation_saved = true;
+	} catch ( Exception $e ) {
+		$order->add_order_note( 'StaffSwap membership activation failed: ' . $e->getMessage() );
+	}
+	if ( ! $activation_saved ) { delete_post_meta( $order->get_id(), '_staffswap_membership_activation_lock', $lock_value ); }
 }
 add_action( 'woocommerce_payment_complete', 'staffswap_wc_activate_membership_from_order' );
 add_action( 'woocommerce_order_status_processing', 'staffswap_wc_activate_membership_from_order' );
