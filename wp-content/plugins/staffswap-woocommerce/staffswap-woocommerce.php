@@ -106,11 +106,12 @@ function staffswap_wc_activate_membership_from_order( $order_id ) {
 			delete_user_meta( $activated_user_id, 'staffswap_vip_plan' );
 		}
 		if ( '1' !== $order->get_meta( '_staffswap_membership_activation_conflict', true ) ) {
-			$order->add_order_note( 'StaffSwap membership activation skipped: order already activated for a different account or plan.' );
-			$order->update_meta_data( '_staffswap_membership_activation_conflict', '1' );
-			$order->save();
+			$order->add_order_note( 'StaffSwap membership activation reassigned after order account or plan changed.' );
 		}
-		return;
+		$order->delete_meta_data( '_staffswap_membership_activated_user' );
+		$order->delete_meta_data( '_staffswap_membership_activated_plan' );
+		$order->update_meta_data( '_staffswap_membership_activation_conflict', '1' );
+		$order->save();
 	}
 	update_user_meta( $user_id, 'staffswap_plus_active', '1' );
 	update_user_meta( $user_id, 'staffswap_vip_plan', $plan );
