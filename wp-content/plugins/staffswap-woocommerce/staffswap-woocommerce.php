@@ -72,7 +72,6 @@ function staffswap_has_active_membership( $user_id = 0 ) {
 		set_transient( $cache_key, '1', $ttl );
 		return true;
 	}
-	set_transient( $cache_key, '0', 5 * MINUTE_IN_SECONDS );
 	return false;
 }
 function staffswap_membership_required_notice( $action = 'use this feature' ) { return '<div class="panel membership-required"><p class="eyebrow">STAFFSWAP PLUS</p><h2>Membership required</h2><p>You need an active membership to ' . esc_html( $action ) . '.</p><a class="button button--primary" href="' . esc_url( home_url( '/pricing/' ) ) . '">View membership plans</a></div>'; }
