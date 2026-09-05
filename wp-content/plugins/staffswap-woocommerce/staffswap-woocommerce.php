@@ -82,6 +82,18 @@ function staffswap_wc_membership_user_for_order( $order ) {
 	if ( ! $order ) { return 0; }
 	return (int) $order->get_user_id();
 }
+function staffswap_wc_user_has_other_paid_membership_orders( $user_id, $exclude_order_id = 0 ) {
+	if ( ! $user_id || ! function_exists( 'wc_get_orders' ) ) { return false; }
+	$order_ids = wc_get_orders( array( 'customer_id' => absint( $user_id ), 'limit' => 100, 'return' => 'ids', 'status' => array_keys( wc_get_is_paid_statuses() ) ) );
+	if ( ! $order_ids ) { return false; }
+	foreach ( $order_ids as $order_id ) {
+		$order_id = absint( $order_id );
+		if ( $exclude_order_id && $order_id === absint( $exclude_order_id ) ) { continue; }
+		$order = wc_get_order( $order_id );
+		if ( $order && $order->is_paid() && staffswap_wc_membership_plan_for_order( $order ) ) { return true; }
+	}
+	return false;
+}
 function staffswap_wc_activate_membership_from_order( $order_id ) {
 	$order = wc_get_order( $order_id );
 	if ( ! $order || ! $order->is_paid() ) { return; }
@@ -94,6 +106,13 @@ function staffswap_wc_activate_membership_from_order( $order_id ) {
 	$activated_plan = sanitize_key( $order->get_meta( '_staffswap_membership_activated_plan', true ) );
 	if ( $activated_user_id === $user_id && $activated_plan === $plan ) { return; }
 	if ( $already_activated ) {
+		if ( $activated_user_id && $activated_user_id !== $user_id ) {
+			$prior_plan = sanitize_key( get_user_meta( $activated_user_id, 'staffswap_vip_plan', true ) );
+			if ( $prior_plan === $activated_plan && ! staffswap_wc_user_has_other_paid_membership_orders( $activated_user_id, $order->get_id() ) ) {
+				delete_user_meta( $activated_user_id, 'staffswap_plus_active' );
+				delete_user_meta( $activated_user_id, 'staffswap_vip_plan' );
+			}
+		}
 		$order->delete_meta_data( '_staffswap_membership_activated' );
 		$order->delete_meta_data( '_staffswap_membership_activated_user' );
 		$order->delete_meta_data( '_staffswap_membership_activated_plan' );
