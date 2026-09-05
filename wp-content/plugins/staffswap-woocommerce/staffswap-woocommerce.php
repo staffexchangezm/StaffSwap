@@ -31,6 +31,19 @@ function staffswap_wc_upgrade_shortcode( $atts ) {
 	return '<a class="button button--primary" href="' . esc_url( $url ) . '">Choose VIP Gold</a>';
 }
 add_shortcode( 'staffswap_upgrade', 'staffswap_wc_upgrade_shortcode' );
+function staffswap_wc_plan_price( $plan = 'month' ) {
+	$plans = staffswap_wc_plans();
+	if ( empty( $plans[ $plan ] ) ) { return ''; }
+	$product_id = staffswap_wc_product( $plan );
+	$product = $product_id && function_exists( 'wc_get_product' ) ? wc_get_product( $product_id ) : false;
+	if ( $product && '' !== $product->get_price() ) { return wc_price( $product->get_price() ); }
+	return 'ZMW ' . esc_html( $plans[ $plan ]['price'] );
+}
+function staffswap_wc_plan_price_shortcode( $atts ) {
+	$atts = shortcode_atts( array( 'plan' => 'month' ), $atts, 'staffswap_plan_price' );
+	return staffswap_wc_plan_price( sanitize_key( $atts['plan'] ) );
+}
+add_shortcode( 'staffswap_plan_price', 'staffswap_wc_plan_price_shortcode' );
 function staffswap_wc_payment_complete( $order_id ) {
 	$order = wc_get_order( $order_id );
 	if ( ! $order ) { return; }
