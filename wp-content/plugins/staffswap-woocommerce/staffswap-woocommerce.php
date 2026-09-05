@@ -124,7 +124,7 @@ function staffswap_wc_activate_membership_from_order( $order_id ) {
 				update_user_meta( $activated_user_id, 'staffswap_plus_active', '1' );
 				update_user_meta( $activated_user_id, 'staffswap_vip_plan', $latest_membership_plan );
 				update_user_meta( $activated_user_id, 'staffswap_membership_source_order', $latest_membership_order_id );
-			} elseif ( ! $latest_membership_order_id ) {
+			} elseif ( ! $latest_membership_order_id || $latest_membership_order_id === $order->get_id() ) {
 				delete_user_meta( $activated_user_id, 'staffswap_plus_active' );
 				delete_user_meta( $activated_user_id, 'staffswap_vip_plan' );
 				delete_user_meta( $activated_user_id, 'staffswap_membership_source_order' );
