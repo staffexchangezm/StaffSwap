@@ -107,11 +107,11 @@ function staffswap_wc_activate_membership_from_order( $order_id ) {
 		}
 		return;
 	}
+	update_user_meta( $user_id, 'staffswap_plus_active', '1' );
+	update_user_meta( $user_id, 'staffswap_vip_plan', $plan );
 	$order->update_meta_data( '_staffswap_membership_activated_user', $user_id );
 	$order->update_meta_data( '_staffswap_membership_activated_plan', $plan );
 	$order->save();
-	update_user_meta( $user_id, 'staffswap_plus_active', '1' );
-	update_user_meta( $user_id, 'staffswap_vip_plan', $plan );
 }
 function staffswap_wc_activate_membership_on_status_change( $order_id, $old_status, $new_status, $order ) {
 	if ( ! in_array( $new_status, wc_get_is_paid_statuses(), true ) ) { return; }
