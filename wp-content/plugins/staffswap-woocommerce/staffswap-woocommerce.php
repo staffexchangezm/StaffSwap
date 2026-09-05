@@ -7,8 +7,9 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 function staffswap_user_has_paid_vip_order( $user_id ) {
 	if ( ! $user_id || ! function_exists( 'wc_get_orders' ) ) { return false; }
+	$plans = staffswap_wc_plans();
 	$vip_products = array();
-	foreach ( array_keys( staffswap_wc_plans() ) as $plan ) {
+	foreach ( array_keys( $plans ) as $plan ) {
 		$product_id = (int) get_option( 'staffswap_vip_product_' . $plan, 0 );
 		if ( $product_id ) { $vip_products[ $product_id ] = $plan; }
 	}
@@ -25,10 +26,11 @@ function staffswap_user_has_paid_vip_order( $user_id ) {
 				$product_id = (int) $item->get_product_id();
 				if ( empty( $vip_products[ $product_id ] ) ) { continue; }
 				$plan = $vip_products[ $product_id ];
-				if ( 'lifetime' === $plan ) { return true; }
+				$duration = strtolower( trim( (string) ( $plans[ $plan ]['duration'] ?? '' ) ) );
+				if ( 'lifetime' === $duration ) { return true; }
 				$paid_date = $order->get_date_paid();
-				if ( ! $paid_date ) { continue; }
-				$expiry_ts = strtotime( 'month' === $plan ? '+1 month' : '+3 months', $paid_date->getTimestamp() );
+				if ( ! $duration || ! $paid_date ) { continue; }
+				$expiry_ts = strtotime( '+' . ltrim( $duration, '+' ), $paid_date->getTimestamp() );
 				if ( $expiry_ts && $expiry_ts >= current_time( 'timestamp', true ) ) { return true; }
 			}
 		}
