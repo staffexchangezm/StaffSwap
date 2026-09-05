@@ -32,6 +32,7 @@ function staffswap_user_has_paid_vip_order( $user_id ) {
 	$order_filters = array( array( 'customer_id' => (int) $user_id ) );
 	$user = get_userdata( $user_id );
 	if ( $user && ! empty( $user->user_email ) ) { $order_filters[] = array( 'billing_email' => sanitize_email( $user->user_email ) ); }
+	$seen_order_ids = array();
 	foreach ( $order_filters as $filter ) {
 		$page = 1;
 		do {
@@ -39,6 +40,9 @@ function staffswap_user_has_paid_vip_order( $user_id ) {
 			if ( ! $orders ) { break; }
 			foreach ( $orders as $order ) {
 				if ( ! $order ) { continue; }
+				$order_id = $order->get_id();
+				if ( isset( $seen_order_ids[ $order_id ] ) ) { continue; }
+				$seen_order_ids[ $order_id ] = true;
 				foreach ( $order->get_items() as $item ) {
 					$product_id = (int) $item->get_product_id();
 					if ( empty( $vip_products[ $product_id ] ) ) { continue; }
