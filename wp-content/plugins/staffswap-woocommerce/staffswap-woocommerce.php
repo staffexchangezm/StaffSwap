@@ -98,7 +98,12 @@ function staffswap_wc_activate_membership_from_order( $order_id ) {
 	update_user_meta( $user_id, 'staffswap_plus_active', '1' );
 	update_user_meta( $user_id, 'staffswap_vip_plan', $plan );
 }
-add_action( 'woocommerce_order_payment_status_changed', 'staffswap_wc_activate_membership_from_order', 10, 1 );
+function staffswap_wc_activate_membership_on_status_change( $order_id, $old_status, $new_status, $order ) {
+	if ( ! $order || ! $order->is_paid() ) { return; }
+	staffswap_wc_activate_membership_from_order( $order_id );
+}
+add_action( 'woocommerce_payment_complete', 'staffswap_wc_activate_membership_from_order' );
+add_action( 'woocommerce_order_status_changed', 'staffswap_wc_activate_membership_on_status_change', 10, 4 );
 function staffswap_wc_admin_notice() { if ( current_user_can( 'manage_options' ) && ! class_exists( 'WooCommerce' ) ) { echo '<div class="notice notice-info"><p><strong>StaffSwap WooCommerce Bridge:</strong> Install WooCommerce to enable premium upgrade checkout. The core marketplace remains fully available without it.</p></div>'; } }
 add_action( 'admin_notices', 'staffswap_wc_admin_notice' );
 
