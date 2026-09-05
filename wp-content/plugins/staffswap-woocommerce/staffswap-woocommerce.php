@@ -88,7 +88,14 @@ function staffswap_wc_activate_membership_from_order( $order_id ) {
 	$plan = staffswap_wc_membership_plan_for_order( $order );
 	if ( ! $plan ) { return; }
 	$user_id = staffswap_wc_membership_user_for_order( $order );
-	if ( ! $user_id ) { $order->add_order_note( 'StaffSwap membership activation skipped: no linked customer account on the order.' ); return; }
+	if ( ! $user_id ) {
+		if ( '1' !== $order->get_meta( '_staffswap_membership_skip_no_user', true ) ) {
+			$order->add_order_note( 'StaffSwap membership activation skipped: no linked customer account on the order.' );
+			$order->update_meta_data( '_staffswap_membership_skip_no_user', '1' );
+			$order->save();
+		}
+		return;
+	}
 	$activated_user_id = (int) $order->get_meta( '_staffswap_membership_activated_user', true );
 	$activated_plan = sanitize_key( $order->get_meta( '_staffswap_membership_activated_plan', true ) );
 	if ( $activated_user_id === $user_id && $activated_plan === $plan ) { return; }
