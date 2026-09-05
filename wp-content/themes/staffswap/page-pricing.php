@@ -1,6 +1,7 @@
 <?php
 get_header();
-if ( staffswap_has_builder_content() ) :
+$staffswap_pricing_elementor_data = get_post_meta( get_the_ID(), '_elementor_data', true );
+if ( ! empty( $staffswap_pricing_elementor_data ) || isset( $_GET['elementor-preview'] ) || ( class_exists( '\Elementor\Plugin' ) && isset( \Elementor\Plugin::$instance->editor ) && \Elementor\Plugin::$instance->editor->is_edit_mode() ) ) :
 	while ( have_posts() ) : the_post(); the_content(); endwhile;
 	get_footer();
 	return;
