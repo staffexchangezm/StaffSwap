@@ -36,7 +36,7 @@ function staffswap_user_has_paid_vip_order( $user_id ) {
 	foreach ( $order_filters as $filter ) {
 		$page = 1;
 		do {
-			$orders = wc_get_orders( array_merge( $filter, array( 'status' => $statuses, 'limit' => 50, 'page' => $page ) ) );
+			$orders = wc_get_orders( array_merge( $filter, array( 'type' => 'shop_order', 'status' => $statuses, 'limit' => 50, 'page' => $page ) ) );
 			if ( ! $orders ) { break; }
 			foreach ( $orders as $order ) {
 				if ( ! $order ) { continue; }
