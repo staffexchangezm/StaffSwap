@@ -72,15 +72,17 @@ function staffswap_wc_payment_complete( $order_id ) {
 	if ( ! $order ) { return; }
 	$user_id = (int) $order->get_user_id();
 	if ( ! $user_id || ! $order->get_items() ) { return; }
+	$matched_plan = '';
 	foreach ( $order->get_items() as $item ) {
 		foreach ( array_keys( staffswap_wc_plans() ) as $plan ) {
 			if ( (int) $item->get_product_id() === (int) get_option( 'staffswap_vip_product_' . $plan ) ) {
-				update_user_meta( $user_id, 'staffswap_plus_active', '1' );
-				update_user_meta( $user_id, 'staffswap_vip_plan', $plan );
-				return;
+				$matched_plan = $plan;
 			}
 		}
 	}
+	if ( '' === $matched_plan ) { return; }
+	update_user_meta( $user_id, 'staffswap_plus_active', '1' );
+	update_user_meta( $user_id, 'staffswap_vip_plan', $matched_plan );
 }
 add_action( 'woocommerce_payment_complete', 'staffswap_wc_payment_complete' );
 add_action( 'woocommerce_order_status_processing', 'staffswap_wc_payment_complete' );
