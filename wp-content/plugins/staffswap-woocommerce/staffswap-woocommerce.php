@@ -115,10 +115,9 @@ function staffswap_wc_activate_membership_from_order( $order_id ) {
 	$activated_plan = sanitize_key( $order->get_meta( '_staffswap_membership_activated_plan', true ) );
 	if ( $activated_user_id === $user_id && $activated_plan === $plan ) { return; }
 	if ( $activated_user_id && ( $activated_user_id !== $user_id || $activated_plan !== $plan ) ) {
-		$prior_plan = sanitize_key( get_user_meta( $activated_user_id, 'staffswap_vip_plan', true ) );
 		$prior_source_order = absint( get_user_meta( $activated_user_id, 'staffswap_membership_source_order', true ) );
 		$latest_paid_membership = staffswap_wc_latest_paid_membership_order( $activated_user_id );
-		if ( $prior_plan === $activated_plan && $prior_source_order === $order->get_id() ) {
+		if ( $prior_source_order === $order->get_id() ) {
 			$latest_membership_order_id = (int) $latest_paid_membership['order_id'];
 			$latest_membership_plan = sanitize_key( $latest_paid_membership['plan'] ?? '' );
 			if ( $latest_membership_order_id && $latest_membership_order_id !== $order->get_id() && $latest_membership_plan ) {
