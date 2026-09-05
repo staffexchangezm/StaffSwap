@@ -99,6 +99,7 @@ function staffswap_wc_activate_membership_from_order( $order_id ) {
 	$activated_plan = sanitize_key( $order->get_meta( '_staffswap_membership_activated_plan', true ) );
 	if ( $activated_user_id === $user_id && $activated_plan === $plan ) { return; }
 	if ( $already_activated ) { return; }
+	if ( ! add_post_meta( $order->get_id(), '_staffswap_membership_activation_lock', $user_id . ':' . $plan, true ) ) { return; }
 	update_user_meta( $user_id, 'staffswap_plus_active', '1' );
 	update_user_meta( $user_id, 'staffswap_vip_plan', $plan );
 	$order->update_meta_data( '_staffswap_membership_activated', '1' );
