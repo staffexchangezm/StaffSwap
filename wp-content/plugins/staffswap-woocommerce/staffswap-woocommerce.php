@@ -113,10 +113,18 @@ function staffswap_wc_activate_membership_from_order( $order_id ) {
 		$prior_plan = sanitize_key( get_user_meta( $activated_user_id, 'staffswap_vip_plan', true ) );
 		$prior_source_order = absint( get_user_meta( $activated_user_id, 'staffswap_membership_source_order', true ) );
 		$latest_paid_membership = staffswap_wc_latest_paid_membership_order( $activated_user_id );
-		if ( $prior_plan === $activated_plan && $prior_source_order === $order->get_id() && (int) $latest_paid_membership['order_id'] === $order->get_id() && $latest_paid_membership['plan'] === $activated_plan ) {
-			delete_user_meta( $activated_user_id, 'staffswap_plus_active' );
-			delete_user_meta( $activated_user_id, 'staffswap_vip_plan' );
-			delete_user_meta( $activated_user_id, 'staffswap_membership_source_order' );
+		if ( $prior_plan === $activated_plan && $prior_source_order === $order->get_id() ) {
+			$latest_membership_order_id = (int) $latest_paid_membership['order_id'];
+			$latest_membership_plan = sanitize_key( $latest_paid_membership['plan'] ?? '' );
+			if ( $latest_membership_order_id && $latest_membership_order_id !== $order->get_id() && $latest_membership_plan ) {
+				update_user_meta( $activated_user_id, 'staffswap_plus_active', '1' );
+				update_user_meta( $activated_user_id, 'staffswap_vip_plan', $latest_membership_plan );
+				update_user_meta( $activated_user_id, 'staffswap_membership_source_order', $latest_membership_order_id );
+			} else {
+				delete_user_meta( $activated_user_id, 'staffswap_plus_active' );
+				delete_user_meta( $activated_user_id, 'staffswap_vip_plan' );
+				delete_user_meta( $activated_user_id, 'staffswap_membership_source_order' );
+			}
 		}
 		if ( '1' !== $order->get_meta( '_staffswap_membership_activation_conflict', true ) ) {
 			$order->add_order_note( 'StaffSwap membership activation reassigned after order account or plan changed.' );
