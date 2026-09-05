@@ -5,6 +5,14 @@
  * Version: 1.0.0
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
+function staffswap_wc_is_duration_active_for_order( $order, $duration ) {
+	$duration = strtolower( trim( (string) $duration ) );
+	if ( 'lifetime' === $duration ) { return true; }
+	$paid_date = $order ? $order->get_date_paid() : false;
+	if ( ! $duration || ! $paid_date ) { return false; }
+	$expiry_ts = strtotime( '+' . ltrim( $duration, '+' ), $paid_date->getTimestamp() );
+	return (bool) ( $expiry_ts && $expiry_ts >= current_time( 'timestamp', true ) );
+}
 function staffswap_user_has_paid_vip_order( $user_id ) {
 	if ( ! $user_id || ! function_exists( 'wc_get_orders' ) ) { return false; }
 	$plans = staffswap_wc_plans();
@@ -16,6 +24,10 @@ function staffswap_user_has_paid_vip_order( $user_id ) {
 	if ( ! $vip_products ) { return false; }
 	$page = 1;
 	$statuses = function_exists( 'wc_get_is_paid_statuses' ) ? wc_get_is_paid_statuses() : array( 'processing', 'completed' );
+	$statuses = array_values( array_unique( array_map( function( $status ) {
+		$status = (string) $status;
+		return 0 === strpos( $status, 'wc-' ) ? $status : 'wc-' . $status;
+	}, $statuses ) ) );
 	do {
 		$order_ids = wc_get_orders( array( 'customer_id' => (int) $user_id, 'status' => $statuses, 'limit' => 50, 'page' => $page, 'return' => 'ids' ) );
 		if ( ! $order_ids ) { break; }
@@ -26,12 +38,8 @@ function staffswap_user_has_paid_vip_order( $user_id ) {
 				$product_id = (int) $item->get_product_id();
 				if ( empty( $vip_products[ $product_id ] ) ) { continue; }
 				$plan = $vip_products[ $product_id ];
-				$duration = strtolower( trim( (string) ( $plans[ $plan ]['duration'] ?? '' ) ) );
-				if ( 'lifetime' === $duration ) { return true; }
-				$paid_date = $order->get_date_paid();
-				if ( ! $duration || ! $paid_date ) { continue; }
-				$expiry_ts = strtotime( '+' . ltrim( $duration, '+' ), $paid_date->getTimestamp() );
-				if ( $expiry_ts && $expiry_ts >= current_time( 'timestamp', true ) ) { return true; }
+				$duration = $plans[ $plan ]['duration'] ?? '';
+				if ( staffswap_wc_is_duration_active_for_order( $order, $duration ) ) { return true; }
 			}
 		}
 		$page++;
