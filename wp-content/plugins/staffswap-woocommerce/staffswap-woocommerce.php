@@ -71,9 +71,20 @@ function staffswap_wc_payment_complete( $order_id ) {
 	$order = wc_get_order( $order_id );
 	if ( ! $order ) { return; }
 	$user_id = (int) $order->get_user_id();
-	if ( $user_id && $order->get_items() ) { foreach ( $order->get_items() as $item ) { foreach ( array_keys( staffswap_wc_plans() ) as $plan ) { if ( (int) $item->get_product_id() === (int) get_option( 'staffswap_vip_product_' . $plan ) ) { update_user_meta( $user_id, 'staffswap_plus_active', '1' ); update_user_meta( $user_id, 'staffswap_vip_plan', $plan ); } } } }
+	if ( ! $user_id || ! $order->get_items() ) { return; }
+	foreach ( $order->get_items() as $item ) {
+		foreach ( array_keys( staffswap_wc_plans() ) as $plan ) {
+			if ( (int) $item->get_product_id() === (int) get_option( 'staffswap_vip_product_' . $plan ) ) {
+				update_user_meta( $user_id, 'staffswap_plus_active', '1' );
+				update_user_meta( $user_id, 'staffswap_vip_plan', $plan );
+				return;
+			}
+		}
+	}
 }
 add_action( 'woocommerce_payment_complete', 'staffswap_wc_payment_complete' );
+add_action( 'woocommerce_order_status_processing', 'staffswap_wc_payment_complete' );
+add_action( 'woocommerce_order_status_completed', 'staffswap_wc_payment_complete' );
 function staffswap_wc_admin_notice() { if ( current_user_can( 'manage_options' ) && ! class_exists( 'WooCommerce' ) ) { echo '<div class="notice notice-info"><p><strong>StaffSwap WooCommerce Bridge:</strong> Install WooCommerce to enable premium upgrade checkout. The core marketplace remains fully available without it.</p></div>'; } }
 add_action( 'admin_notices', 'staffswap_wc_admin_notice' );
 
