@@ -14,15 +14,20 @@ function staffswap_user_has_paid_vip_order( $user_id ) {
 	}
 	$vip_product_ids = array_values( array_unique( $vip_product_ids ) );
 	if ( ! $vip_product_ids ) { return false; }
-	$order_ids = wc_get_orders( array( 'customer_id' => (int) $user_id, 'status' => function_exists( 'wc_get_is_paid_statuses' ) ? wc_get_is_paid_statuses() : array( 'processing', 'completed' ), 'limit' => 50, 'return' => 'ids' ) );
-	if ( ! $order_ids ) { return false; }
-	foreach ( $order_ids as $order_id ) {
-		$order = wc_get_order( $order_id );
-		if ( ! $order ) { continue; }
-		foreach ( $order->get_items() as $item ) {
-			if ( in_array( (int) $item->get_product_id(), $vip_product_ids, true ) ) { return true; }
+	$page = 1;
+	$statuses = function_exists( 'wc_get_is_paid_statuses' ) ? wc_get_is_paid_statuses() : array( 'processing', 'completed' );
+	do {
+		$order_ids = wc_get_orders( array( 'customer_id' => (int) $user_id, 'status' => $statuses, 'limit' => 50, 'page' => $page, 'return' => 'ids' ) );
+		if ( ! $order_ids ) { break; }
+		foreach ( $order_ids as $order_id ) {
+			$order = wc_get_order( $order_id );
+			if ( ! $order ) { continue; }
+			foreach ( $order->get_items() as $item ) {
+				if ( in_array( (int) $item->get_product_id(), $vip_product_ids, true ) ) { return true; }
+			}
 		}
-	}
+		$page++;
+	} while ( count( $order_ids ) === 50 );
 	return false;
 }
 function staffswap_has_active_membership( $user_id = 0 ) {
