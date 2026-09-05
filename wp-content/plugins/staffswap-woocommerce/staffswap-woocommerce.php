@@ -7,13 +7,12 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 function staffswap_user_has_paid_vip_order( $user_id ) {
 	if ( ! $user_id || ! function_exists( 'wc_get_orders' ) ) { return false; }
-	$vip_product_ids = array();
+	$vip_products = array();
 	foreach ( array_keys( staffswap_wc_plans() ) as $plan ) {
 		$product_id = (int) get_option( 'staffswap_vip_product_' . $plan, 0 );
-		if ( $product_id ) { $vip_product_ids[] = $product_id; }
+		if ( $product_id ) { $vip_products[ $product_id ] = $plan; }
 	}
-	$vip_product_ids = array_values( array_unique( $vip_product_ids ) );
-	if ( ! $vip_product_ids ) { return false; }
+	if ( ! $vip_products ) { return false; }
 	$page = 1;
 	$statuses = function_exists( 'wc_get_is_paid_statuses' ) ? wc_get_is_paid_statuses() : array( 'processing', 'completed' );
 	do {
@@ -23,7 +22,14 @@ function staffswap_user_has_paid_vip_order( $user_id ) {
 			$order = wc_get_order( $order_id );
 			if ( ! $order ) { continue; }
 			foreach ( $order->get_items() as $item ) {
-				if ( in_array( (int) $item->get_product_id(), $vip_product_ids, true ) ) { return true; }
+				$product_id = (int) $item->get_product_id();
+				if ( empty( $vip_products[ $product_id ] ) ) { continue; }
+				$plan = $vip_products[ $product_id ];
+				if ( 'lifetime' === $plan ) { return true; }
+				$paid_date = $order->get_date_paid();
+				if ( ! $paid_date ) { continue; }
+				$expiry_ts = strtotime( 'month' === $plan ? '+1 month' : '+3 months', $paid_date->getTimestamp() );
+				if ( $expiry_ts && $expiry_ts >= current_time( 'timestamp', true ) ) { return true; }
 			}
 		}
 		$page++;
@@ -34,7 +40,7 @@ function staffswap_has_active_membership( $user_id = 0 ) {
 	$user_id = $user_id ? absint( $user_id ) : get_current_user_id();
 	if ( ! $user_id ) { return false; }
 	if ( '1' === get_user_meta( $user_id, 'staffswap_plus_active', true ) ) { return true; }
-	if ( staffswap_user_has_paid_vip_order( $user_id ) ) { update_user_meta( $user_id, 'staffswap_plus_active', '1' ); return true; }
+	if ( staffswap_user_has_paid_vip_order( $user_id ) ) { return true; }
 	return false;
 }
 function staffswap_membership_required_notice( $action = 'use this feature' ) { return '<div class="panel membership-required"><p class="eyebrow">STAFFSWAP PLUS</p><h2>Membership required</h2><p>You need an active membership to ' . esc_html( $action ) . '.</p><a class="button button--primary" href="' . esc_url( home_url( '/pricing/' ) ) . '">View membership plans</a></div>'; }
