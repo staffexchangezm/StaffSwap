@@ -72,12 +72,14 @@ function staffswap_wc_payment_complete( $order_id ) {
 	if ( ! $order ) { return; }
 	$user_id = (int) $order->get_user_id();
 	if ( ! $user_id || ! $order->get_items() ) { return; }
-	$plan_priority = array_flip( array( 'month', 'quarter', 'lifetime' ) );
+	$plan_priority = array_flip( array_keys( staffswap_wc_plans() ) );
 	$matched_plan = '';
 	foreach ( $order->get_items() as $item ) {
 		foreach ( array_keys( staffswap_wc_plans() ) as $plan ) {
 			if ( (int) $item->get_product_id() === (int) get_option( 'staffswap_vip_product_' . $plan ) ) {
-				if ( '' === $matched_plan || $plan_priority[ $plan ] > $plan_priority[ $matched_plan ] ) {
+				$current_priority = $plan_priority[ $plan ] ?? -1;
+				$matched_priority = '' === $matched_plan ? -1 : ( $plan_priority[ $matched_plan ] ?? -1 );
+				if ( $current_priority > $matched_priority ) {
 					$matched_plan = $plan;
 				}
 			}
