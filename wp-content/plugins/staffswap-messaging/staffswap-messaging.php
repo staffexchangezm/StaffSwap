@@ -18,7 +18,22 @@ add_shortcode( 'staffswap_inbox', 'staffswap_inbox_shortcode' );
 function staffswap_unread_message_count( $user_id = 0 ) {
 	$user_id = $user_id ? absint( $user_id ) : get_current_user_id();
 	if ( ! $user_id ) { return 0; }
-	return count( get_posts( array( 'post_type' => 'staff_message', 'post_status' => 'publish', 'fields' => 'ids', 'posts_per_page' => -1, 'meta_query' => array( array( 'key' => '_staffswap_recipient', 'value' => $user_id, 'compare' => '=' ), array( 'key' => '_staffswap_read', 'value' => '0', 'compare' => '=' ) ) ) ) );
+
+	$query = new WP_Query( array(
+		'post_type' => 'staff_message',
+		'post_status' => 'publish',
+		'fields' => 'ids',
+		'posts_per_page' => 1,
+		'no_found_rows' => false,
+		'update_post_meta_cache' => false,
+		'update_post_term_cache' => false,
+		'meta_query' => array(
+			array( 'key' => '_staffswap_recipient', 'value' => $user_id, 'compare' => '=' ),
+			array( 'key' => '_staffswap_read', 'value' => '0', 'compare' => '=' ),
+		),
+	) );
+
+	return (int) $query->found_posts;
 }
 
 function staffswap_pending_offer_count( $user_id = 0 ) {
