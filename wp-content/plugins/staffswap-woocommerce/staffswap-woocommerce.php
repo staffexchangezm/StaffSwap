@@ -143,6 +143,7 @@ function staffswap_wc_activate_membership_from_order( $order_id ) {
 	update_user_meta( $user_id, 'staffswap_membership_source_order', $order->get_id() );
 	$order->update_meta_data( '_staffswap_membership_activated_user', $user_id );
 	$order->update_meta_data( '_staffswap_membership_activated_plan', $plan );
+	$order->delete_meta_data( '_staffswap_membership_activation_conflict' );
 	$order->save();
 }
 function staffswap_wc_activate_membership_on_status_change( $order_id, $old_status, $new_status, $order ) {
