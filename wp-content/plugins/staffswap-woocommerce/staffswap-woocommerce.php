@@ -31,10 +31,9 @@ function staffswap_user_has_paid_vip_order( $user_id ) {
 		return 0 === strpos( $status, 'wc-' ) ? $status : 'wc-' . $status;
 	}, $statuses ) ) );
 	do {
-		$order_ids = wc_get_orders( array( 'customer_id' => (int) $user_id, 'status' => $statuses, 'limit' => 50, 'page' => $page, 'return' => 'ids' ) );
-		if ( ! $order_ids ) { break; }
-		foreach ( $order_ids as $order_id ) {
-			$order = wc_get_order( $order_id );
+		$orders = wc_get_orders( array( 'customer_id' => (int) $user_id, 'status' => $statuses, 'limit' => 50, 'page' => $page ) );
+		if ( ! $orders ) { break; }
+		foreach ( $orders as $order ) {
 			if ( ! $order ) { continue; }
 			foreach ( $order->get_items() as $item ) {
 				$product_id = (int) $item->get_product_id();
@@ -45,7 +44,7 @@ function staffswap_user_has_paid_vip_order( $user_id ) {
 			}
 		}
 		$page++;
-	} while ( count( $order_ids ) === 50 );
+	} while ( count( $orders ) === 50 );
 	return false;
 }
 function staffswap_has_active_membership( $user_id = 0 ) {
