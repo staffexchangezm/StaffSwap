@@ -5,7 +5,33 @@
  * Version: 1.0.0
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
-function staffswap_has_active_membership( $user_id = 0 ) { $user_id = $user_id ? absint( $user_id ) : get_current_user_id(); return (bool) ( $user_id && '1' === get_user_meta( $user_id, 'staffswap_plus_active', true ) ); }
+function staffswap_user_has_paid_vip_order( $user_id ) {
+	if ( ! $user_id || ! function_exists( 'wc_get_orders' ) ) { return false; }
+	$vip_product_ids = array();
+	foreach ( array_keys( staffswap_wc_plans() ) as $plan ) {
+		$product_id = (int) get_option( 'staffswap_vip_product_' . $plan, 0 );
+		if ( $product_id ) { $vip_product_ids[] = $product_id; }
+	}
+	$vip_product_ids = array_values( array_unique( $vip_product_ids ) );
+	if ( ! $vip_product_ids ) { return false; }
+	$order_ids = wc_get_orders( array( 'customer_id' => (int) $user_id, 'status' => function_exists( 'wc_get_is_paid_statuses' ) ? wc_get_is_paid_statuses() : array( 'processing', 'completed' ), 'limit' => 50, 'return' => 'ids' ) );
+	if ( ! $order_ids ) { return false; }
+	foreach ( $order_ids as $order_id ) {
+		$order = wc_get_order( $order_id );
+		if ( ! $order ) { continue; }
+		foreach ( $order->get_items() as $item ) {
+			if ( in_array( (int) $item->get_product_id(), $vip_product_ids, true ) ) { return true; }
+		}
+	}
+	return false;
+}
+function staffswap_has_active_membership( $user_id = 0 ) {
+	$user_id = $user_id ? absint( $user_id ) : get_current_user_id();
+	if ( ! $user_id ) { return false; }
+	if ( '1' === get_user_meta( $user_id, 'staffswap_plus_active', true ) ) { return true; }
+	if ( staffswap_user_has_paid_vip_order( $user_id ) ) { update_user_meta( $user_id, 'staffswap_plus_active', '1' ); return true; }
+	return false;
+}
 function staffswap_membership_required_notice( $action = 'use this feature' ) { return '<div class="panel membership-required"><p class="eyebrow">STAFFSWAP PLUS</p><h2>Membership required</h2><p>You need an active membership to ' . esc_html( $action ) . '.</p><a class="button button--primary" href="' . esc_url( home_url( '/pricing/' ) ) . '">View membership plans</a></div>'; }
 function staffswap_wc_plans() { return array( 'month' => array( 'title' => 'StaffSwap VIP Gold - 1 Month', 'price' => '99', 'sku' => 'STAFFSWAP-VIP-1M', 'duration' => '1 month' ), 'quarter' => array( 'title' => 'StaffSwap VIP Gold - 3 Months', 'price' => '249', 'sku' => 'STAFFSWAP-VIP-3M', 'duration' => '3 months' ), 'lifetime' => array( 'title' => 'StaffSwap VIP Gold - Lifetime', 'price' => '799', 'sku' => 'STAFFSWAP-VIP-LIFE', 'duration' => 'lifetime' ) ); }
 function staffswap_wc_product( $plan = 'month' ) {
