@@ -24,27 +24,32 @@ function staffswap_user_has_paid_vip_order( $user_id ) {
 		if ( $product_id ) { $vip_products[ $product_id ] = $plan; }
 	}
 	if ( ! $vip_products ) { return false; }
-	$page = 1;
 	$statuses = function_exists( 'wc_get_is_paid_statuses' ) ? wc_get_is_paid_statuses() : array( 'processing', 'completed' );
 	$statuses = array_values( array_unique( array_map( function( $status ) {
 		$status = (string) $status;
 		return 0 === strpos( $status, 'wc-' ) ? $status : 'wc-' . $status;
 	}, $statuses ) ) );
-	do {
-		$orders = wc_get_orders( array( 'customer_id' => (int) $user_id, 'status' => $statuses, 'limit' => 50, 'page' => $page ) );
-		if ( ! $orders ) { break; }
-		foreach ( $orders as $order ) {
-			if ( ! $order ) { continue; }
-			foreach ( $order->get_items() as $item ) {
-				$product_id = (int) $item->get_product_id();
-				if ( empty( $vip_products[ $product_id ] ) ) { continue; }
-				$plan = $vip_products[ $product_id ];
-				$duration = $plans[ $plan ]['duration'] ?? '';
-				if ( staffswap_wc_is_duration_active_for_order( $order, $duration ) ) { return true; }
+	$order_filters = array( array( 'customer_id' => (int) $user_id ) );
+	$user = get_userdata( $user_id );
+	if ( $user && ! empty( $user->user_email ) ) { $order_filters[] = array( 'billing_email' => sanitize_email( $user->user_email ) ); }
+	foreach ( $order_filters as $filter ) {
+		$page = 1;
+		do {
+			$orders = wc_get_orders( array_merge( $filter, array( 'status' => $statuses, 'limit' => 50, 'page' => $page ) ) );
+			if ( ! $orders ) { break; }
+			foreach ( $orders as $order ) {
+				if ( ! $order ) { continue; }
+				foreach ( $order->get_items() as $item ) {
+					$product_id = (int) $item->get_product_id();
+					if ( empty( $vip_products[ $product_id ] ) ) { continue; }
+					$plan = $vip_products[ $product_id ];
+					$duration = $plans[ $plan ]['duration'] ?? '';
+					if ( staffswap_wc_is_duration_active_for_order( $order, $duration ) ) { return true; }
+				}
 			}
-		}
-		$page++;
-	} while ( count( $orders ) === 50 );
+			$page++;
+		} while ( count( $orders ) === 50 );
+	}
 	return false;
 }
 function staffswap_has_active_membership( $user_id = 0 ) {
