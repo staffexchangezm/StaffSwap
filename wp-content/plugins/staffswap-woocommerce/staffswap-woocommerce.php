@@ -10,8 +10,8 @@ function staffswap_wc_is_duration_active_for_order( $order, $duration ) {
 	if ( 'lifetime' === $duration ) { return true; }
 	$paid_date = $order ? $order->get_date_paid() : false;
 	if ( ! $duration || ! $paid_date ) { return false; }
-	$normalized_duration = ltrim( $duration );
-	if ( 0 !== strpos( $normalized_duration, '+' ) ) { $normalized_duration = '+' . $normalized_duration; }
+	$normalized_duration = trim( $duration );
+	if ( ! in_array( substr( $normalized_duration, 0, 1 ), array( '+', '-' ), true ) ) { $normalized_duration = '+' . $normalized_duration; }
 	$expiry_ts = strtotime( $normalized_duration, $paid_date->getTimestamp() );
 	return (bool) ( $expiry_ts && $expiry_ts >= current_time( 'timestamp', true ) );
 }
