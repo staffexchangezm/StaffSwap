@@ -1,6 +1,6 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) { exit; }
-function staffswap_setup() { add_theme_support( 'title-tag' ); add_theme_support( 'post-thumbnails' ); add_theme_support( 'custom-logo', array( 'height' => 48, 'width' => 220, 'flex-height' => true, 'flex-width' => true ) ); add_theme_support( 'align-wide' ); add_theme_support( 'editor-styles' ); add_theme_support( 'elementor' ); add_editor_style( 'style.css' ); register_nav_menus( array( 'primary' => __( 'Primary Menu', 'staffswap' ) ) ); }
+function staffswap_setup() { add_theme_support( 'title-tag' ); add_theme_support( 'post-thumbnails' ); add_theme_support( 'custom-logo', array( 'height' => 48, 'width' => 220, 'flex-height' => true, 'flex-width' => true ) ); add_theme_support( 'align-wide' ); add_theme_support( 'editor-styles' ); add_theme_support( 'elementor' ); add_post_type_support( 'page', 'elementor' ); add_editor_style( 'style.css' ); register_nav_menus( array( 'primary' => __( 'Primary Menu', 'staffswap' ) ) ); }
 add_action( 'after_setup_theme', 'staffswap_setup' );
 function staffswap_load_textdomain() { load_theme_textdomain( 'staffswap', get_template_directory() . '/languages' ); }
 add_action( 'after_setup_theme', 'staffswap_load_textdomain', 11 );

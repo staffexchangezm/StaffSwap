@@ -5,6 +5,8 @@
  * Version: 1.0.0
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
+function staffswap_has_active_membership( $user_id = 0 ) { $user_id = $user_id ? absint( $user_id ) : get_current_user_id(); return (bool) ( $user_id && '1' === get_user_meta( $user_id, 'staffswap_plus_active', true ) ); }
+function staffswap_membership_required_notice( $action = 'use this feature' ) { return '<div class="panel membership-required"><p class="eyebrow">STAFFSWAP PLUS</p><h2>Membership required</h2><p>You need an active membership to ' . esc_html( $action ) . '.</p><a class="button button--primary" href="' . esc_url( home_url( '/pricing/' ) ) . '">View membership plans</a></div>'; }
 function staffswap_wc_plans() { return array( 'month' => array( 'title' => 'StaffSwap VIP Gold - 1 Month', 'price' => '99', 'sku' => 'STAFFSWAP-VIP-1M', 'duration' => '1 month' ), 'quarter' => array( 'title' => 'StaffSwap VIP Gold - 3 Months', 'price' => '249', 'sku' => 'STAFFSWAP-VIP-3M', 'duration' => '3 months' ), 'lifetime' => array( 'title' => 'StaffSwap VIP Gold - Lifetime', 'price' => '799', 'sku' => 'STAFFSWAP-VIP-LIFE', 'duration' => 'lifetime' ) ); }
 function staffswap_wc_product( $plan = 'month' ) {
 	if ( ! class_exists( 'WooCommerce' ) ) { return 0; }
@@ -29,6 +31,42 @@ function staffswap_wc_upgrade_shortcode( $atts ) {
 	return '<a class="button button--primary" href="' . esc_url( $url ) . '">Choose VIP Gold</a>';
 }
 add_shortcode( 'staffswap_upgrade', 'staffswap_wc_upgrade_shortcode' );
+function staffswap_wc_plan_price( $plan = 'month' ) {
+	$plans = staffswap_wc_plans();
+	if ( empty( $plans[ $plan ] ) ) { return ''; }
+	$product_id = staffswap_wc_product( $plan );
+	$product = $product_id && function_exists( 'wc_get_product' ) ? wc_get_product( $product_id ) : false;
+	if ( $product && '' !== $product->get_price() ) { return wc_price( $product->get_price() ); }
+	return 'ZMW ' . esc_html( $plans[ $plan ]['price'] );
+}
+function staffswap_wc_plan_price_shortcode( $atts ) {
+	$atts = shortcode_atts( array( 'plan' => 'month' ), $atts, 'staffswap_plan_price' );
+	return staffswap_wc_plan_price( sanitize_key( $atts['plan'] ) );
+}
+add_shortcode( 'staffswap_plan_price', 'staffswap_wc_plan_price_shortcode' );
+function staffswap_wc_sync_pricing_content( $content ) {
+	if ( is_admin() || ! is_page( 'pricing' ) || ! class_exists( 'WooCommerce' ) ) { return $content; }
+	$plans = array_keys( staffswap_wc_plans() );
+	$price_index = 0;
+	$content = preg_replace_callback( '/(?:ZK|ZMW|K)\s?[0-9][0-9,.]*/i', function ( $matches ) use ( $plans, &$price_index ) {
+		if ( ! isset( $plans[ $price_index ] ) ) { return $matches[0]; }
+		$price = staffswap_wc_plan_price( $plans[ $price_index ] );
+		$price_index++;
+		return wp_strip_all_tags( html_entity_decode( $price ) );
+	}, $content );
+	$button_index = 0;
+	$content = preg_replace_callback( '/<a\b([^>]*)>(\s*Choose VIP Gold\s*)<\/a>/i', function ( $matches ) use ( $plans, &$button_index ) {
+		if ( ! isset( $plans[ $button_index ] ) ) { return $matches[0]; }
+		$product_id = staffswap_wc_product( $plans[ $button_index ] );
+		$button_index++;
+		if ( ! $product_id || ! function_exists( 'wc_get_checkout_url' ) ) { return $matches[0]; }
+		$url = add_query_arg( array( 'add-to-cart' => $product_id ), wc_get_checkout_url() );
+		$attributes = preg_replace( '/\s+href=(["\']).*?\1/i', '', $matches[1] );
+		return '<a' . $attributes . ' href="' . esc_url( $url ) . '">' . $matches[2] . '</a>';
+	}, $content );
+	return $content;
+}
+add_filter( 'the_content', 'staffswap_wc_sync_pricing_content', 99 );
 function staffswap_wc_payment_complete( $order_id ) {
 	$order = wc_get_order( $order_id );
 	if ( ! $order ) { return; }

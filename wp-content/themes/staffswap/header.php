@@ -13,6 +13,8 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 $staffswap_elementor_header = staffswap_builder_location( 'header' );
 if ( ! $staffswap_elementor_header ) :
 	$current_user = wp_get_current_user();
+	$staffswap_unread_messages = is_user_logged_in() && function_exists( 'staffswap_unread_message_count' ) ? staffswap_unread_message_count() : 0;
+	$staffswap_pending_offers = is_user_logged_in() && function_exists( 'staffswap_pending_offer_count' ) ? staffswap_pending_offer_count() : 0;
 	$staffswap_menu = wp_nav_menu( array( 'theme_location' => 'primary', 'fallback_cb' => false, 'container' => false, 'echo' => false ) );
 	?>
 	<header class="site-header site-header--brand">
@@ -21,8 +23,8 @@ if ( ! $staffswap_elementor_header ) :
 			<button class="menu-toggle" type="button" data-mobile-menu aria-label="<?php echo esc_attr__( 'Toggle menu', 'staffswap' ); ?>"><?php echo esc_html__( 'Menu', 'staffswap' ); ?></button>
 			<nav class="primary-nav" aria-label="<?php echo esc_attr__( 'Primary navigation', 'staffswap' ); ?>"><?php if ( ! empty( trim( $staffswap_menu ) ) ) { echo $staffswap_menu; } else { staffswap_fallback_menu(); } ?></nav>
 			<div class="header-actions">
-				<a class="header-icon" href="<?php echo esc_url( home_url( '/offers/' ) ); ?>" aria-label="<?php echo esc_attr__( 'Offers', 'staffswap' ); ?>"><span class="dashicons dashicons-bell" aria-hidden="true"></span><b>3</b></a>
-				<a class="header-icon" href="<?php echo esc_url( home_url( '/messages/' ) ); ?>" aria-label="<?php echo esc_attr__( 'Messages', 'staffswap' ); ?>"><span class="dashicons dashicons-email-alt" aria-hidden="true"></span></a>
+				<a class="header-icon" href="<?php echo esc_url( home_url( '/offers/' ) ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Offers, %d pending', 'staffswap' ), $staffswap_pending_offers ) ); ?>"><span class="dashicons dashicons-bell" aria-hidden="true"></span><?php if ( $staffswap_pending_offers ) : ?><b><?php echo esc_html( $staffswap_pending_offers ); ?></b><?php endif; ?></a>
+				<a class="header-icon" href="<?php echo esc_url( home_url( '/messages/' ) ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Messages, %d unread', 'staffswap' ), $staffswap_unread_messages ) ); ?>"><span class="dashicons dashicons-email-alt" aria-hidden="true"></span><?php if ( $staffswap_unread_messages ) : ?><b><?php echo esc_html( $staffswap_unread_messages ); ?></b><?php endif; ?></a>
 				<div class="profile-menu" data-profile-menu>
 					<button class="profile-cluster" type="button" data-profile-trigger aria-expanded="false" aria-haspopup="true">
 						<span class="profile-avatar"><?php if ( is_user_logged_in() ) : ?><?php echo esc_html( strtoupper( substr( $current_user->display_name, 0, 1 ) ) ); ?><?php else : ?><span class="dashicons dashicons-admin-users" aria-hidden="true"></span><?php endif; ?></span>
