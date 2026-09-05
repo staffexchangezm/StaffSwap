@@ -147,6 +147,8 @@ function staffswap_wc_activate_membership_from_order( $order_id ) {
 	$order->save();
 }
 function staffswap_wc_activate_membership_on_status_change( $order_id, $old_status, $new_status, $order ) {
+	$old_status = 0 === strpos( (string) $old_status, 'wc-' ) ? substr( (string) $old_status, 3 ) : (string) $old_status;
+	$new_status = 0 === strpos( (string) $new_status, 'wc-' ) ? substr( (string) $new_status, 3 ) : (string) $new_status;
 	$paid_statuses = array_map( function ( $status ) { return 0 === strpos( $status, 'wc-' ) ? substr( $status, 3 ) : $status; }, wc_get_is_paid_statuses() );
 	if ( ! in_array( $new_status, $paid_statuses, true ) || in_array( $old_status, $paid_statuses, true ) ) { return; }
 	if ( ! $order || ! $order->is_paid() ) { return; }
