@@ -90,14 +90,18 @@ function staffswap_wc_membership_user_for_order( $order ) {
 function staffswap_wc_activate_membership_from_order( $order_id ) {
 	$order = wc_get_order( $order_id );
 	if ( ! $order || ! $order->is_paid() ) { return; }
-	if ( '1' === $order->get_meta( '_staffswap_membership_activated', true ) ) { return; }
 	$plan = staffswap_wc_membership_plan_for_order( $order );
 	if ( ! $plan ) { return; }
 	$user_id = staffswap_wc_membership_user_for_order( $order );
 	if ( ! $user_id ) { return; }
+	$activated_user_id = (int) $order->get_meta( '_staffswap_membership_activated_user', true );
+	$activated_plan = sanitize_key( $order->get_meta( '_staffswap_membership_activated_plan', true ) );
+	if ( $activated_user_id === $user_id && $activated_plan === $plan ) { return; }
 	update_user_meta( $user_id, 'staffswap_plus_active', '1' );
 	update_user_meta( $user_id, 'staffswap_vip_plan', $plan );
 	$order->update_meta_data( '_staffswap_membership_activated', '1' );
+	$order->update_meta_data( '_staffswap_membership_activated_user', $user_id );
+	$order->update_meta_data( '_staffswap_membership_activated_plan', $plan );
 	$order->save();
 }
 add_action( 'woocommerce_payment_complete', 'staffswap_wc_activate_membership_from_order' );
