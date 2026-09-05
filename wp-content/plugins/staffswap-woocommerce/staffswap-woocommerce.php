@@ -70,6 +70,7 @@ add_filter( 'the_content', 'staffswap_wc_sync_pricing_content', 99 );
 function staffswap_wc_payment_complete( $order_id ) {
 	$order = wc_get_order( $order_id );
 	if ( ! $order ) { return; }
+	if ( ! $order->is_paid() ) { return; }
 	$user_id = (int) $order->get_user_id();
 	if ( ! $user_id || ! $order->get_items() ) { return; }
 	$plan_priority = array_flip( array_keys( staffswap_wc_plans() ) );
