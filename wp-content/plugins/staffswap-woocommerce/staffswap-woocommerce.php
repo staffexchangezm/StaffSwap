@@ -82,18 +82,6 @@ function staffswap_wc_membership_user_for_order( $order ) {
 	if ( ! $order ) { return 0; }
 	return (int) $order->get_user_id();
 }
-function staffswap_wc_user_has_other_paid_membership_orders( $user_id, $exclude_order_id = 0 ) {
-	if ( ! $user_id || ! function_exists( 'wc_get_orders' ) ) { return false; }
-	$order_ids = wc_get_orders( array( 'customer_id' => absint( $user_id ), 'limit' => 100, 'return' => 'ids', 'status' => array_keys( wc_get_is_paid_statuses() ) ) );
-	if ( ! $order_ids ) { return false; }
-	foreach ( $order_ids as $order_id ) {
-		$order_id = absint( $order_id );
-		if ( $exclude_order_id && $order_id === absint( $exclude_order_id ) ) { continue; }
-		$order = wc_get_order( $order_id );
-		if ( $order && $order->is_paid() && staffswap_wc_membership_plan_for_order( $order ) ) { return true; }
-	}
-	return false;
-}
 function staffswap_wc_activate_membership_from_order( $order_id ) {
 	$order = wc_get_order( $order_id );
 	if ( ! $order || ! $order->is_paid() ) { return; }
@@ -101,44 +89,16 @@ function staffswap_wc_activate_membership_from_order( $order_id ) {
 	if ( ! $plan ) { return; }
 	$user_id = staffswap_wc_membership_user_for_order( $order );
 	if ( ! $user_id ) { $order->add_order_note( 'StaffSwap membership activation skipped: no linked customer account on the order.' ); return; }
-	$already_activated = '1' === $order->get_meta( '_staffswap_membership_activated', true );
 	$activated_user_id = (int) $order->get_meta( '_staffswap_membership_activated_user', true );
 	$activated_plan = sanitize_key( $order->get_meta( '_staffswap_membership_activated_plan', true ) );
 	if ( $activated_user_id === $user_id && $activated_plan === $plan ) { return; }
-	if ( $already_activated ) {
-		if ( $activated_user_id && $activated_user_id !== $user_id ) {
-			$prior_plan = sanitize_key( get_user_meta( $activated_user_id, 'staffswap_vip_plan', true ) );
-			if ( $prior_plan === $activated_plan && ! staffswap_wc_user_has_other_paid_membership_orders( $activated_user_id, $order->get_id() ) ) {
-				delete_user_meta( $activated_user_id, 'staffswap_plus_active' );
-				delete_user_meta( $activated_user_id, 'staffswap_vip_plan' );
-			}
-		}
-		$order->delete_meta_data( '_staffswap_membership_activated' );
-		$order->delete_meta_data( '_staffswap_membership_activated_user' );
-		$order->delete_meta_data( '_staffswap_membership_activated_plan' );
-		delete_post_meta( $order->get_id(), '_staffswap_membership_activation_lock' );
-		$order->add_order_note( 'StaffSwap membership activation metadata was reset after customer or plan details changed.' );
-		$order->save();
-	}
-	$lock_value = $user_id . ':' . $plan;
-	if ( ! add_post_meta( $order->get_id(), '_staffswap_membership_activation_lock', $lock_value, true ) ) { return; }
-	$activation_saved = false;
-	try {
-		update_user_meta( $user_id, 'staffswap_plus_active', '1' );
-		update_user_meta( $user_id, 'staffswap_vip_plan', $plan );
-		$order->update_meta_data( '_staffswap_membership_activated', '1' );
-		$order->update_meta_data( '_staffswap_membership_activated_user', $user_id );
-		$order->update_meta_data( '_staffswap_membership_activated_plan', $plan );
-		$order->save();
-		$activation_saved = true;
-	} catch ( Exception $e ) {
-		$order->add_order_note( 'StaffSwap membership activation failed: ' . $e->getMessage() );
-	}
-	if ( ! $activation_saved ) { delete_post_meta( $order->get_id(), '_staffswap_membership_activation_lock', $lock_value ); }
+	$order->update_meta_data( '_staffswap_membership_activated_user', $user_id );
+	$order->update_meta_data( '_staffswap_membership_activated_plan', $plan );
+	$order->save();
+	update_user_meta( $user_id, 'staffswap_plus_active', '1' );
+	update_user_meta( $user_id, 'staffswap_vip_plan', $plan );
 }
-add_action( 'woocommerce_payment_complete', 'staffswap_wc_activate_membership_from_order' );
-add_action( 'woocommerce_order_status_processing', 'staffswap_wc_activate_membership_from_order' );
-add_action( 'woocommerce_order_status_completed', 'staffswap_wc_activate_membership_from_order' );
+add_action( 'woocommerce_order_payment_status_changed', 'staffswap_wc_activate_membership_from_order', 10, 1 );
 function staffswap_wc_admin_notice() { if ( current_user_can( 'manage_options' ) && ! class_exists( 'WooCommerce' ) ) { echo '<div class="notice notice-info"><p><strong>StaffSwap WooCommerce Bridge:</strong> Install WooCommerce to enable premium upgrade checkout. The core marketplace remains fully available without it.</p></div>'; } }
 add_action( 'admin_notices', 'staffswap_wc_admin_notice' );
 
