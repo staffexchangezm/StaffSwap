@@ -80,13 +80,25 @@ register_deactivation_hook( __FILE__, 'flush_rewrite_rules' );
 function staffswap_listing_fields() { return array( 'profession' => 'Profession', 'current_location' => 'Current Location', 'current_employer' => 'Current Employer', 'desired_location' => 'Desired Location', 'desired_employer' => 'Desired Employer', 'experience' => 'Experience (years)', 'match_score' => 'Match Score', 'housing' => 'Housing available', 'nearby_towns' => 'Open to nearby towns', 'relocation_support' => 'Relocation support', 'urgent' => 'Urgent listing', 'verified' => 'Verified professional', 'swap_reason' => 'Reason for swap request' ); }
 function staffswap_swap_reasons() {
     return array(
-        'family' => 'Closer to family',
-        'spouse' => 'Reunite with spouse/partner',
-        'health' => 'Health or medical reasons',
-        'career' => 'Career growth opportunity',
-        'education' => "Children's education",
-        'safety' => 'Security concerns',
-        'cost_of_living' => 'Lower cost of living',
+        'family_reasons' => 'Family reasons',
+        'spouse_partner_relocation' => 'Spouse or partner relocation',
+        'closer_to_family' => 'Moving closer to family',
+        'childcare_dependent_care' => 'Childcare or dependent care',
+        'education_studies' => 'Education or studies',
+        'career_development' => 'Career development',
+        'professional_growth' => 'Professional growth',
+        'better_work_environment' => 'Better work environment',
+        'change_work_environment' => 'Change of work environment',
+        'closer_to_home' => 'Moving closer to home',
+        'reduce_commuting_distance' => 'Reduce commuting distance',
+        'lower_cost_of_living' => 'Lower cost of living',
+        'housing_accommodation' => 'Housing or accommodation',
+        'personal_circumstances' => 'Personal circumstances',
+        'returning_home_district_province' => 'Returning to home district/province',
+        'urban_location' => 'Preference for urban location',
+        'rural_location' => 'Preference for rural location',
+        'new_experience' => 'Seeking new experience',
+        'mutual_convenience' => 'Mutual convenience',
         'other' => 'Other',
     );
 }
@@ -97,6 +109,14 @@ function staffswap_meta_box( $post ) {
     echo '<div class="staffswap-admin-fields">';
     foreach ( staffswap_listing_fields() as $key => $label ) {
         $value = get_post_meta( $post->ID, '_staffswap_' . $key, true );
+        if ( 'swap_reason' === $key ) {
+            echo '<p><label><strong>' . esc_html( $label ) . '</strong><br><select name="staffswap_swap_reason"><option value="">Select a reason</option>';
+            foreach ( staffswap_swap_reasons() as $reason_key => $reason_label ) {
+                echo '<option value="' . esc_attr( $reason_key ) . '" ' . selected( $value, $reason_key, false ) . '>' . esc_html( $reason_label ) . '</option>';
+            }
+            echo '</select></label></p>';
+            continue;
+        }
         $type = in_array( $key, array( 'housing', 'nearby_towns', 'relocation_support', 'urgent', 'verified' ), true ) ? 'checkbox' : 'text';
         echo '<p><label><strong>' . esc_html( $label ) . '</strong><br><input type="' . esc_attr( $type ) . '" name="staffswap_' . esc_attr( $key ) . '" value="' . esc_attr( $type === 'checkbox' ? '1' : $value ) . '" ' . checked( $value, '1', false ) . '></label></p>';
     }
@@ -106,6 +126,7 @@ function staffswap_save_meta( $post_id ) {
     if ( ! isset( $_POST['staffswap_listing_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['staffswap_listing_nonce'] ) ), 'staffswap_save_listing' ) || ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) || ! current_user_can( 'edit_post', $post_id ) ) { return; }
     foreach ( staffswap_listing_fields() as $key => $label ) {
         $value = isset( $_POST['staffswap_' . $key] ) ? sanitize_text_field( wp_unslash( $_POST['staffswap_' . $key] ) ) : '';
+        if ( 'swap_reason' === $key && ! array_key_exists( $value, staffswap_swap_reasons() ) ) { $value = ''; }
         update_post_meta( $post_id, '_staffswap_' . $key, $value );
     }
 }
@@ -401,7 +422,7 @@ function staffswap_create_form_shortcode() {
     if ( isset( $_POST['staffswap_create_listing'] ) && check_admin_referer( 'staffswap_create_listing', 'staffswap_create_nonce' ) ) {
         $is_verified = 'verified' === get_user_meta( get_current_user_id(), 'staffswap_verified_status', true );
         $post_id = wp_insert_post( array( 'post_type' => 'swap_listing', 'post_title' => sanitize_text_field( wp_unslash( $_POST['name'] ) ), 'post_content' => sanitize_textarea_field( wp_unslash( $_POST['notes'] ?? '' ) ), 'post_status' => $is_verified ? 'publish' : 'pending', 'post_author' => get_current_user_id() ), true );
-            if ( ! is_wp_error( $post_id ) ) { foreach ( staffswap_listing_fields() as $key => $label ) { if ( isset( $_POST[ $key ] ) ) { update_post_meta( $post_id, '_staffswap_' . $key, sanitize_text_field( wp_unslash( $_POST[ $key ] ) ) ); } } update_post_meta( $post_id, '_staffswap_verified', $is_verified ? '1' : '' ); if ( $is_verified ) { staffswap_refresh_listing_matches( $post_id ); return '<div class="panel content-form"><h2>Listing published</h2><p>Your verified listing is live and the matchmaker is scanning for reciprocal routes.</p></div>'; } return '<div class="panel content-form"><h2>Listing submitted for review</h2><p>Submit verification to publish your listing and activate reciprocal matching.</p><a class="button button--primary" href="' . esc_url( home_url( '/verification/' ) ) . '">Open verification</a></div>'; }
+            if ( ! is_wp_error( $post_id ) ) { foreach ( staffswap_listing_fields() as $key => $label ) { if ( isset( $_POST[ $key ] ) ) { $value = sanitize_text_field( wp_unslash( $_POST[ $key ] ) ); if ( 'swap_reason' === $key && ! array_key_exists( $value, staffswap_swap_reasons() ) ) { $value = ''; } update_post_meta( $post_id, '_staffswap_' . $key, $value ); } } update_post_meta( $post_id, '_staffswap_verified', $is_verified ? '1' : '' ); if ( $is_verified ) { staffswap_refresh_listing_matches( $post_id ); return '<div class="panel content-form"><h2>Listing published</h2><p>Your verified listing is live and the matchmaker is scanning for reciprocal routes.</p></div>'; } return '<div class="panel content-form"><h2>Listing submitted for review</h2><p>Submit verification to publish your listing and activate reciprocal matching.</p><a class="button button--primary" href="' . esc_url( home_url( '/verification/' ) ) . '">Open verification</a></div>'; }
     }
     $user = wp_get_current_user();
     $profile = array( 'name' => $user->display_name, 'profession' => get_user_meta( $user->ID, 'staffswap_profession', true ), 'current_employer' => get_user_meta( $user->ID, 'staffswap_employer', true ), 'current_location' => get_user_meta( $user->ID, 'staffswap_location', true ), 'experience' => get_user_meta( $user->ID, 'staffswap_years_service', true ), 'housing' => get_user_meta( $user->ID, 'staffswap_staff_housing', true ) );
