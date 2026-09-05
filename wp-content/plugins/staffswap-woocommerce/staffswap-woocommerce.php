@@ -34,23 +34,26 @@ function staffswap_user_has_paid_vip_order( $user_id ) {
 	if ( $user && ! empty( $user->user_email ) ) { $order_filters[] = array( 'billing_email' => sanitize_email( $user->user_email ) ); }
 	$seen_order_ids = array();
 	foreach ( $order_filters as $filter ) {
-		foreach ( $vip_products as $vip_product_id => $plan ) {
-			$page = 1;
-			do {
-				$orders = wc_get_orders( array_merge( $filter, array( 'type' => 'shop_order', 'status' => $statuses, 'product_id' => (int) $vip_product_id, 'limit' => 50, 'page' => $page ) ) );
-				if ( ! $orders ) { break; }
-				foreach ( $orders as $order ) {
-					if ( ! $order ) { continue; }
-					$order_id = $order->get_id();
-					if ( isset( $seen_order_ids[ $order_id ] ) ) { continue; }
-					$seen_order_ids[ $order_id ] = true;
+		$page = 1;
+		do {
+			$orders = wc_get_orders( array_merge( $filter, array( 'type' => 'shop_order', 'status' => $statuses, 'limit' => 50, 'page' => $page ) ) );
+			if ( ! $orders ) { break; }
+			foreach ( $orders as $order ) {
+				if ( ! $order ) { continue; }
+				$order_id = $order->get_id();
+				if ( isset( $seen_order_ids[ $order_id ] ) ) { continue; }
+				$seen_order_ids[ $order_id ] = true;
+				foreach ( $order->get_items() as $item ) {
+					$product_id = (int) $item->get_product_id();
+					if ( empty( $vip_products[ $product_id ] ) ) { continue; }
+					$plan = $vip_products[ $product_id ];
 					$duration = $plans[ $plan ]['duration'] ?? '';
 					if ( staffswap_wc_is_duration_active_for_order( $order, $duration ) ) { return true; }
 				}
-				$page++;
-			} while ( count( $orders ) === 50 );
 			}
-		}
+			$page++;
+		} while ( count( $orders ) === 50 );
+	}
 	return false;
 }
 function staffswap_has_active_membership( $user_id = 0 ) {
