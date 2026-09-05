@@ -37,13 +37,13 @@ function staffswap_user_has_paid_vip_order( $user_id, &$active_until_ts = 0 ) {
 	foreach ( $order_filters as $filter ) {
 		$page = 1;
 		do {
-			$orders = wc_get_orders( array_merge( $filter, array( 'status' => $statuses, 'limit' => 50, 'page' => $page ) ) );
-			if ( ! $orders ) { break; }
-			foreach ( $orders as $order ) {
-				if ( ! $order ) { continue; }
-				$order_id = $order->get_id();
+			$order_ids = wc_get_orders( array_merge( $filter, array( 'status' => $statuses, 'limit' => 50, 'page' => $page, 'return' => 'ids' ) ) );
+			if ( ! $order_ids ) { break; }
+			foreach ( $order_ids as $order_id ) {
 				if ( isset( $seen_order_ids[ $order_id ] ) ) { continue; }
 				$seen_order_ids[ $order_id ] = true;
+				$order = wc_get_order( $order_id );
+				if ( ! $order ) { continue; }
 				foreach ( $order->get_items() as $item ) {
 					$product_id = (int) $item->get_product_id();
 					if ( empty( $vip_products[ $product_id ] ) ) { continue; }
@@ -54,7 +54,7 @@ function staffswap_user_has_paid_vip_order( $user_id, &$active_until_ts = 0 ) {
 				}
 			}
 			$page++;
-		} while ( count( $orders ) === 50 );
+		} while ( count( $order_ids ) === 50 );
 	}
 	return false;
 }
@@ -68,7 +68,7 @@ function staffswap_has_active_membership( $user_id = 0 ) {
 	$active_until_ts = 0;
 	$has_active_membership = staffswap_user_has_paid_vip_order( $user_id, $active_until_ts );
 	if ( $has_active_membership ) {
-		$ttl = $active_until_ts ? max( MINUTE_IN_SECONDS, $active_until_ts - current_time( 'timestamp', true ) ) : HOUR_IN_SECONDS;
+		$ttl = 0 === $active_until_ts ? WEEK_IN_SECONDS : max( MINUTE_IN_SECONDS, $active_until_ts - current_time( 'timestamp', true ) );
 		set_transient( $cache_key, '1', $ttl );
 		return true;
 	}
