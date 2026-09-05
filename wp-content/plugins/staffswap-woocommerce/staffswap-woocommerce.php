@@ -97,11 +97,6 @@ function staffswap_wc_latest_paid_membership_order( $user_id ) {
 	}
 	return array( 'order_id' => 0, 'plan' => '' );
 }
-function staffswap_wc_latest_paid_order( $user_id ) {
-	if ( ! $user_id || ! function_exists( 'wc_get_orders' ) ) { return false; }
-	$orders = wc_get_orders( array( 'customer_id' => absint( $user_id ), 'limit' => 1, 'status' => wc_get_is_paid_statuses(), 'orderby' => 'date', 'order' => 'DESC' ) );
-	return ! empty( $orders[0] ) ? $orders[0] : false;
-}
 function staffswap_wc_activate_membership_from_order( $order_id ) {
 	$order = wc_get_order( $order_id );
 	if ( ! $order || ! $order->is_paid() ) { return; }
@@ -123,16 +118,10 @@ function staffswap_wc_activate_membership_from_order( $order_id ) {
 		$prior_plan = sanitize_key( get_user_meta( $activated_user_id, 'staffswap_vip_plan', true ) );
 		$prior_source_order = absint( get_user_meta( $activated_user_id, 'staffswap_membership_source_order', true ) );
 		$latest_paid_membership = staffswap_wc_latest_paid_membership_order( $activated_user_id );
-		$latest_paid_order = staffswap_wc_latest_paid_order( $activated_user_id );
-		$latest_paid_order_plan = $latest_paid_order ? staffswap_wc_membership_plan_for_order( $latest_paid_order ) : '';
 		if ( $prior_plan === $activated_plan && $prior_source_order === $order->get_id() ) {
 			$latest_membership_order_id = (int) $latest_paid_membership['order_id'];
 			$latest_membership_plan = sanitize_key( $latest_paid_membership['plan'] ?? '' );
-			if ( $latest_paid_order && ! $latest_paid_order_plan ) {
-				delete_user_meta( $activated_user_id, 'staffswap_plus_active' );
-				delete_user_meta( $activated_user_id, 'staffswap_vip_plan' );
-				delete_user_meta( $activated_user_id, 'staffswap_membership_source_order' );
-			} elseif ( $latest_membership_order_id && $latest_membership_order_id !== $order->get_id() && $latest_membership_plan ) {
+			if ( $latest_membership_order_id && $latest_membership_order_id !== $order->get_id() && $latest_membership_plan ) {
 				update_user_meta( $activated_user_id, 'staffswap_plus_active', '1' );
 				update_user_meta( $activated_user_id, 'staffswap_vip_plan', $latest_membership_plan );
 				update_user_meta( $activated_user_id, 'staffswap_membership_source_order', $latest_membership_order_id );
