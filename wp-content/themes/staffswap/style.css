@@ -135,3 +135,4 @@ body{display:block;min-width:0;overflow-x:hidden}.site-header,.site-main,.site-f
 .resource-search select{background:#f5f9ff;flex:0 0 auto;width:auto}.resource-downloads{font-size:12px;margin:6px 0 10px}
 .staffswap-subscribe-success{display:block;color:#0f766e;font-weight:600;margin-top:8px}.staffswap-subscribe-error{display:block;color:#dc2626;font-weight:600;margin-top:8px}
 .single-article__share{display:flex;align-items:center;gap:12px;margin:24px 0;flex-wrap:wrap}.single-article__share a{color:var(--blue);font-weight:600;font-size:13px;text-decoration:none}.single-article__share a:hover{text-decoration:underline}
+@media print{.site-header--brand,.site-footer,.page-heading,.content-form>form,.content-form>p{display:none!important}.staffswap-letter{border:none!important;box-shadow:none!important;padding:0!important}}
