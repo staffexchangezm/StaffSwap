@@ -130,6 +130,19 @@ function staffswap_testimonials_shortcode( $atts ) {
 }
 add_shortcode( 'staffswap_success_stories', 'staffswap_testimonials_shortcode' );
 
+function staffswap_random_testimonial() {
+	$story = get_posts( array( 'post_type' => 'staff_testimonial', 'post_status' => 'publish', 'posts_per_page' => 1, 'orderby' => 'rand' ) );
+	if ( ! $story ) { return false; }
+	$story = $story[0];
+	$parts = preg_split( '/\s+/', trim( $story->post_title ) );
+	return array(
+		'name' => $story->post_title,
+		'quote' => $story->post_content,
+		'role' => get_post_meta( $story->ID, '_staffswap_testimonial_role', true ),
+		'initials' => strtoupper( substr( $parts[0] ?? '', 0, 1 ) . substr( end( $parts ) ?: '', 0, 1 ) ),
+	);
+}
+
 function staffswap_theme_activated() { update_option( 'staffswap_show_setup', '1' ); }
 add_action( 'after_switch_theme', 'staffswap_theme_activated' );
 
