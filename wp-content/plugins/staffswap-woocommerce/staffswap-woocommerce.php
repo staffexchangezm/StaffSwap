@@ -7,7 +7,27 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 function staffswap_has_active_membership( $user_id = 0 ) { $user_id = $user_id ? absint( $user_id ) : get_current_user_id(); return (bool) ( $user_id && '1' === get_user_meta( $user_id, 'staffswap_plus_active', true ) ); }
 function staffswap_membership_required_notice( $action = 'use this feature' ) { return '<div class="panel membership-required"><p class="eyebrow">STAFFSWAP PLUS</p><h2>Membership required</h2><p>You need an active membership to ' . esc_html( $action ) . '.</p><a class="button button--primary" href="' . esc_url( home_url( '/pricing/' ) ) . '">View membership plans</a></div>'; }
-function staffswap_wc_plans() { return array( 'month' => array( 'title' => 'StaffSwap VIP Gold - 1 Month', 'price' => '99', 'sku' => 'STAFFSWAP-VIP-1M', 'duration' => '1 month' ), 'quarter' => array( 'title' => 'StaffSwap VIP Gold - 3 Months', 'price' => '249', 'sku' => 'STAFFSWAP-VIP-3M', 'duration' => '3 months' ), 'lifetime' => array( 'title' => 'StaffSwap VIP Gold - Lifetime', 'price' => '799', 'sku' => 'STAFFSWAP-VIP-LIFE', 'duration' => 'lifetime' ) ); }
+function staffswap_wc_plans() {
+	$plans = array( 'month' => array( 'title' => 'StaffSwap VIP Gold - 1 Month', 'price' => '99', 'sku' => 'STAFFSWAP-VIP-1M', 'duration' => '1 month' ), 'quarter' => array( 'title' => 'StaffSwap VIP Gold - 3 Months', 'price' => '249', 'sku' => 'STAFFSWAP-VIP-3M', 'duration' => '3 months' ), 'lifetime' => array( 'title' => 'StaffSwap VIP Gold - Lifetime', 'price' => '799', 'sku' => 'STAFFSWAP-VIP-LIFE', 'duration' => 'lifetime' ) );
+	$overrides = get_option( 'staffswap_plan_settings', array() );
+	foreach ( $plans as $plan => $data ) {
+		if ( ! empty( $overrides[ $plan ]['title'] ) ) { $plans[ $plan ]['title'] = $overrides[ $plan ]['title']; }
+		if ( isset( $overrides[ $plan ]['price'] ) && '' !== $overrides[ $plan ]['price'] ) { $plans[ $plan ]['price'] = $overrides[ $plan ]['price']; }
+	}
+	return $plans;
+}
+// Pushes edited plan titles/prices from Theme Options onto the already-created WooCommerce products.
+function staffswap_wc_sync_plan_products() {
+	if ( ! class_exists( 'WooCommerce' ) ) { return; }
+	foreach ( staffswap_wc_plans() as $plan => $data ) {
+		$product_id = (int) get_option( 'staffswap_vip_product_' . $plan, 0 );
+		if ( $product_id && 'publish' === get_post_status( $product_id ) ) {
+			wp_update_post( array( 'ID' => $product_id, 'post_title' => $data['title'] ) );
+			update_post_meta( $product_id, '_regular_price', $data['price'] );
+			update_post_meta( $product_id, '_price', $data['price'] );
+		}
+	}
+}
 function staffswap_wc_product( $plan = 'month' ) {
 	if ( ! class_exists( 'WooCommerce' ) ) { return 0; }
 	$plans = staffswap_wc_plans();

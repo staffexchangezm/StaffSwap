@@ -73,8 +73,8 @@ add_action( 'init', 'staffswap_enable_elementor_content_types', 30 );
 function staffswap_theme_activated() { update_option( 'staffswap_show_setup', '1' ); }
 add_action( 'after_switch_theme', 'staffswap_theme_activated' );
 
-function staffswap_setup_menu() { add_theme_page( 'StaffSwap Setup', 'StaffSwap Setup', 'manage_options', 'staffswap-setup', 'staffswap_setup_screen' ); }
-add_action( 'admin_menu', 'staffswap_setup_menu' );
+// Setup is now a tab inside Theme Options rather than its own admin page.
+function staffswap_setup_menu() {}
 
 function staffswap_setup_pages() {
 	$pages = array(
@@ -126,8 +126,8 @@ function staffswap_handle_setup() {
 	if ( ! current_user_can( 'manage_options' ) ) { wp_die( esc_html__( 'You are not allowed to run StaffSwap setup.', 'staffswap' ) ); }
 	check_admin_referer( 'staffswap_run_setup', 'staffswap_setup_nonce' );
 	$created = staffswap_setup_pages();
-	if ( is_array( $created ) ) { wp_safe_redirect( add_query_arg( array( 'page' => 'staffswap-setup', 'staffswap_setup' => 'complete' ), admin_url( 'themes.php' ) ) ); exit; }
-	wp_safe_redirect( add_query_arg( array( 'page' => 'staffswap-setup', 'staffswap_setup' => 'failed' ), admin_url( 'themes.php' ) ) ); exit;
+	if ( is_array( $created ) ) { wp_safe_redirect( add_query_arg( array( 'page' => 'staffswap-theme-options', 'tab' => 'setup', 'staffswap_setup' => 'complete' ), admin_url( 'themes.php' ) ) ); exit; }
+	wp_safe_redirect( add_query_arg( array( 'page' => 'staffswap-theme-options', 'tab' => 'setup', 'staffswap_setup' => 'failed' ), admin_url( 'themes.php' ) ) ); exit;
 }
 add_action( 'admin_post_staffswap_run_setup', 'staffswap_handle_setup' );
 
@@ -135,7 +135,7 @@ function staffswap_handle_repair() {
 	if ( ! current_user_can( 'manage_options' ) ) { wp_die( esc_html__( 'You are not allowed to repair StaffSwap setup.', 'staffswap' ) ); }
 	check_admin_referer( 'staffswap_repair_setup', 'staffswap_repair_nonce' );
 	staffswap_setup_pages();
-	wp_safe_redirect( add_query_arg( array( 'page' => 'staffswap-setup', 'staffswap_setup' => 'repaired' ), admin_url( 'themes.php' ) ) );
+	wp_safe_redirect( add_query_arg( array( 'page' => 'staffswap-theme-options', 'tab' => 'setup', 'staffswap_setup' => 'repaired' ), admin_url( 'themes.php' ) ) );
 	exit;
 }
 add_action( 'admin_post_staffswap_repair_setup', 'staffswap_handle_repair' );
@@ -177,7 +177,7 @@ add_action( 'admin_enqueue_scripts', 'staffswap_admin_settings_styles' );
 
 remove_action( 'admin_menu', 'staffswap_admin_settings_menu' );
 function staffswap_theme_options_menu() {
-	add_theme_page( 'StaffSwap Theme Options', 'Theme Options', 'manage_options', 'staffswap-theme-options', 'staffswap_theme_options_screen' );
+	add_theme_page( 'StaffSwap Theme Options', 'Theme Options', 'manage_options', 'staffswap-theme-options', 'staffswap_theme_options_hub' );
 }
 add_action( 'admin_menu', 'staffswap_theme_options_menu' );
 
@@ -207,3 +207,168 @@ function staffswap_theme_options_styles( $hook ) {
 	wp_add_inline_style( 'dashicons', '.staffswap-theme-options{max-width:1180px;margin-top:24px}.staffswap-options-hero{align-items:center;background:#0d2240;color:#fff;display:flex;justify-content:space-between;padding:34px 40px}.staffswap-options-hero span{color:#a4f4cf;font-size:11px;font-weight:700;letter-spacing:.1em}.staffswap-options-hero h1{color:#fff;font:700 34px/1.2 "Space Grotesk",sans-serif;margin:8px 0}.staffswap-options-hero p{color:#bedbff;margin:0}.staffswap-options-hero .button{background:#00bb7f;border-color:#00bb7f;color:#06251d;font-weight:700}.staffswap-options-layout{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:20px;margin-top:20px}.staffswap-options-card{background:#fff;border:1px solid #d9e1ec;padding:26px}.staffswap-options-heading{border-bottom:1px solid #e2e8f0;margin-bottom:22px;padding-bottom:16px}.staffswap-options-heading>div{align-items:center;display:flex;gap:9px}.staffswap-options-heading .dashicons{color:#00a875}.staffswap-options-heading h2{font:700 19px "Space Grotesk",sans-serif;margin:0}.staffswap-options-heading p{color:#526074;font-size:13px;margin:8px 0 0}.staffswap-options-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.staffswap-options-grid label{color:#0f172a;display:grid;font-weight:700;gap:7px}.staffswap-options-grid input,.staffswap-options-grid textarea{border:1px solid #cbd5e1;border-radius:4px;font:14px "DM Sans",sans-serif;padding:9px 10px;width:100%}.staffswap-options-grid input[type=color]{height:40px;padding:3px}.staffswap-options-grid small{color:#64748b;font-weight:400}.staffswap-options-full{grid-column:1/-1}.staffswap-options-card--nav a{align-items:center;border-top:1px solid #e2e8f0;color:#155dfc;display:flex;font-weight:700;justify-content:space-between;padding:12px 0;text-decoration:none}.staffswap-options-card--nav a:hover{color:#0f766e}.staffswap-options-status{align-items:flex-start;background:#ecfdf5;border:1px solid #a4f4cf;display:flex;gap:12px;margin-top:20px;padding:18px}.staffswap-options-status .dashicons{color:#0f766e}.staffswap-options-status strong{color:#0f766e}.staffswap-options-status p{color:#526074;font-size:13px;line-height:1.5;margin:5px 0 0}@media(max-width:760px){.staffswap-options-hero{align-items:flex-start;flex-direction:column;padding:26px}.staffswap-options-layout{grid-template-columns:1fr}.staffswap-options-grid{grid-template-columns:1fr}}' );
 }
 add_action( 'admin_enqueue_scripts', 'staffswap_theme_options_styles' );
+
+// Single tabbed "Theme Options" page: every StaffSwap setting lives here, switched with JS tabs, no extra admin pages to click through to.
+function staffswap_theme_options_hub_tabs() {
+	return array(
+		'brand' => array( 'label' => 'Brand & Homepage', 'icon' => 'dashicons-admin-appearance' ),
+		'plans' => array( 'label' => 'Membership Plans', 'icon' => 'dashicons-tickets-alt' ),
+		'payments' => array( 'label' => 'Payment Gateway', 'icon' => 'dashicons-money-alt' ),
+		'setup' => array( 'label' => 'Setup & Health', 'icon' => 'dashicons-admin-tools' ),
+		'links' => array( 'label' => 'Quick Links', 'icon' => 'dashicons-admin-links' ),
+	);
+}
+
+function staffswap_theme_options_hub() {
+	if ( ! current_user_can( 'manage_options' ) ) { return; }
+	$tabs = staffswap_theme_options_hub_tabs();
+	$requested = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'brand';
+	$active = isset( $tabs[ $requested ] ) ? $requested : 'brand';
+	echo '<div class="wrap staffswap-hub"><header class="staffswap-hub__hero"><div><span>STAFFEXCHANGEHUB / CONTROL CENTRE</span><h1>Theme Options</h1><p>Every StaffSwap setting lives on this one page — switch tabs below, nothing here sends you to another screen.</p></div><a class="button" href="' . esc_url( home_url( '/' ) ) . '" target="_blank" rel="noopener">View site</a></header>';
+	echo '<nav class="staffswap-hub__tabs">';
+	foreach ( $tabs as $key => $tab ) { echo '<button type="button" class="staffswap-hub__tab' . ( $key === $active ? ' is-active' : '' ) . '" data-staffswap-tab="' . esc_attr( $key ) . '"><span class="dashicons ' . esc_attr( $tab['icon'] ) . '"></span>' . esc_html( $tab['label'] ) . '</button>'; }
+	echo '</nav><div class="staffswap-hub__panels">';
+	foreach ( $tabs as $key => $tab ) {
+		echo '<section class="staffswap-hub__panel' . ( $key === $active ? ' is-active' : '' ) . '" data-staffswap-panel="' . esc_attr( $key ) . '">';
+		if ( function_exists( 'staffswap_hub_tab_' . $key ) ) { call_user_func( 'staffswap_hub_tab_' . $key ); }
+		echo '</section>';
+	}
+	echo '</div></div>';
+}
+
+function staffswap_hub_tab_brand() {
+	$defaults = array( 'site_name' => 'StaffExchangeHub', 'hero_title' => 'Swap Your Workplace. Change Your Life.', 'hero_text' => 'Connect with verified professionals across Zambia who want to swap their workplace just like you. Secure, efficient, and professional workplace mobility.', 'primary_label' => 'Create Swap Post', 'secondary_label' => 'Browse Swaps', 'stats' => '12,000+|3,200+|150+|10|20+', 'primary_color' => '#00bb7f' );
+	$settings = wp_parse_args( get_option( 'staffswap_settings', array() ), $defaults );
+	if ( isset( $_POST['staffswap_save_theme_options'] ) && check_admin_referer( 'staffswap_save_theme_options', 'staffswap_theme_options_nonce' ) ) {
+		foreach ( $defaults as $key => $default ) { $settings[ $key ] = 'primary_color' === $key ? sanitize_hex_color( wp_unslash( $_POST[ $key ] ?? $default ) ) : sanitize_textarea_field( wp_unslash( $_POST[ $key ] ?? $default ) ); }
+		update_option( 'staffswap_settings', $settings );
+		echo '<div class="notice notice-success is-dismissible"><p>Brand settings saved.</p></div>';
+	}
+	?>
+	<form method="post">
+		<div class="staffswap-hub__grid">
+			<label>Site name<input name="site_name" value="<?php echo esc_attr( $settings['site_name'] ); ?>"></label>
+			<label>Primary action<input name="primary_label" value="<?php echo esc_attr( $settings['primary_label'] ); ?>"></label>
+			<label>Secondary action<input name="secondary_label" value="<?php echo esc_attr( $settings['secondary_label'] ); ?>"></label>
+			<label>Primary action color<input name="primary_color" type="color" value="<?php echo esc_attr( $settings['primary_color'] ); ?>"></label>
+			<label class="staffswap-hub__full">Homepage headline<input name="hero_title" value="<?php echo esc_attr( $settings['hero_title'] ); ?>"></label>
+			<label class="staffswap-hub__full">Homepage description<textarea name="hero_text" rows="4"><?php echo esc_textarea( $settings['hero_text'] ); ?></textarea></label>
+			<label class="staffswap-hub__full">Network statistics<input name="stats" value="<?php echo esc_attr( $settings['stats'] ); ?>"><small>Five values separated with the | character.</small></label>
+		</div>
+		<?php wp_nonce_field( 'staffswap_save_theme_options', 'staffswap_theme_options_nonce' ); ?>
+		<p><button type="submit" name="staffswap_save_theme_options" class="button button-primary">Save brand settings</button></p>
+	</form>
+	<?php
+}
+
+function staffswap_hub_tab_plans() {
+	$plan_defaults = function_exists( 'staffswap_wc_plans' ) ? staffswap_wc_plans() : array(
+		'month' => array( 'title' => 'StaffSwap VIP Gold - 1 Month', 'price' => '99', 'duration' => '1 month' ),
+		'quarter' => array( 'title' => 'StaffSwap VIP Gold - 3 Months', 'price' => '249', 'duration' => '3 months' ),
+		'lifetime' => array( 'title' => 'StaffSwap VIP Gold - Lifetime', 'price' => '799', 'duration' => 'lifetime' ),
+	);
+	if ( isset( $_POST['staffswap_save_plans'] ) && check_admin_referer( 'staffswap_save_plans', 'staffswap_plans_nonce' ) ) {
+		$overrides = array();
+		foreach ( array_keys( $plan_defaults ) as $plan ) { $overrides[ $plan ] = array( 'title' => sanitize_text_field( wp_unslash( $_POST[ 'plan_title_' . $plan ] ?? '' ) ), 'price' => sanitize_text_field( wp_unslash( $_POST[ 'plan_price_' . $plan ] ?? '' ) ) ); }
+		update_option( 'staffswap_plan_settings', $overrides );
+		if ( function_exists( 'staffswap_wc_sync_plan_products' ) ) { staffswap_wc_sync_plan_products(); }
+		echo '<div class="notice notice-success is-dismissible"><p>Membership plan pricing saved.</p></div>';
+		if ( function_exists( 'staffswap_wc_plans' ) ) { $plan_defaults = staffswap_wc_plans(); }
+	}
+	if ( ! class_exists( 'WooCommerce' ) ) { echo '<p>Install and activate WooCommerce to sell StaffSwap VIP Gold memberships.</p>'; }
+	?>
+	<form method="post">
+		<div class="staffswap-hub__plans">
+			<?php foreach ( $plan_defaults as $plan => $data ) : ?>
+				<div class="staffswap-hub__plan-card">
+					<h3><?php echo esc_html( ucfirst( $plan ) ); ?> <small>(<?php echo esc_html( $data['duration'] ?? '' ); ?>)</small></h3>
+					<label>Plan title<input name="plan_title_<?php echo esc_attr( $plan ); ?>" value="<?php echo esc_attr( $data['title'] ); ?>"></label>
+					<label>Price (ZMW)<input name="plan_price_<?php echo esc_attr( $plan ); ?>" value="<?php echo esc_attr( $data['price'] ); ?>"></label>
+				</div>
+			<?php endforeach; ?>
+		</div>
+		<?php wp_nonce_field( 'staffswap_save_plans', 'staffswap_plans_nonce' ); ?>
+		<p><button type="submit" name="staffswap_save_plans" class="button button-primary">Save plan pricing</button></p>
+	</form>
+	<?php
+}
+
+function staffswap_hub_tab_payments() {
+	if ( ! class_exists( 'WC_Payment_Gateway' ) ) { echo '<p>Install and activate WooCommerce to configure the Lipila Mobile Money gateway.</p>'; return; }
+	$settings = get_option( 'woocommerce_staffswap_lipila_settings', array() );
+	$settings = wp_parse_args( is_array( $settings ) ? $settings : array(), array( 'enabled' => 'no', 'title' => 'Mobile Money', 'description' => 'Pay securely using MTN Mobile Money, Airtel Money, or Zamtel Kwacha.', 'api_key' => '' ) );
+	if ( isset( $_POST['staffswap_save_payments'] ) && check_admin_referer( 'staffswap_save_payments', 'staffswap_payments_nonce' ) ) {
+		$settings['enabled'] = isset( $_POST['lipila_enabled'] ) ? 'yes' : 'no';
+		$settings['title'] = sanitize_text_field( wp_unslash( $_POST['lipila_title'] ?? $settings['title'] ) );
+		$settings['description'] = sanitize_textarea_field( wp_unslash( $_POST['lipila_description'] ?? $settings['description'] ) );
+		$submitted_key = wp_unslash( $_POST['lipila_api_key'] ?? '' );
+		if ( '' !== trim( (string) $submitted_key ) ) { $settings['api_key'] = sanitize_text_field( $submitted_key ); }
+		update_option( 'woocommerce_staffswap_lipila_settings', $settings );
+		echo '<div class="notice notice-success is-dismissible"><p>Payment gateway settings saved.</p></div>';
+	}
+	?>
+	<form method="post">
+		<div class="staffswap-hub__grid">
+			<label class="staffswap-hub__checkbox"><input type="checkbox" name="lipila_enabled" <?php checked( 'yes', $settings['enabled'] ); ?>> Enable Lipila Mobile Money</label>
+			<label>Gateway title<input name="lipila_title" value="<?php echo esc_attr( $settings['title'] ); ?>"></label>
+			<label class="staffswap-hub__full">Customer description<textarea name="lipila_description" rows="3"><?php echo esc_textarea( $settings['description'] ); ?></textarea></label>
+			<label class="staffswap-hub__full">Lipila secret key<input type="password" name="lipila_api_key" placeholder="<?php echo $settings['api_key'] ? 'Key saved — leave blank to keep it' : ''; ?>" autocomplete="off"><small>Stored securely; leave blank to keep the current key.</small></label>
+		</div>
+		<?php wp_nonce_field( 'staffswap_save_payments', 'staffswap_payments_nonce' ); ?>
+		<p><button type="submit" name="staffswap_save_payments" class="button button-primary">Save payment settings</button></p>
+	</form>
+	<?php
+}
+
+function staffswap_hub_tab_setup() {
+	if ( isset( $_GET['staffswap_setup'] ) ) {
+		$state = sanitize_key( wp_unslash( $_GET['staffswap_setup'] ) );
+		$messages = array(
+			'complete' => array( 'success', 'StaffSwap is ready. Your pages, homepage, and navigation were configured.' ),
+			'failed' => array( 'error', 'StaffSwap setup could not complete. Check your administrator permissions and try again.' ),
+			'repaired' => array( 'success', 'Setup repaired. Pages, navigation, and homepage settings were checked again.' ),
+		);
+		if ( isset( $messages[ $state ] ) ) { echo '<div class="notice notice-' . esc_attr( $messages[ $state ][0] ) . ' is-dismissible"><p>' . esc_html( $messages[ $state ][1] ) . '</p></div>'; }
+	}
+	$status = staffswap_setup_status();
+	?>
+	<div class="staffswap-hub__setup">
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"><?php wp_nonce_field( 'staffswap_run_setup', 'staffswap_setup_nonce' ); ?><input type="hidden" name="action" value="staffswap_run_setup"><button class="button button-primary" type="submit">Run setup</button></form>
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"><?php wp_nonce_field( 'staffswap_repair_setup', 'staffswap_repair_nonce' ); ?><input type="hidden" name="action" value="staffswap_repair_setup"><button class="button" type="submit">Repair pages and menu</button></form>
+		<ul class="staffswap-hub__checks">
+			<li class="<?php echo $status['menu_assigned'] ? 'is-ready' : ''; ?>">Primary menu assigned</li>
+			<li class="<?php echo $status['front_page'] ? 'is-ready' : ''; ?>">Homepage configured</li>
+			<li class="<?php echo $status['menu'] ? 'is-ready' : ''; ?>">StaffSwap Main Menu exists</li>
+			<li class="<?php echo $status['elementor'] ? 'is-ready' : ''; ?>">Elementor active</li>
+			<?php foreach ( $status['pages'] as $slug => $exists ) : ?>
+				<li class="<?php echo $exists ? 'is-ready' : ''; ?>">Page /<?php echo esc_html( $slug ); ?>/</li>
+			<?php endforeach; ?>
+		</ul>
+	</div>
+	<?php
+}
+
+function staffswap_hub_tab_links() {
+	$links = array(
+		'Moderation Queue' => admin_url( 'edit.php?post_type=swap_listing&page=staffswap-listing-moderation' ),
+		'Analytics' => admin_url( 'edit.php?post_type=swap_listing&page=staffswap-analytics' ),
+		'Verification Queue' => admin_url( 'users.php?page=staffswap-verification-queue' ),
+		'Listings' => admin_url( 'edit.php?post_type=swap_listing' ),
+		'Messages' => admin_url( 'edit.php?post_type=staff_message' ),
+		'Offers' => admin_url( 'edit.php?post_type=staffswap_offer' ),
+		'Menus' => admin_url( 'nav-menus.php' ),
+		'Plugins & Payments' => admin_url( 'plugins.php' ),
+	);
+	echo '<ul class="staffswap-hub__links">';
+	foreach ( $links as $label => $url ) { echo '<li><a href="' . esc_url( $url ) . '">' . esc_html( $label ) . '<span class="dashicons dashicons-arrow-right-alt2"></span></a></li>'; }
+	echo '</ul>';
+}
+
+function staffswap_theme_options_hub_assets( $hook ) {
+	if ( 'appearance_page_staffswap-theme-options' !== $hook ) { return; }
+	wp_enqueue_style( 'dashicons' );
+	wp_enqueue_script( 'jquery' );
+	wp_add_inline_style( 'dashicons', '.staffswap-hub{max-width:1180px;margin-top:24px}.staffswap-hub__hero{align-items:center;background:#0d2240;color:#fff;display:flex;justify-content:space-between;padding:34px 40px;border-radius:8px}.staffswap-hub__hero span{color:#a4f4cf;font-size:11px;font-weight:700;letter-spacing:.1em}.staffswap-hub__hero h1{color:#fff;font:700 32px/1.2 "Space Grotesk",sans-serif;margin:8px 0}.staffswap-hub__hero p{color:#bedbff;margin:0}.staffswap-hub__hero .button{background:#00bb7f;border-color:#00bb7f;color:#06251d;font-weight:700}.staffswap-hub__tabs{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}.staffswap-hub__tab{align-items:center;background:#fff;border:1px solid #d9e1ec;border-radius:6px;color:#334155;cursor:pointer;display:flex;font-weight:600;gap:6px;padding:10px 16px}.staffswap-hub__tab.is-active{background:#0d2240;border-color:#0d2240;color:#fff}.staffswap-hub__tab .dashicons{font-size:16px;height:16px;width:16px}.staffswap-hub__panel{background:#fff;border:1px solid #d9e1ec;border-radius:8px;display:none;padding:26px}.staffswap-hub__panel.is-active{display:block}.staffswap-hub__grid{display:grid;gap:18px;grid-template-columns:1fr 1fr}.staffswap-hub__grid label{color:#0f172a;display:grid;font-weight:700;gap:7px}.staffswap-hub__grid input,.staffswap-hub__grid textarea{border:1px solid #cbd5e1;border-radius:4px;font:14px "DM Sans",sans-serif;padding:9px 10px;width:100%}.staffswap-hub__grid input[type=color]{height:40px;padding:3px}.staffswap-hub__full{grid-column:1/-1}.staffswap-hub__checkbox{align-items:center;display:flex!important;flex-direction:row!important;font-weight:600!important;gap:8px}.staffswap-hub__plans{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}.staffswap-hub__plan-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:18px;display:grid;gap:12px}.staffswap-hub__plan-card h3{margin:0}.staffswap-hub__plan-card label{display:grid;font-weight:600;gap:6px}.staffswap-hub__setup form{display:inline-block;margin-right:10px}.staffswap-hub__checks{border-top:1px solid #e2e8f0;display:grid;gap:0;margin-top:20px}.staffswap-hub__checks li{border-bottom:1px solid #eef2f0;color:#8a9690;padding:10px 0}.staffswap-hub__checks li.is-ready{color:#0d2240;font-weight:600}.staffswap-hub__checks li.is-ready::before{content:"\\2713";color:#00a875;margin-right:8px}.staffswap-hub__checks li:not(.is-ready)::before{content:"\\25CB";margin-right:8px}.staffswap-hub__links{display:grid;gap:0;list-style:none;margin:0;padding:0}.staffswap-hub__links a{align-items:center;border-bottom:1px solid #e2e8f0;color:#155dfc;display:flex;font-weight:700;justify-content:space-between;padding:14px 4px;text-decoration:none}.staffswap-hub__links a:hover{color:#0f766e}' );
+	wp_add_inline_script( 'jquery', '(function(){document.addEventListener("DOMContentLoaded",function(){var tabs=document.querySelectorAll(".staffswap-hub__tab");var panels=document.querySelectorAll(".staffswap-hub__panel");tabs.forEach(function(tab){tab.addEventListener("click",function(){var target=tab.getAttribute("data-staffswap-tab");tabs.forEach(function(t){t.classList.toggle("is-active",t===tab);});panels.forEach(function(p){p.classList.toggle("is-active",p.getAttribute("data-staffswap-panel")===target);});if(window.history&&window.history.replaceState){var url=new URL(window.location.href);url.searchParams.set("tab",target);window.history.replaceState({},"",url);}});});});})();' );
+}
+add_action( 'admin_enqueue_scripts', 'staffswap_theme_options_hub_assets' );
