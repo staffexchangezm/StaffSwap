@@ -214,6 +214,7 @@ function staffswap_theme_options_hub_tabs() {
 		'brand' => array( 'label' => 'Brand & Homepage', 'icon' => 'dashicons-admin-appearance' ),
 		'plans' => array( 'label' => 'Membership Plans', 'icon' => 'dashicons-tickets-alt' ),
 		'payments' => array( 'label' => 'Payment Gateway', 'icon' => 'dashicons-money-alt' ),
+		'sms' => array( 'label' => 'SMS Notifications', 'icon' => 'dashicons-smartphone' ),
 		'setup' => array( 'label' => 'Setup & Health', 'icon' => 'dashicons-admin-tools' ),
 		'links' => array( 'label' => 'Quick Links', 'icon' => 'dashicons-admin-links' ),
 	);
@@ -316,6 +317,31 @@ function staffswap_hub_tab_payments() {
 		</div>
 		<?php wp_nonce_field( 'staffswap_save_payments', 'staffswap_payments_nonce' ); ?>
 		<p><button type="submit" name="staffswap_save_payments" class="button button-primary">Save payment settings</button></p>
+	</form>
+	<?php
+}
+
+function staffswap_hub_tab_sms() {
+	$settings = get_option( 'staffswap_sms_settings', array() );
+	$settings = wp_parse_args( is_array( $settings ) ? $settings : array(), array( 'enabled' => 'no', 'api_token' => '', 'sender_id' => '' ) );
+	if ( isset( $_POST['staffswap_save_sms'] ) && check_admin_referer( 'staffswap_save_sms', 'staffswap_sms_nonce' ) ) {
+		$settings['enabled'] = isset( $_POST['sms_enabled'] ) ? 'yes' : 'no';
+		$settings['sender_id'] = sanitize_text_field( wp_unslash( $_POST['sms_sender_id'] ?? $settings['sender_id'] ) );
+		$submitted_token = wp_unslash( $_POST['sms_api_token'] ?? '' );
+		if ( '' !== trim( (string) $submitted_token ) ) { $settings['api_token'] = sanitize_text_field( $submitted_token ); }
+		update_option( 'staffswap_sms_settings', $settings );
+		echo '<div class="notice notice-success is-dismissible"><p>SMS gateway settings saved.</p></div>';
+	}
+	?>
+	<p>Members can opt in to SMS updates for new messages, offers, and matches from their Profile Settings once they add a mobile number.</p>
+	<form method="post">
+		<div class="staffswap-hub__grid">
+			<label class="staffswap-hub__checkbox"><input type="checkbox" name="sms_enabled" <?php checked( 'yes', $settings['enabled'] ); ?>> Enable ExciteSMS notifications</label>
+			<label>Sender ID<input name="sms_sender_id" value="<?php echo esc_attr( $settings['sender_id'] ); ?>" placeholder="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>"></label>
+			<label class="staffswap-hub__full">ExciteSMS API token<input type="password" name="sms_api_token" placeholder="<?php echo $settings['api_token'] ? 'Token saved — leave blank to keep it' : ''; ?>" autocomplete="off"><small>Stored securely; leave blank to keep the current token.</small></label>
+		</div>
+		<?php wp_nonce_field( 'staffswap_save_sms', 'staffswap_sms_nonce' ); ?>
+		<p><button type="submit" name="staffswap_save_sms" class="button button-primary">Save SMS settings</button></p>
 	</form>
 	<?php
 }

@@ -148,6 +148,12 @@ function staffswap_verification_queue_action() {
 		return;
 	}
 	update_user_meta( $user_id, 'staffswap_verified_status', $action );
+	if ( function_exists( 'staffswap_notify_user' ) ) {
+		$message = 'verified' === $action
+			? 'You are now a verified member. Your swap listings can publish immediately and display a verified badge.'
+			: 'Your verification request was not approved. Please review your submitted documents and try again.';
+		staffswap_notify_user( $user_id, 'Verification update', $message . "\n\n" . 'Manage your verification here: ' . home_url( '/verification/' ) );
+	}
 	wp_safe_redirect( add_query_arg( array( 'page' => 'staffswap-verification-queue', 'updated' => '1' ), admin_url( 'users.php' ) ) );
 	exit;
 }
@@ -173,7 +179,7 @@ function staffswap_profile_settings_shortcode() {
 	if ( ! is_user_logged_in() ) { return '<div class="panel"><p>Please sign in to update your profile.</p></div>'; }
 	$user_id = get_current_user_id();
 	$user = wp_get_current_user();
-	$fields = array( 'man_number' => 'Employee Man-Number', 'profession' => 'Profession / Cadre', 'employer' => 'Employer / Institution', 'years_service' => 'Years of Service', 'location' => 'Current Province & Town', 'desired_location' => 'Desired Province & Town', 'professional_license' => 'Professional License Number' );
+	$fields = array( 'man_number' => 'Employee Man-Number', 'profession' => 'Profession / Cadre', 'employer' => 'Employer / Institution', 'years_service' => 'Years of Service', 'location' => 'Current Province & Town', 'desired_location' => 'Desired Province & Town', 'professional_license' => 'Professional License Number', 'phone' => 'Mobile Number' );
 	$notice = '';
 	if ( isset( $_POST['staffswap_save_frontend_profile'] ) && check_admin_referer( 'staffswap_save_frontend_profile', 'staffswap_profile_settings_nonce' ) ) {
 		$display_name = sanitize_text_field( wp_unslash( $_POST['display_name'] ?? '' ) );
@@ -181,10 +187,11 @@ function staffswap_profile_settings_shortcode() {
 		foreach ( $fields as $key => $label ) { update_user_meta( $user_id, 'staffswap_' . $key, sanitize_text_field( wp_unslash( $_POST[ $key ] ?? '' ) ) ); }
 		update_user_meta( $user_id, 'staffswap_staff_housing', isset( $_POST['staff_housing'] ) ? '1' : '' );
 		update_user_meta( $user_id, 'staffswap_notifications_disabled', isset( $_POST['disable_notifications'] ) ? '1' : '' );
+		update_user_meta( $user_id, 'staffswap_sms_notifications_enabled', isset( $_POST['enable_sms_notifications'] ) ? '1' : '' );
 		$notice = '<div class="notice"><p>Profile settings saved. Your future listings and matches will use these details.</p></div>';
 		$user = wp_get_current_user();
 	}
-	ob_start(); echo $notice; ?><section class="content-form"><div class="page-heading"><div><p class="eyebrow">MEMBER PROFILE</p><h1>Profile settings</h1><p class="muted">Keep your professional and relocation details current.</p></div></div><form method="post" class="panel"><div class="form-grid"><div class="field"><label for="display_name">Official full name</label><input id="display_name" name="display_name" value="<?php echo esc_attr( $user->display_name ); ?>" required></div><?php foreach ( $fields as $key => $label ) : ?><div class="field"><label for="<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $label ); ?></label><?php if ( in_array( $key, array( 'location', 'desired_location' ), true ) ) : ?><?php echo staffswap_profile_location_select( $key, $key, get_user_meta( $user_id, 'staffswap_' . $key, true ) ); ?><?php else : ?><input id="<?php echo esc_attr( $key ); ?>" name="<?php echo esc_attr( $key ); ?>" value="<?php echo esc_attr( get_user_meta( $user_id, 'staffswap_' . $key, true ) ); ?>" <?php echo 'years_service' === $key ? 'type="number" min="0"' : ''; ?>><?php endif; ?></div><?php endforeach; ?><label class="check full"><input type="checkbox" name="staff_housing" value="1" <?php checked( get_user_meta( $user_id, 'staffswap_staff_housing', true ), '1' ); ?>> Staff accommodation is available for handover</label><label class="check full"><input type="checkbox" name="disable_notifications" value="1" <?php checked( get_user_meta( $user_id, 'staffswap_notifications_disabled', true ), '1' ); ?>> Do not email me about new messages and offers</label></div><?php wp_nonce_field( 'staffswap_save_frontend_profile', 'staffswap_profile_settings_nonce' ); ?><input type="submit" name="staffswap_save_frontend_profile" value="Save profile settings"></form></section><?php return ob_get_clean();
+	ob_start(); echo $notice; ?><section class="content-form"><div class="page-heading"><div><p class="eyebrow">MEMBER PROFILE</p><h1>Profile settings</h1><p class="muted">Keep your professional and relocation details current.</p></div></div><form method="post" class="panel"><div class="form-grid"><div class="field"><label for="display_name">Official full name</label><input id="display_name" name="display_name" value="<?php echo esc_attr( $user->display_name ); ?>" required></div><?php foreach ( $fields as $key => $label ) : ?><div class="field"><label for="<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $label ); ?></label><?php if ( in_array( $key, array( 'location', 'desired_location' ), true ) ) : ?><?php echo staffswap_profile_location_select( $key, $key, get_user_meta( $user_id, 'staffswap_' . $key, true ) ); ?><?php else : ?><input id="<?php echo esc_attr( $key ); ?>" name="<?php echo esc_attr( $key ); ?>" value="<?php echo esc_attr( get_user_meta( $user_id, 'staffswap_' . $key, true ) ); ?>" <?php echo 'years_service' === $key ? 'type="number" min="0"' : ( 'phone' === $key ? 'type="tel" placeholder="26097XXXXXXX"' : '' ); ?>><?php endif; ?></div><?php endforeach; ?><label class="check full"><input type="checkbox" name="staff_housing" value="1" <?php checked( get_user_meta( $user_id, 'staffswap_staff_housing', true ), '1' ); ?>> Staff accommodation is available for handover</label><label class="check full"><input type="checkbox" name="disable_notifications" value="1" <?php checked( get_user_meta( $user_id, 'staffswap_notifications_disabled', true ), '1' ); ?>> Do not email me about new messages and offers</label><label class="check full"><input type="checkbox" name="enable_sms_notifications" value="1" <?php checked( get_user_meta( $user_id, 'staffswap_sms_notifications_enabled', true ), '1' ); ?>> Also text me updates via SMS</label></div><?php wp_nonce_field( 'staffswap_save_frontend_profile', 'staffswap_profile_settings_nonce' ); ?><input type="submit" name="staffswap_save_frontend_profile" value="Save profile settings"></form></section><?php return ob_get_clean();
 }
 add_shortcode( 'staffswap_profile_settings', 'staffswap_profile_settings_shortcode' );
 

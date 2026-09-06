@@ -23,17 +23,23 @@ function staffswap_email_html_template( $subject, $message ) {
 		. '<p style="color:#94a3b8;font-size:12px;text-align:center;margin-top:16px;">' . esc_html( $site_name ) . ' &middot; <a style="color:#94a3b8;" href="' . esc_url( home_url( '/' ) ) . '">' . esc_html( home_url( '/' ) ) . '</a></p>'
 		. '</div></body></html>';
 }
-// Central email helper so members can be notified without leaving the site to check for updates.
+// Central email/SMS helper so members can be notified without leaving the site to check for updates.
 function staffswap_notify_user( $user_id, $subject, $message ) {
 	$user_id = absint( $user_id );
-	if ( ! $user_id || '1' === get_user_meta( $user_id, 'staffswap_notifications_disabled', true ) ) { return; }
+	if ( ! $user_id ) { return; }
 	$user = get_userdata( $user_id );
-	if ( ! $user || ! is_email( $user->user_email ) ) { return; }
-	$site_name = get_bloginfo( 'name' );
-	$set_html_type = function () { return 'text/html'; };
-	add_filter( 'wp_mail_content_type', $set_html_type );
-	wp_mail( $user->user_email, '[' . $site_name . '] ' . $subject, staffswap_email_html_template( $subject, $message ) );
-	remove_filter( 'wp_mail_content_type', $set_html_type );
+	if ( ! $user ) { return; }
+	if ( is_email( $user->user_email ) && '1' !== get_user_meta( $user_id, 'staffswap_notifications_disabled', true ) ) {
+		$site_name = get_bloginfo( 'name' );
+		$set_html_type = function () { return 'text/html'; };
+		add_filter( 'wp_mail_content_type', $set_html_type );
+		wp_mail( $user->user_email, '[' . $site_name . '] ' . $subject, staffswap_email_html_template( $subject, $message ) );
+		remove_filter( 'wp_mail_content_type', $set_html_type );
+	}
+	if ( function_exists( 'staffswap_send_sms' ) && '1' === get_user_meta( $user_id, 'staffswap_sms_notifications_enabled', true ) ) {
+		$phone = get_user_meta( $user_id, 'staffswap_phone', true );
+		if ( $phone ) { staffswap_send_sms( $phone, mb_substr( wp_strip_all_tags( $subject . ': ' . $message ), 0, 300 ) ); }
+	}
 }
 function staffswap_message_post_type() { register_post_type( 'staff_message', array( 'labels' => array( 'name' => 'Messages', 'singular_name' => 'Message' ), 'public' => false, 'show_ui' => true, 'show_in_menu' => 'edit.php?post_type=swap_listing', 'supports' => array( 'title', 'editor', 'author' ), 'capability_type' => 'post' ) ); }
 add_action( 'init', 'staffswap_message_post_type' );

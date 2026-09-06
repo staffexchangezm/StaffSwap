@@ -8,6 +8,20 @@
  * Text Domain: staffswap-core
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
+// Sends a member notification SMS through ExciteSMS, if the gateway is configured and enabled.
+function staffswap_send_sms( $phone, $message ) {
+    $settings = get_option( 'staffswap_sms_settings', array() );
+    if ( empty( $settings['enabled'] ) || empty( $settings['api_token'] ) || ! $phone ) { return false; }
+    $recipient = preg_replace( '/\D+/', '', (string) $phone );
+    if ( ! $recipient ) { return false; }
+    $response = wp_remote_post( 'https://gateway.excitesms.com/api/v3/sms/send', array(
+        'timeout' => 20,
+        'headers' => array( 'Authorization' => 'Bearer ' . $settings['api_token'], 'Content-Type' => 'application/json', 'Accept' => 'application/json' ),
+        'body' => wp_json_encode( array( 'recipient' => $recipient, 'sender_id' => ! empty( $settings['sender_id'] ) ? $settings['sender_id'] : get_bloginfo( 'name' ), 'type' => 'plain', 'message' => $message ) ),
+    ) );
+    if ( is_wp_error( $response ) ) { return false; }
+    return 200 === (int) wp_remote_retrieve_response_code( $response );
+}
 
 define( 'STAFFSWAP_DB_VERSION', '1.0.0' );
 function staffswap_zambia_locations() {
@@ -235,6 +249,14 @@ function staffswap_listing_moderation_action() {
     update_post_meta( $listing_id, '_staffswap_reviewed_by', get_current_user_id() );
     if ( 'approved' === $action ) { wp_update_post( array( 'ID' => $listing_id, 'post_status' => 'publish' ) ); }
     staffswap_record_event( 'listing_' . $action, $listing_id, array( 'reason' => $reason, 'reviewer_id' => get_current_user_id() ), get_current_user_id() );
+    if ( function_exists( 'staffswap_notify_user' ) ) {
+        $decision_messages = array(
+            'approved' => 'Your listing "' . get_the_title( $listing_id ) . '" was approved and is now live on the marketplace.',
+            'rejected' => 'Your listing "' . get_the_title( $listing_id ) . '" was not approved.' . ( $reason ? ' Reason: ' . $reason : '' ),
+            'changes_requested' => 'An administrator requested changes to your listing "' . get_the_title( $listing_id ) . '" before it can be published.' . ( $reason ? ' Details: ' . $reason : '' ),
+        );
+        staffswap_notify_user( (int) get_post_field( 'post_author', $listing_id ), 'Listing review update', $decision_messages[ $action ] . "\n\n" . 'View your listing here: ' . get_permalink( $listing_id ) );
+    }
     wp_safe_redirect( add_query_arg( array( 'post_type' => 'swap_listing', 'page' => 'staffswap-listing-moderation', 'updated' => '1' ), admin_url( 'edit.php' ) ) );
     exit;
 }
@@ -243,7 +265,10 @@ add_action( 'admin_init', 'staffswap_listing_moderation_action' );
 function staffswap_listing_moderation_screen() {
     if ( ! current_user_can( 'manage_options' ) ) { return; }
     $listings = get_posts( array( 'post_type' => 'swap_listing', 'post_status' => 'pending', 'posts_per_page' => 50, 'orderby' => 'date', 'order' => 'ASC' ) );
-    ?><div class="wrap"><h1>StaffSwap Listing Moderation</h1><?php if ( isset( $_GET['updated'] ) ) : ?><div class="notice notice-success is-dismissible"><p>Listing review recorded.</p></div><?php endif; ?><p>Approve verified, complete listings. Rejections and requested changes remain private to the author until corrected.</p><table class="widefat striped"><thead><tr><th>Listing</th><th>Author</th><th>Route</th><th>Review decision</th></tr></thead><tbody><?php if ( $listings ) : foreach ( $listings as $listing ) : ?><tr><td><strong><a href="<?php echo esc_url( get_edit_post_link( $listing->ID ) ); ?>"><?php echo esc_html( $listing->post_title ); ?></a></strong><br><?php echo esc_html( get_the_date( '', $listing ) ); ?></td><td><?php echo esc_html( get_the_author_meta( 'display_name', $listing->post_author ) ); ?></td><td><?php echo esc_html( get_post_meta( $listing->ID, '_staffswap_current_location', true ) ); ?> to <?php echo esc_html( get_post_meta( $listing->ID, '_staffswap_desired_location', true ) ); ?></td><td><form method="post"><textarea name="review_reason" rows="2" placeholder="Reason for this decision"></textarea><input type="hidden" name="listing_id" value="<?php echo esc_attr( $listing->ID ); ?>"><?php wp_nonce_field( 'staffswap_listing_moderation_' . $listing->ID, 'staffswap_listing_moderation_nonce' ); ?><p><button type="submit" class="button button-primary" name="staffswap_listing_moderation_action" value="approved">Approve</button> <button type="submit" class="button" name="staffswap_listing_moderation_action" value="changes_requested">Request changes</button> <button type="submit" class="button" name="staffswap_listing_moderation_action" value="rejected">Reject</button></p></form></td></tr><?php endforeach; else : ?><tr><td colspan="4">No pending listings are waiting for review.</td></tr><?php endif; ?></tbody></table></div><?php
+    ?><div class="wrap"><h1>StaffSwap Listing Moderation</h1><?php if ( isset( $_GET['updated'] ) ) : ?><div class="notice notice-success is-dismissible"><p>Listing review recorded.</p></div><?php endif; ?><p><?php echo esc_html( count( $listings ) ); ?> listing(s) awaiting review. Approve verified, complete listings. Rejections and requested changes remain private to the author until corrected.</p><table class="widefat striped"><thead><tr><th>Listing</th><th>Author</th><th>Profession</th><th>Route</th><th>Waiting</th><th>Review decision</th></tr></thead><tbody><?php if ( $listings ) : foreach ( $listings as $listing ) :
+        $waiting_days = (int) floor( ( time() - get_post_time( 'U', true, $listing ) ) / DAY_IN_SECONDS );
+        $is_verified = 'verified' === get_user_meta( $listing->post_author, 'staffswap_verified_status', true );
+    ?><tr><td><strong><a href="<?php echo esc_url( get_edit_post_link( $listing->ID ) ); ?>"><?php echo esc_html( $listing->post_title ); ?></a></strong><br><a href="<?php echo esc_url( get_preview_post_link( $listing ) ); ?>" target="_blank" rel="noopener">Preview listing</a><br><?php echo esc_html( get_the_date( '', $listing ) ); ?></td><td><?php echo esc_html( get_the_author_meta( 'display_name', $listing->post_author ) ); ?><br><span style="color:<?php echo $is_verified ? '#00a875' : '#b45309'; ?>;font-weight:600;"><?php echo $is_verified ? 'Verified member' : 'Not yet verified'; ?></span></td><td><?php echo esc_html( get_post_meta( $listing->ID, '_staffswap_profession', true ) ); ?><br><span class="description"><?php echo esc_html( get_post_meta( $listing->ID, '_staffswap_experience', true ) ); ?> yrs experience</span></td><td><?php echo esc_html( get_post_meta( $listing->ID, '_staffswap_current_location', true ) ); ?> to <?php echo esc_html( get_post_meta( $listing->ID, '_staffswap_desired_location', true ) ); ?></td><td><span style="<?php echo $waiting_days >= 3 ? 'color:#b32d2e;font-weight:700;' : ''; ?>"><?php echo esc_html( $waiting_days ); ?> day(s)</span></td><td><form method="post"><textarea name="review_reason" rows="2" placeholder="Reason for this decision"></textarea><input type="hidden" name="listing_id" value="<?php echo esc_attr( $listing->ID ); ?>"><?php wp_nonce_field( 'staffswap_listing_moderation_' . $listing->ID, 'staffswap_listing_moderation_nonce' ); ?><p><button type="submit" class="button button-primary" name="staffswap_listing_moderation_action" value="approved">Approve</button> <button type="submit" class="button" name="staffswap_listing_moderation_action" value="changes_requested">Request changes</button> <button type="submit" class="button" name="staffswap_listing_moderation_action" value="rejected">Reject</button></p></form></td></tr><?php endforeach; else : ?><tr><td colspan="6">No pending listings are waiting for review.</td></tr><?php endif; ?></tbody></table></div><?php
 }
 function staffswap_listing_review_status_shortcode( $atts ) {
     $atts = shortcode_atts( array( 'listing' => get_the_ID() ), $atts, 'staffswap_listing_review_status' );
