@@ -34,6 +34,8 @@ function staffswap_user_has_paid_vip_order( $user_id, &$active_until_ts = 0 ) {
 	$user = get_userdata( $user_id );
 	if ( $user && ! empty( $user->user_email ) ) { $order_filters[] = array( 'billing_email' => sanitize_email( $user->user_email ) ); }
 	$seen_order_ids = array();
+	$has_active_membership = false;
+	$active_until_ts = 0;
 	foreach ( $order_filters as $filter ) {
 		$page = 1;
 		do {
@@ -50,13 +52,16 @@ function staffswap_user_has_paid_vip_order( $user_id, &$active_until_ts = 0 ) {
 					$plan = $vip_products[ $product_id ];
 					$duration = $plans[ $plan ]['duration'] ?? '';
 					$membership_expiry = staffswap_wc_membership_expiry_for_order( $order, $duration );
-					if ( false !== $membership_expiry ) { $active_until_ts = (int) $membership_expiry; return true; }
+					if ( false === $membership_expiry ) { continue; }
+					if ( 0 === (int) $membership_expiry ) { $active_until_ts = 0; return true; }
+					if ( (int) $membership_expiry > (int) $active_until_ts ) { $active_until_ts = (int) $membership_expiry; }
+					$has_active_membership = true;
 				}
 			}
 			$page++;
 		} while ( count( $order_ids ) === 50 );
 	}
-	return false;
+	return $has_active_membership;
 }
 function staffswap_has_active_membership( $user_id = 0 ) {
 	$user_id = $user_id ? absint( $user_id ) : get_current_user_id();
