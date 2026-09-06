@@ -9,6 +9,32 @@ function staffswap_resources_post_type() { register_post_type( 'staff_resource',
 add_action( 'init', 'staffswap_resources_post_type' );
 register_activation_hook( __FILE__, function() { staffswap_resources_post_type(); flush_rewrite_rules(); } );
 register_deactivation_hook( __FILE__, 'flush_rewrite_rules' );
+
+// Admin UI to attach the downloadable file, since it previously had no editor field at all.
+function staffswap_resource_file_meta_box() {
+	add_meta_box( 'staffswap_resource_file', 'Downloadable File', 'staffswap_resource_file_meta_box_render', 'staff_resource', 'side', 'default' );
+}
+add_action( 'add_meta_boxes', 'staffswap_resource_file_meta_box' );
+
+function staffswap_resource_file_meta_box_render( $post ) {
+	wp_nonce_field( 'staffswap_save_resource_file', 'staffswap_resource_file_nonce' );
+	$file_url = get_post_meta( $post->ID, '_staffswap_resource_file', true );
+	echo '<p><input type="url" id="staffswap_resource_file" name="staffswap_resource_file" class="widefat" value="' . esc_attr( $file_url ) . '" placeholder="https://..."></p>';
+	echo '<p><button type="button" class="button" id="staffswap_resource_file_pick">Choose from Media Library</button></p>';
+	echo '<p class="description">Members are redirected here when they click Download. Leave blank to link to the resource page instead.</p>';
+	wp_enqueue_media();
+	echo '<script>(function(){var btn=document.getElementById("staffswap_resource_file_pick"),input=document.getElementById("staffswap_resource_file"),frame;if(!btn)return;btn.addEventListener("click",function(e){e.preventDefault();if(frame){frame.open();return;}frame=wp.media({title:"Select a resource file",button:{text:"Use this file"},multiple:false});frame.on("select",function(){var attachment=frame.state().get("selection").first().toJSON();input.value=attachment.url;});frame.open();});})();</script>';
+}
+
+function staffswap_resource_file_meta_box_save( $post_id ) {
+	if ( ! isset( $_POST['staffswap_resource_file_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['staffswap_resource_file_nonce'] ) ), 'staffswap_save_resource_file' ) ) { return; }
+	if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) { return; }
+	if ( ! current_user_can( 'edit_post', $post_id ) ) { return; }
+	$file_url = sanitize_text_field( wp_unslash( $_POST['staffswap_resource_file'] ?? '' ) );
+	if ( $file_url ) { update_post_meta( $post_id, '_staffswap_resource_file', esc_url_raw( $file_url ) ); } else { delete_post_meta( $post_id, '_staffswap_resource_file' ); }
+}
+add_action( 'save_post_staff_resource', 'staffswap_resource_file_meta_box_save' );
+
 function staffswap_resources_shortcode() {
 	$search = isset( $_GET['resource_search'] ) ? sanitize_text_field( wp_unslash( $_GET['resource_search'] ) ) : '';
 	$category_slug = isset( $_GET['resource_category'] ) ? sanitize_title( wp_unslash( $_GET['resource_category'] ) ) : '';

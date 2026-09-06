@@ -23,7 +23,7 @@ function staffswap_send_sms( $phone, $message ) {
     return 200 === (int) wp_remote_retrieve_response_code( $response );
 }
 
-define( 'STAFFSWAP_DB_VERSION', '1.0.0' );
+define( 'STAFFSWAP_DB_VERSION', '1.1.0' );
 function staffswap_zambia_locations() {
     return array(
         'Central Province' => array( 'Kabwe', 'Kapiri Mposhi', 'Mkushi', 'Serenje', 'Chibombo', 'Mumbwa' ),
@@ -59,7 +59,8 @@ function staffswap_db_install() {
     $charset = $wpdb->get_charset_collate();
     $sql = "CREATE TABLE " . staffswap_db_table( 'matches' ) . " ( id bigint(20) unsigned NOT NULL AUTO_INCREMENT, listing_id bigint(20) unsigned NOT NULL, candidate_listing_id bigint(20) unsigned NOT NULL, score decimal(5,2) NOT NULL DEFAULT 0, status varchar(20) NOT NULL DEFAULT 'suggested', created_at datetime NOT NULL, updated_at datetime NOT NULL, PRIMARY KEY (id), UNIQUE KEY listing_pair (listing_id,candidate_listing_id), KEY listing_id (listing_id), KEY candidate_listing_id (candidate_listing_id), KEY status (status) ) $charset;
     CREATE TABLE " . staffswap_db_table( 'saved_searches' ) . " ( id bigint(20) unsigned NOT NULL AUTO_INCREMENT, user_id bigint(20) unsigned NOT NULL, name varchar(190) NOT NULL, filters longtext NOT NULL, alert_frequency varchar(20) NOT NULL DEFAULT 'weekly', last_notified_at datetime NULL, created_at datetime NOT NULL, PRIMARY KEY (id), KEY user_id (user_id), KEY alert_frequency (alert_frequency) ) $charset;
-    CREATE TABLE " . staffswap_db_table( 'events' ) . " ( id bigint(20) unsigned NOT NULL AUTO_INCREMENT, user_id bigint(20) unsigned NULL, event_type varchar(50) NOT NULL, object_id bigint(20) unsigned NULL, payload longtext NULL, created_at datetime NOT NULL, PRIMARY KEY (id), KEY user_id (user_id), KEY event_type (event_type), KEY object_id (object_id), KEY created_at (created_at) ) $charset;";
+    CREATE TABLE " . staffswap_db_table( 'events' ) . " ( id bigint(20) unsigned NOT NULL AUTO_INCREMENT, user_id bigint(20) unsigned NULL, event_type varchar(50) NOT NULL, object_id bigint(20) unsigned NULL, payload longtext NULL, created_at datetime NOT NULL, PRIMARY KEY (id), KEY user_id (user_id), KEY event_type (event_type), KEY object_id (object_id), KEY created_at (created_at) ) $charset;
+    CREATE TABLE " . staffswap_db_table( 'subscribers' ) . " ( id bigint(20) unsigned NOT NULL AUTO_INCREMENT, email varchar(190) NOT NULL, status varchar(20) NOT NULL DEFAULT 'active', created_at datetime NOT NULL, PRIMARY KEY (id), UNIQUE KEY email (email), KEY status (status) ) $charset;";
     dbDelta( $sql ); update_option( 'staffswap_db_version', STAFFSWAP_DB_VERSION );
 }
 function staffswap_db_maybe_upgrade() { if ( get_option( 'staffswap_db_version' ) !== STAFFSWAP_DB_VERSION ) { staffswap_db_install(); } }
@@ -553,6 +554,60 @@ function staffswap_send_saved_search_alerts() {
 add_action( 'staffswap_saved_search_alerts', 'staffswap_send_saved_search_alerts' );
 add_action( 'init', function() { if ( ! wp_next_scheduled( 'staffswap_saved_search_alerts' ) ) { wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', 'staffswap_saved_search_alerts' ); } } );
 
+// The homepage "Get Swap Alerts" form previously submitted nowhere; it now stores subscribers and emails a weekly digest.
+function staffswap_alert_signup_shortcode() {
+    $notice = '';
+    if ( isset( $_GET['staffswap_subscribed'] ) ) {
+        $notice = 'success' === $_GET['staffswap_subscribed'] ? '<small class="staffswap-subscribe-success">You\'re subscribed to swap alerts.</small>' : '<small class="staffswap-subscribe-error">Please enter a valid email address.</small>';
+    }
+    ob_start(); ?><form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"><input type="hidden" name="action" value="staffswap_subscribe_alerts"><?php wp_nonce_field( 'staffswap_subscribe_alerts', 'staffswap_subscribe_nonce' ); ?><input type="email" name="staffswap_subscribe_email" placeholder="Enter your email" aria-label="Email address" required><input type="submit" value="Subscribe"></form><?php echo $notice; ?><?php return ob_get_clean();
+}
+add_shortcode( 'staffswap_alert_signup', 'staffswap_alert_signup_shortcode' );
+
+function staffswap_handle_alert_signup() {
+    if ( ! isset( $_POST['staffswap_subscribe_email'] ) ) { return; }
+    check_admin_referer( 'staffswap_subscribe_alerts', 'staffswap_subscribe_nonce' );
+    $email = sanitize_email( wp_unslash( $_POST['staffswap_subscribe_email'] ) );
+    $redirect = wp_get_referer() ?: home_url( '/' );
+    if ( ! is_email( $email ) ) { wp_safe_redirect( add_query_arg( 'staffswap_subscribed', 'invalid', $redirect ) ); exit; }
+    global $wpdb;
+    $wpdb->query( $wpdb->prepare( 'INSERT INTO ' . staffswap_db_table( 'subscribers' ) . ' (email, status, created_at) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE status = %s', $email, 'active', current_time( 'mysql', true ), 'active' ) );
+    wp_safe_redirect( add_query_arg( 'staffswap_subscribed', 'success', $redirect ) );
+    exit;
+}
+add_action( 'admin_post_staffswap_subscribe_alerts', 'staffswap_handle_alert_signup' );
+add_action( 'admin_post_nopriv_staffswap_subscribe_alerts', 'staffswap_handle_alert_signup' );
+
+function staffswap_handle_alert_unsubscribe() {
+    $email = sanitize_email( wp_unslash( $_GET['email'] ?? '' ) );
+    if ( ! $email || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ?? '' ) ), 'staffswap_unsubscribe_' . $email ) ) { wp_die( 'Invalid unsubscribe link.' ); }
+    global $wpdb;
+    $wpdb->update( staffswap_db_table( 'subscribers' ), array( 'status' => 'unsubscribed' ), array( 'email' => $email ), array( '%s' ), array( '%s' ) );
+    wp_safe_redirect( home_url( '/?staffswap_unsubscribed=1' ) );
+    exit;
+}
+add_action( 'admin_post_staffswap_unsubscribe_alerts', 'staffswap_handle_alert_unsubscribe' );
+add_action( 'admin_post_nopriv_staffswap_unsubscribe_alerts', 'staffswap_handle_alert_unsubscribe' );
+
+function staffswap_subscriber_digest_send() {
+    $last_sent = (int) get_option( 'staffswap_subscriber_digest_last_sent', 0 );
+    if ( $last_sent && time() - $last_sent < WEEK_IN_SECONDS ) { return; }
+    global $wpdb;
+    $subscribers = $wpdb->get_col( "SELECT email FROM " . staffswap_db_table( 'subscribers' ) . " WHERE status = 'active'" );
+    if ( ! $subscribers ) { return; }
+    $recent = get_posts( array( 'post_type' => 'swap_listing', 'post_status' => 'publish', 'posts_per_page' => 5, 'date_query' => array( array( 'after' => '7 days ago' ) ) ) );
+    if ( ! $recent ) { return; }
+    $lines = array();
+    foreach ( $recent as $listing ) { $lines[] = get_the_title( $listing ) . ' - ' . get_post_meta( $listing->ID, '_staffswap_current_location', true ) . ' to ' . get_post_meta( $listing->ID, '_staffswap_desired_location', true ) . ': ' . get_permalink( $listing ); }
+    $body = "New swap listings this week:\n\n" . implode( "\n", $lines ) . "\n\nBrowse all listings: " . home_url( '/swaps/' );
+    foreach ( $subscribers as $email ) {
+        $unsubscribe_url = wp_nonce_url( add_query_arg( array( 'action' => 'staffswap_unsubscribe_alerts', 'email' => rawurlencode( $email ) ), admin_url( 'admin-post.php' ) ), 'staffswap_unsubscribe_' . $email );
+        wp_mail( $email, '[' . get_bloginfo( 'name' ) . '] New swap listings this week', $body . "\n\nUnsubscribe: " . $unsubscribe_url );
+    }
+    update_option( 'staffswap_subscriber_digest_last_sent', time() );
+}
+add_action( 'staffswap_saved_search_alerts', 'staffswap_subscriber_digest_send' );
+
 function staffswap_saved_listing_ids() { return is_user_logged_in() ? array_map( 'absint', (array) get_user_meta( get_current_user_id(), 'staffswap_saved_listings', true ) ) : array(); }
 function staffswap_toggle_saved_listing() { if ( ! is_user_logged_in() ) { wp_safe_redirect( wp_login_url( wp_get_referer() ?: home_url( '/' ) ) ); exit; } $listing_id = absint( $_GET['listing_id'] ?? 0 ); if ( ! $listing_id || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ?? '' ) ), 'staffswap_save_listing_' . $listing_id ) ) { wp_die( 'Invalid save request.' ); } $saved = staffswap_saved_listing_ids(); if ( in_array( $listing_id, $saved, true ) ) { $saved = array_values( array_diff( $saved, array( $listing_id ) ) ); } else { $saved[] = $listing_id; } update_user_meta( get_current_user_id(), 'staffswap_saved_listings', $saved ); wp_safe_redirect( wp_get_referer() ?: get_permalink( $listing_id ) ); exit; }
 add_action( 'init', function() { if ( isset( $_GET['staffswap_toggle_saved'] ) ) { staffswap_toggle_saved_listing(); } } );
@@ -675,7 +730,9 @@ function staffswap_profile_workspace_shortcode() {
         $match_count = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM ' . staffswap_db_table( 'matches' ) . ' m INNER JOIN ' . $wpdb->posts . ' p ON p.ID = m.listing_id WHERE p.post_author = %d AND m.status = %s', get_current_user_id(), 'suggested' ) );
         $offer_count = post_type_exists( 'staffswap_offer' ) ? (int) ( new WP_Query( array( 'post_type' => 'staffswap_offer', 'post_status' => 'publish', 'meta_key' => '_staffswap_offer_recipient', 'meta_value' => get_current_user_id(), 'meta_query' => array( array( 'key' => '_staffswap_offer_status', 'value' => 'proposed' ) ), 'fields' => 'ids', 'posts_per_page' => -1 ) ) )->found_posts : 0;
         $verification = get_user_meta( get_current_user_id(), 'staffswap_verified_status', true ) ?: 'unverified';
-        ob_start(); ?><section class="member-metrics"><article><span>Active listings</span><strong><?php echo esc_html( $query->found_posts ); ?></strong><small>Published or in review</small></article><article><span>Reciprocal matches</span><strong><?php echo esc_html( $match_count ); ?></strong><small>Routes ready to compare</small></article><article><span>Incoming offers</span><strong><?php echo esc_html( $offer_count ); ?></strong><small>Awaiting your response</small></article><article><span>Verification</span><strong><?php echo esc_html( ucfirst( $verification ) ); ?></strong><small>Profile trust status</small></article></section><section class="panel"><div class="section-heading"><div><p class="eyebrow">YOUR LISTINGS</p><h2>Active swap requests</h2></div><a class="text-link" href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>">Create listing</a></div><?php if ( $query->have_posts() ) : ?><div class="member-listings"><?php while ( $query->have_posts() ) : $query->the_post(); ?><article><div><strong><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></strong><span><?php echo esc_html( get_post_status_object( get_post_status() )->label ); ?></span></div><a href="<?php the_permalink(); ?>">Manage</a></article><?php endwhile; wp_reset_postdata(); ?></div><?php else : ?><p class="muted">No active listings yet. Publish your route to activate the matchmaker.</p><?php endif; ?></section><?php $content = ob_get_clean();
+        $is_vip = function_exists( 'staffswap_has_active_membership' ) && staffswap_has_active_membership();
+        $vip_expires_at = get_user_meta( get_current_user_id(), 'staffswap_vip_expires_at', true );
+        ob_start(); ?><section class="member-metrics"><article><span>Active listings</span><strong><?php echo esc_html( $query->found_posts ); ?></strong><small>Published or in review</small></article><article><span>Reciprocal matches</span><strong><?php echo esc_html( $match_count ); ?></strong><small>Routes ready to compare</small></article><article><span>Incoming offers</span><strong><?php echo esc_html( $offer_count ); ?></strong><small>Awaiting your response</small></article><article><span>Verification</span><strong><?php echo esc_html( ucfirst( $verification ) ); ?></strong><small>Profile trust status</small></article><article><span>Membership</span><strong><?php echo esc_html( $is_vip ? 'VIP Gold' : 'Free' ); ?></strong><small><?php echo $is_vip ? esc_html( $vip_expires_at ? 'Renews ' . date_i18n( 'j M Y', strtotime( $vip_expires_at ) ) : 'Lifetime access' ) : 'Upgrade for messaging & offers'; ?></small></article></section><section class="panel"><div class="section-heading"><div><p class="eyebrow">YOUR LISTINGS</p><h2>Active swap requests</h2></div><a class="text-link" href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>">Create listing</a></div><?php if ( $query->have_posts() ) : ?><div class="member-listings"><?php while ( $query->have_posts() ) : $query->the_post(); ?><article><div><strong><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></strong><span><?php echo esc_html( get_post_status_object( get_post_status() )->label ); ?></span></div><a href="<?php the_permalink(); ?>">Manage</a></article><?php endwhile; wp_reset_postdata(); ?></div><?php else : ?><p class="muted">No active listings yet. Publish your route to activate the matchmaker.</p><?php endif; ?></section><?php $content = ob_get_clean();
     }
     $labels = array( 'dashboard' => 'Dashboard', 'search' => 'Search Swaps', 'messages' => 'Messages', 'offers' => 'Offers', 'verification' => 'Verification', 'planner' => 'Planner', 'documents' => 'Documents' );
     ob_start(); ?><div class="member-workspace member-workspace--tabs"><header class="member-workspace__header"><div><p class="eyebrow">MEMBER WORKSPACE</p><h1><?php echo esc_html( $user->display_name ); ?></h1><p class="muted"><?php echo esc_html( get_user_meta( $user->ID, 'staffswap_profession', true ) ?: 'Complete your professional profile' ); ?> · <?php echo esc_html( get_user_meta( $user->ID, 'staffswap_location', true ) ?: 'Location pending' ); ?></p></div><a class="button button--primary" href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>">Publish Direct Swap Listing</a></header><nav class="member-workspace__nav" aria-label="Member workspace"><?php foreach ( $labels as $key => $label ) : ?><a href="<?php echo esc_url( add_query_arg( 'profile_tab', $key, home_url( '/my-profile/' ) ) ); ?>" class="<?php echo $tab === $key ? 'is-active' : ''; ?>" aria-current="<?php echo $tab === $key ? 'page' : 'false'; ?>"><?php echo esc_html( $label ); ?></a><?php endforeach; ?></nav><div class="member-workspace__pane"><?php if ( 'dashboard' === $tab && shortcode_exists( 'staffswap_profile_completion' ) ) { echo do_shortcode( '[staffswap_profile_completion]' ); } ?><?php echo $content; ?></div></div><?php return ob_get_clean();

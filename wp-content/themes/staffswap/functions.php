@@ -70,6 +70,66 @@ function staffswap_builder_location( $location ) {
 function staffswap_has_builder_content( $post_id = 0 ) { return (bool) get_post_meta( $post_id ?: get_the_ID(), '_elementor_data', true ) || isset( $_GET['elementor-preview'] ) || ( class_exists( '\Elementor\Plugin' ) && isset( \Elementor\Plugin::$instance->editor ) && \Elementor\Plugin::$instance->editor->is_edit_mode() ); }
 function staffswap_enable_elementor_content_types() { foreach ( array( 'page', 'post', 'swap_listing', 'staff_resource' ) as $post_type ) { add_post_type_support( $post_type, 'elementor' ); } }
 add_action( 'init', 'staffswap_enable_elementor_content_types', 30 );
+
+// Success Stories were previously three testimonials hardcoded in the template; now they're an editable post type.
+function staffswap_testimonial_post_type() {
+	register_post_type( 'staff_testimonial', array( 'labels' => array( 'name' => 'Success Stories', 'singular_name' => 'Success Story', 'add_new_item' => 'Add Success Story' ), 'public' => false, 'show_ui' => true, 'show_in_menu' => 'edit.php?post_type=swap_listing', 'menu_icon' => 'dashicons-star-filled', 'supports' => array( 'title', 'editor' ) ) );
+}
+add_action( 'init', 'staffswap_testimonial_post_type' );
+
+function staffswap_testimonial_meta_box() {
+	add_meta_box( 'staffswap_testimonial_details', 'Story Details', 'staffswap_testimonial_meta_box_render', 'staff_testimonial', 'side', 'default' );
+}
+add_action( 'add_meta_boxes', 'staffswap_testimonial_meta_box' );
+
+function staffswap_testimonial_meta_box_render( $post ) {
+	wp_nonce_field( 'staffswap_save_testimonial', 'staffswap_testimonial_nonce' );
+	$role = get_post_meta( $post->ID, '_staffswap_testimonial_role', true );
+	$variant = get_post_meta( $post->ID, '_staffswap_testimonial_variant', true ) ?: 'default';
+	echo '<p><label for="staffswap_testimonial_role"><strong>Role &amp; location</strong></label><br><input type="text" id="staffswap_testimonial_role" name="staffswap_testimonial_role" class="widefat" value="' . esc_attr( $role ) . '" placeholder="e.g. Registered Nurse · Ndola"></p>';
+	echo '<p><label for="staffswap_testimonial_variant"><strong>Accent colour</strong></label><br><select id="staffswap_testimonial_variant" name="staffswap_testimonial_variant" class="widefat"><option value="default" ' . selected( $variant, 'default', false ) . '>Green (default)</option><option value="blue" ' . selected( $variant, 'blue', false ) . '>Blue</option><option value="gold" ' . selected( $variant, 'gold', false ) . '>Gold</option></select></p>';
+	echo '<p class="description">Title is the member\'s name. The editor content is the quote.</p>';
+}
+
+function staffswap_testimonial_meta_box_save( $post_id ) {
+	if ( ! isset( $_POST['staffswap_testimonial_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['staffswap_testimonial_nonce'] ) ), 'staffswap_save_testimonial' ) ) { return; }
+	if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) { return; }
+	if ( ! current_user_can( 'edit_post', $post_id ) ) { return; }
+	update_post_meta( $post_id, '_staffswap_testimonial_role', sanitize_text_field( wp_unslash( $_POST['staffswap_testimonial_role'] ?? '' ) ) );
+	$variant = sanitize_key( wp_unslash( $_POST['staffswap_testimonial_variant'] ?? 'default' ) );
+	update_post_meta( $post_id, '_staffswap_testimonial_variant', in_array( $variant, array( 'default', 'blue', 'gold' ), true ) ? $variant : 'default' );
+}
+add_action( 'save_post_staff_testimonial', 'staffswap_testimonial_meta_box_save' );
+
+function staffswap_seed_testimonials() {
+	if ( get_option( 'staffswap_testimonials_seeded' ) ) { return; }
+	update_option( 'staffswap_testimonials_seeded', '1' );
+	if ( get_posts( array( 'post_type' => 'staff_testimonial', 'post_status' => 'publish', 'posts_per_page' => 1, 'fields' => 'ids' ) ) ) { return; }
+	$seed = array(
+		array( 'name' => 'Lydia Mwansa', 'role' => 'Registered Nurse · Ndola', 'quote' => 'The process was simple, secure and fast. I found a placement that works better for my family.', 'variant' => 'default' ),
+		array( 'name' => 'Brian Chileshe', 'role' => 'Maths Teacher · Southern Province', 'quote' => 'I could compare real institutions and speak to someone who understood the work before making a decision.', 'variant' => 'blue' ),
+		array( 'name' => 'Robert Tembo', 'role' => 'Bank Officer · Kabwe', 'quote' => 'StaffExchangeHub made a complicated career move feel organised and professional from the first post.', 'variant' => 'gold' ),
+	);
+	foreach ( $seed as $story ) {
+		$post_id = wp_insert_post( array( 'post_type' => 'staff_testimonial', 'post_title' => $story['name'], 'post_content' => $story['quote'], 'post_status' => 'publish' ) );
+		if ( $post_id && ! is_wp_error( $post_id ) ) {
+			update_post_meta( $post_id, '_staffswap_testimonial_role', $story['role'] );
+			update_post_meta( $post_id, '_staffswap_testimonial_variant', $story['variant'] );
+		}
+	}
+}
+add_action( 'after_switch_theme', 'staffswap_seed_testimonials' );
+add_action( 'admin_init', 'staffswap_seed_testimonials' );
+
+function staffswap_testimonials_shortcode( $atts ) {
+	$atts = shortcode_atts( array( 'limit' => 3 ), $atts, 'staffswap_success_stories' );
+	$stories = get_posts( array( 'post_type' => 'staff_testimonial', 'post_status' => 'publish', 'posts_per_page' => absint( $atts['limit'] ), 'orderby' => 'date', 'order' => 'DESC' ) );
+	if ( ! $stories ) { return ''; }
+	$initials = function ( $name ) { $parts = preg_split( '/\s+/', trim( $name ) ); return strtoupper( substr( $parts[0] ?? '', 0, 1 ) . substr( end( $parts ) ?: '', 0, 1 ) ); };
+	ob_start(); ?><section class="stories-grid"><?php foreach ( $stories as $story ) : $variant = get_post_meta( $story->ID, '_staffswap_testimonial_variant', true ) ?: 'default'; $variant_class = 'default' === $variant ? '' : ' story-card--' . $variant; $avatar_class = 'default' === $variant ? '' : ' featured-avatar--' . $variant; ?><article class="story-card<?php echo esc_attr( $variant_class ); ?>"><span class="featured-avatar<?php echo esc_attr( $avatar_class ); ?>"><?php echo esc_html( $initials( $story->post_title ) ); ?></span><p class="story-quote">&ldquo;<?php echo esc_html( $story->post_content ); ?>&rdquo;</p><strong><?php echo esc_html( $story->post_title ); ?></strong><small><?php echo esc_html( get_post_meta( $story->ID, '_staffswap_testimonial_role', true ) ); ?></small></article><?php endforeach; ?></section><?php return ob_get_clean();
+}
+add_shortcode( 'staffswap_success_stories', 'staffswap_testimonials_shortcode' );
+
 function staffswap_theme_activated() { update_option( 'staffswap_show_setup', '1' ); }
 add_action( 'after_switch_theme', 'staffswap_theme_activated' );
 

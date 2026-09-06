@@ -5,7 +5,16 @@
  * Version: 1.0.0
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
-function staffswap_has_active_membership( $user_id = 0 ) { $user_id = $user_id ? absint( $user_id ) : get_current_user_id(); return (bool) ( $user_id && '1' === get_user_meta( $user_id, 'staffswap_plus_active', true ) ); }
+function staffswap_has_active_membership( $user_id = 0 ) {
+	$user_id = $user_id ? absint( $user_id ) : get_current_user_id();
+	if ( ! $user_id || '1' !== get_user_meta( $user_id, 'staffswap_plus_active', true ) ) { return false; }
+	$expires_at = get_user_meta( $user_id, 'staffswap_vip_expires_at', true );
+	if ( $expires_at && strtotime( $expires_at . ' UTC' ) < time() ) {
+		update_user_meta( $user_id, 'staffswap_plus_active', '' );
+		return false;
+	}
+	return true;
+}
 function staffswap_membership_required_notice( $action = 'use this feature' ) { return '<div class="panel membership-required"><p class="eyebrow">STAFFSWAP PLUS</p><h2>Membership required</h2><p>You need an active membership to ' . esc_html( $action ) . '.</p><a class="button button--primary" href="' . esc_url( home_url( '/pricing/' ) ) . '">View membership plans</a></div>'; }
 function staffswap_wc_plans() {
 	$plans = array( 'month' => array( 'title' => 'StaffSwap VIP Gold - 1 Month', 'price' => '99', 'sku' => 'STAFFSWAP-VIP-1M', 'duration' => '1 month' ), 'quarter' => array( 'title' => 'StaffSwap VIP Gold - 3 Months', 'price' => '249', 'sku' => 'STAFFSWAP-VIP-3M', 'duration' => '3 months' ), 'lifetime' => array( 'title' => 'StaffSwap VIP Gold - Lifetime', 'price' => '799', 'sku' => 'STAFFSWAP-VIP-LIFE', 'duration' => 'lifetime' ) );
@@ -47,6 +56,13 @@ function staffswap_wc_upgrade_shortcode( $atts ) {
 	if ( ! class_exists( 'WooCommerce' ) ) { return '<div class="panel"><h2>StaffSwap Plus</h2><p>Install WooCommerce to enable premium upgrades.</p></div>'; }
 	$plans = staffswap_wc_plans(); $plan = sanitize_key( $atts['plan'] ); $product_id = staffswap_wc_product( $plan );
 	if ( ! $product_id ) { return '<div class="panel"><p>Premium upgrades are temporarily unavailable.</p></div>'; }
+	if ( ! is_user_logged_in() ) {
+		return '<a class="button button--outline" href="' . esc_url( wp_login_url( get_permalink() ) ) . '">Sign in to choose this plan</a>';
+	}
+	if ( staffswap_has_active_membership() && $plan === get_user_meta( get_current_user_id(), 'staffswap_vip_plan', true ) ) {
+		$expires_at = get_user_meta( get_current_user_id(), 'staffswap_vip_expires_at', true );
+		return '<span class="button button--outline" aria-disabled="true">Current plan</span>' . ( $expires_at ? '<p class="muted" style="margin-top:8px;font-size:12px;">Renews ' . esc_html( date_i18n( 'j M Y', strtotime( $expires_at ) ) ) . '</p>' : '<p class="muted" style="margin-top:8px;font-size:12px;">Lifetime access</p>' );
+	}
 	$url = function_exists( 'wc_get_checkout_url' ) ? add_query_arg( array( 'add-to-cart' => $product_id ), wc_get_checkout_url() ) : get_permalink( $product_id );
 	return '<a class="button button--primary" href="' . esc_url( $url ) . '">Choose VIP Gold</a>';
 }
@@ -91,13 +107,43 @@ function staffswap_wc_payment_complete( $order_id ) {
 	$order = wc_get_order( $order_id );
 	if ( ! $order ) { return; }
 	$user_id = (int) $order->get_user_id();
-	if ( $user_id && $order->get_items() ) { foreach ( $order->get_items() as $item ) { foreach ( array_keys( staffswap_wc_plans() ) as $plan ) { if ( (int) $item->get_product_id() === (int) get_option( 'staffswap_vip_product_' . $plan ) ) { update_user_meta( $user_id, 'staffswap_plus_active', '1' ); update_user_meta( $user_id, 'staffswap_vip_plan', $plan ); } } } }
+	$plan_durations = array( 'month' => '+1 month', 'quarter' => '+3 months', 'lifetime' => '' );
+	if ( $user_id && $order->get_items() ) { foreach ( $order->get_items() as $item ) { foreach ( array_keys( staffswap_wc_plans() ) as $plan ) { if ( (int) $item->get_product_id() === (int) get_option( 'staffswap_vip_product_' . $plan ) ) { update_user_meta( $user_id, 'staffswap_plus_active', '1' ); update_user_meta( $user_id, 'staffswap_vip_plan', $plan ); $duration = $plan_durations[ $plan ] ?? ''; update_user_meta( $user_id, 'staffswap_vip_expires_at', $duration ? gmdate( 'Y-m-d H:i:s', strtotime( $duration, current_time( 'timestamp', true ) ) ) : '' ); delete_user_meta( $user_id, 'staffswap_vip_renewal_notified' ); } } } }
 }
 add_action( 'woocommerce_payment_complete', 'staffswap_wc_payment_complete' );
 // Some gateways (bank transfer, manual admin completion, COD) never call $order->payment_complete(),
 // so also activate the plan on the order status transitions that indicate the order was paid.
 add_action( 'woocommerce_order_status_processing', 'staffswap_wc_payment_complete' );
 add_action( 'woocommerce_order_status_completed', 'staffswap_wc_payment_complete' );
+
+function staffswap_wc_membership_cron_schedule() {
+	if ( ! wp_next_scheduled( 'staffswap_membership_check' ) ) { wp_schedule_event( time(), 'daily', 'staffswap_membership_check' ); }
+}
+add_action( 'wp', 'staffswap_wc_membership_cron_schedule' );
+function staffswap_wc_membership_cron_clear() { wp_clear_scheduled_hook( 'staffswap_membership_check' ); }
+register_deactivation_hook( __FILE__, 'staffswap_wc_membership_cron_clear' );
+
+// Emails a renewal reminder a few days before expiry, then deactivates and notifies once a plan actually lapses.
+function staffswap_wc_membership_daily_check() {
+	if ( ! function_exists( 'staffswap_notify_user' ) ) { return; }
+	global $wpdb;
+	$soon = $wpdb->get_col( $wpdb->prepare( "SELECT user_id FROM {$wpdb->usermeta} WHERE meta_key = 'staffswap_vip_expires_at' AND meta_value <> '' AND meta_value BETWEEN %s AND %s", gmdate( 'Y-m-d H:i:s' ), gmdate( 'Y-m-d H:i:s', strtotime( '+3 days' ) ) ) );
+	foreach ( $soon as $user_id ) {
+		if ( '1' !== get_user_meta( $user_id, 'staffswap_plus_active', true ) || get_user_meta( $user_id, 'staffswap_vip_renewal_notified', true ) ) { continue; }
+		staffswap_notify_user( $user_id, 'Your VIP Gold membership is expiring soon', 'Your StaffSwap VIP Gold membership expires on ' . get_user_meta( $user_id, 'staffswap_vip_expires_at', true ) . ' UTC. Renew now to keep uninterrupted access to messaging and formal swap offers.' . "\n\n" . 'Renew here: ' . home_url( '/pricing/' ) );
+		update_user_meta( $user_id, 'staffswap_vip_renewal_notified', '1' );
+	}
+	$active = $wpdb->get_col( "SELECT user_id FROM {$wpdb->usermeta} WHERE meta_key = 'staffswap_plus_active' AND meta_value = '1'" );
+	foreach ( $active as $user_id ) {
+		$expires_at = get_user_meta( $user_id, 'staffswap_vip_expires_at', true );
+		if ( $expires_at && strtotime( $expires_at . ' UTC' ) < time() ) {
+			update_user_meta( $user_id, 'staffswap_plus_active', '' );
+			delete_user_meta( $user_id, 'staffswap_vip_renewal_notified' );
+			staffswap_notify_user( $user_id, 'Your VIP Gold membership has expired', 'Your StaffSwap VIP Gold membership has expired. Renew to regain access to messaging and formal swap offers.' . "\n\n" . 'Renew here: ' . home_url( '/pricing/' ) );
+		}
+	}
+}
+add_action( 'staffswap_membership_check', 'staffswap_wc_membership_daily_check' );
 function staffswap_wc_admin_notice() { if ( current_user_can( 'manage_options' ) && ! class_exists( 'WooCommerce' ) ) { echo '<div class="notice notice-info"><p><strong>StaffSwap WooCommerce Bridge:</strong> Install WooCommerce to enable premium upgrade checkout. The core marketplace remains fully available without it.</p></div>'; } }
 add_action( 'admin_notices', 'staffswap_wc_admin_notice' );
 
