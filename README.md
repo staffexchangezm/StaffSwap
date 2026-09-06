@@ -6,12 +6,12 @@ For the complete installation, Elementor, WooCommerce, database, import, cache, 
 
 ## Included
 
-- `wp-content/themes/staffswap`: responsive marketplace theme with landing page, navigation, footer, forms, listing cards, and a dedicated listing view.
-- `wp-content/plugins/staffswap-core`: `swap_listing` custom post type, secure listing metadata, admin editing fields, filterable `[staffswap_listings]` shortcode, authenticated `[staffswap_create_form]` submission flow, `[staffswap_save_button]`, and `[staffswap_saved_listings]`.
-- `wp-content/plugins/staffswap-resources`: searchable `staff_resource` content type, resource categories, `[staffswap_resources]` Resources Centre layout, secure download tracking, and `[staffswap_resource_download]`.
-- `wp-content/plugins/staffswap-profiles`: member profession, location, and employer fields with `[staffswap_profile]` display output.
-- `wp-content/plugins/staffswap-messaging`: private `staff_message` content type, `[staffswap_contact listing="123"]` contact form, and `[staffswap_inbox]` inbox. Activating it creates a Messages page.
-- `wp-content/plugins/staffswap-woocommerce`: optional WooCommerce bridge with `[staffswap_upgrade]`, a StaffSwap Plus product, checkout CTA, and payment-complete membership flag.
+- `wp-content/themes/staffswap`: responsive marketplace theme with landing page, navigation, footer, forms, listing cards, a dedicated listing view with similar-listings suggestions, an editable Success Stories post type (`staff_testimonial`), a working "Get Swap Alerts" email signup, and a single tabbed **Appearance > Theme Options** page for all brand, plan, payment, and SMS settings.
+- `wp-content/plugins/staffswap-core`: `swap_listing` custom post type, secure listing metadata, admin editing fields, filterable `[staffswap_listings]` shortcode with sort/filter chips/pagination, authenticated `[staffswap_create_form]` submission flow, `[staffswap_save_button]`, `[staffswap_saved_listings]`, a Listing Moderation queue with author verification/waiting-time context, an Analytics dashboard, and a new-listings subscriber digest.
+- `wp-content/plugins/staffswap-resources`: searchable `staff_resource` content type, resource categories with a filter dropdown, an admin media-library file picker for downloads, `[staffswap_resources]` Resources Centre layout with real download counts, secure download tracking, and `[staffswap_resource_download]`.
+- `wp-content/plugins/staffswap-profiles`: member profession, location, employer, phone number, and notification-preference fields with `[staffswap_profile]` display output and a Verification Queue that emails members the outcome.
+- `wp-content/plugins/staffswap-messaging`: private `staff_message` content type, `[staffswap_contact listing="123"]` contact form, `[staffswap_inbox]` inbox, and branded HTML email + optional SMS notifications for messages, replies, offers, and offer status changes. Activating it creates a Messages page.
+- `wp-content/plugins/staffswap-woocommerce`: optional WooCommerce bridge with `[staffswap_upgrade]`, configurable VIP Gold plans, a Lipila Mobile Money gateway, checkout CTA, membership activation with automatic expiry/renewal reminders for term plans, and a "Current plan" state once a member is subscribed.
 - `wp-content/themes/staffswap/elementor-templates/staffswap-homepage.json`: importable Elementor homepage starter with hero, workflow, and CTA sections.
 
 The theme is compatible with Elementor and other page builders through normal WordPress templates, menus, widgets, and shortcodes. Elementor is not bundled with this repository: install and activate the Elementor plugin separately before looking for Elementor admin menus. Use an Elementor Shortcode widget with `[staffswap_listings]`, `[staffswap_search]`, `[staffswap_create_form]`, `[staffswap_resources]`, `[staffswap_profile]`, or `[staffswap_contact listing="123"]`. The theme's header, footer, fonts, CSS variables, and scripts remain available to Elementor pages.
@@ -30,7 +30,7 @@ For a designed Elementor starting point, import `elementor-templates/staffswap-h
 2. Activate **StaffSwap Core** in Plugins.
 3. Activate **StaffSwap Resources**, **StaffSwap Profiles**, **StaffSwap Messaging**, and **StaffSwap WooCommerce Bridge** when those modules are needed.
 4. Activate **StaffSwap** in Appearance > Themes.
-5. Open Appearance > StaffSwap Setup and click **Run setup**. This creates the essential pages, sets the homepage, and builds the StaffSwap Main Menu. The setup screen can be reopened at any time.
+5. Open Appearance > Theme Options and use the **Setup & Health** tab to click **Run setup**. This creates the essential pages, sets the homepage, and builds the StaffSwap Main Menu. The same page can be reopened at any time.
 6. Activating the core plugin automatically creates these pages with their shortcodes:
 	- `swaps`: `[staffswap_listings]`
 	- `create-swap`: `[staffswap_create_form]`
@@ -53,11 +53,11 @@ For a designed Elementor starting point, import `elementor-templates/staffswap-h
 
 New listings are submitted as `pending` for moderation. Administrators can complete match score, verification, urgency, housing, employer, and location details from the Swap Listings editor.
 
-Theme content is editable from Appearance > Customize > StaffSwap Homepage. Site administrators can update the hero title, description, CTA labels, homepage stats, and primary action color without editing code.
+Theme content is editable from **Appearance > Theme Options**, a single tabbed page covering Brand & Homepage, Membership Plans, Payment Gateway, SMS Notifications, Setup & Health, and Quick Links, so administrators never have to hunt across separate settings screens. Appearance > Customize > StaffSwap Homepage remains available for live visual previews of the same hero/color fields.
 
-WooCommerce is optional. When active, the bridge creates a virtual StaffSwap Plus product and `[staffswap_upgrade]` links to checkout. Completed payments set `staffswap_plus_active` on the customer. Future premium visibility rules can use that user flag without coupling swap listings to WooCommerce internals.
+WooCommerce is optional. When active, the bridge creates virtual VIP Gold products per plan and `[staffswap_upgrade]` links to checkout; plan titles/prices are edited from Theme Options rather than the WooCommerce product screen. Completed payments set `staffswap_plus_active` on the customer along with an expiry date for term plans (month/quarter); a daily check emails renewal reminders and expiry notices, then deactivates the flag once a plan lapses. Lifetime plans never expire. Guests are prompted to sign in before checkout so a purchase is never orphaned from an account.
 
-StaffSwap Core creates versioned relational tables for matches, saved searches, and activity events using the site's WordPress database prefix. See [SETUP.md](SETUP.md) for the schema contract and migration rules.
+StaffSwap Core creates versioned relational tables for matches, saved searches, activity events, and alert subscribers using the site's WordPress database prefix. See [SETUP.md](SETUP.md) for the schema contract and migration rules.
 
 ## Elementor cache refresh
 
@@ -100,11 +100,11 @@ Improve the member workspace tabs with keyboard navigation, reliable active stat
 - Tabs expose appropriate ARIA state.
 - Mobile navigation remains easy to use.
 
-### 3. Add profile completion progress
+### 3. Add profile completion progress ✓ Completed
 
 **Labels:** `frontend`, `profiles`, `enhancement`
 
-Add a profile completion percentage and a clear list of missing professional details.
+Add a profile completion percentage and a clear list of missing professional details. Implemented via `[staffswap_profile_completion]`.
 
 **Acceptance criteria**
 
@@ -125,11 +125,11 @@ Add combined filters for profession, province, employer, experience, housing, ve
 - Empty results have a useful state.
 - The filter interface works on mobile.
 
-### 5. Build a match explanation component
+### 5. Build a match explanation component ✓ Completed
 
 **Labels:** `core`, `frontend`, `matching`
 
-Explain why two listings match instead of showing only a percentage score. Consider profession, locations, employer, housing, and verification.
+Explain why two listings match instead of showing only a percentage score. Consider profession, locations, employer, housing, and verification. Implemented via `staffswap_match_explanation()`.
 
 **Acceptance criteria**
 
@@ -150,18 +150,11 @@ Show saved searches inside the profile workspace and allow members to run or del
 - Members can run and delete saved searches.
 - The empty state links to search creation.
 
-### 7. Add live notification counts
+### 7. Add live notification counts ✓ Completed
 
 **Labels:** `core`, `messaging`, `enhancement`
 
-Replace static header notification badges with live unread message and pending offer counts.
-
-**Acceptance criteria**
-
-- Counts are scoped to the logged-in user.
-- Badges are hidden when counts are zero.
-- Guest users see no private notification counts.
-- Accessible labels describe each notification type.
+Replace static header notification badges with live unread message and pending offer counts. Implemented: the header now shows live Messages, Offers, and Matches badge counts (`staffswap_unread_message_count()`, `staffswap_pending_offer_count()`, `staffswap_new_match_count()`), scoped to the logged-in user and hidden at zero.
 
 ### 8. Improve messaging security and UX
 
@@ -175,18 +168,11 @@ Add conversation grouping, unread states, reply controls, and stronger participa
 - Unread messages are visually clear.
 - Forms use nonce and capability validation.
 
-### 9. Add a listing moderation workflow
+### 9. Add a listing moderation workflow ✓ Completed
 
 **Labels:** `admin`, `core`, `moderation`
 
-Create an administrator workflow for approving, rejecting, and requesting changes to listings.
-
-**Acceptance criteria**
-
-- Admins can approve and reject listings.
-- Review status is visible to authors.
-- Status changes are logged.
-- Non-admin users cannot access moderation actions.
+Create an administrator workflow for approving, rejecting, and requesting changes to listings. Implemented at **Swap Listings > Moderation Queue**, including author verification status, waiting-time indicator, a listing preview link, and an email notification to the author on every decision.
 
 ### 10. Add verification document management
 
@@ -214,18 +200,11 @@ Add overall and per-phase progress indicators, saved-state feedback, and complet
 - Save feedback is visible.
 - The planner works on mobile.
 
-### 12. Add an admin analytics dashboard
+### 12. Add an admin analytics dashboard ✓ Completed
 
 **Labels:** `admin`, `analytics`, `enhancement`
 
-Create an admin dashboard for members, verified members, active listings, pending listings, matches, offers, and registrations.
-
-**Acceptance criteria**
-
-- Access is restricted to administrators.
-- Metrics use appropriate WordPress data.
-- Sensitive personal data is not exposed unnecessarily.
-- Empty states and responsive layouts are included.
+Create an admin dashboard for members, verified members, active listings, pending listings, matches, offers, and registrations. Implemented at **Swap Listings > Analytics**, including pending listings, active VIP Gold members, offer acceptance rate, top professions, and top swap routes.
 
 ### 13. Improve Customizer logo controls
 
@@ -239,18 +218,11 @@ Improve header branding controls with logo preview, recommended dimensions, dark
 - Desktop and mobile headers remain stable.
 - Text and accessibility fallbacks work when no logo is uploaded.
 
-### 14. Add email notifications
+### 14. Add email notifications ✓ Completed
 
 **Labels:** `messaging`, `notifications`, `enhancement`
 
-Add configurable email notifications for new matches, offers, replies, verification updates, and listing approval.
-
-**Acceptance criteria**
-
-- Members can manage notification preferences.
-- Emails contain safe links.
-- Duplicate notifications are prevented.
-- Delivery failures are logged.
+Add configurable email notifications for new matches, offers, replies, verification updates, and listing approval. Implemented via `staffswap_notify_user()` (branded HTML email, plus optional SMS through ExciteSMS), covering messages, replies, offers, offer status changes, counter-offers, new matches, listing moderation decisions, and verification updates. Members manage preferences (email opt-out, SMS opt-in) from Profile Settings.
 
 ### 15. Expand production deployment documentation
 
@@ -305,4 +277,4 @@ Review nonces, capability checks, ownership checks, uploads, SQL queries, escapi
 - Security-sensitive tests are added.
 - Unauthorized users cannot access private content.
 
-**Recommended first issues:** 1, 3, 11, 13, 15, and 16. These have clear boundaries and can be completed without redesigning the marketplace data model.
+**Recommended first issues:** 1, 2, 4, 6, 8, 10, 11, 13, 15, 16, 17, and 18. Items 3, 5, 7, 9, 12, and 14 have been completed. These have clear boundaries and can be completed without redesigning the marketplace data model.
