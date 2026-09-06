@@ -5,6 +5,24 @@
  * Version: 1.0.0
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
+// Branded HTML wrapper for member notification emails, using the Theme Options brand color.
+function staffswap_email_html_template( $subject, $message ) {
+	$site_name = get_bloginfo( 'name' );
+	$settings = get_option( 'staffswap_settings', array() );
+	$color = ! empty( $settings['primary_color'] ) ? sanitize_hex_color( $settings['primary_color'] ) : '#00bb7f';
+	$body = wpautop( make_clickable( esc_html( $message ) ) );
+	return '<!doctype html><html><body style="margin:0;padding:0;background:#f4f6f5;font-family:Arial,Helvetica,sans-serif;">'
+		. '<div style="max-width:560px;margin:0 auto;padding:24px;">'
+		. '<div style="background:#0d2240;border-radius:10px 10px 0 0;padding:24px 28px;">'
+		. '<span style="color:' . esc_attr( $color ) . ';font-size:11px;font-weight:700;letter-spacing:.1em;">' . esc_html( strtoupper( $site_name ) ) . '</span>'
+		. '<h1 style="color:#fff;font-size:20px;margin:8px 0 0;">' . esc_html( $subject ) . '</h1>'
+		. '</div>'
+		. '<div style="background:#fff;border:1px solid #e2e8f0;border-top:0;border-radius:0 0 10px 10px;padding:28px;color:#0f172a;font-size:14px;line-height:1.7;">'
+		. $body
+		. '</div>'
+		. '<p style="color:#94a3b8;font-size:12px;text-align:center;margin-top:16px;">' . esc_html( $site_name ) . ' &middot; <a style="color:#94a3b8;" href="' . esc_url( home_url( '/' ) ) . '">' . esc_html( home_url( '/' ) ) . '</a></p>'
+		. '</div></body></html>';
+}
 // Central email helper so members can be notified without leaving the site to check for updates.
 function staffswap_notify_user( $user_id, $subject, $message ) {
 	$user_id = absint( $user_id );
@@ -12,7 +30,10 @@ function staffswap_notify_user( $user_id, $subject, $message ) {
 	$user = get_userdata( $user_id );
 	if ( ! $user || ! is_email( $user->user_email ) ) { return; }
 	$site_name = get_bloginfo( 'name' );
-	wp_mail( $user->user_email, '[' . $site_name . '] ' . $subject, $message . "\n\n" . '— ' . $site_name );
+	$set_html_type = function () { return 'text/html'; };
+	add_filter( 'wp_mail_content_type', $set_html_type );
+	wp_mail( $user->user_email, '[' . $site_name . '] ' . $subject, staffswap_email_html_template( $subject, $message ) );
+	remove_filter( 'wp_mail_content_type', $set_html_type );
 }
 function staffswap_message_post_type() { register_post_type( 'staff_message', array( 'labels' => array( 'name' => 'Messages', 'singular_name' => 'Message' ), 'public' => false, 'show_ui' => true, 'show_in_menu' => 'edit.php?post_type=swap_listing', 'supports' => array( 'title', 'editor', 'author' ), 'capability_type' => 'post' ) ); }
 add_action( 'init', 'staffswap_message_post_type' );
