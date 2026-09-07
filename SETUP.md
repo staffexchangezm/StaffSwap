@@ -34,7 +34,7 @@ StaffSwap Core creates its database tables on activation. If the database versio
 
 ## 4. Run the setup wizard
 
-Open **Appearance > StaffSwap Setup** and select **Run setup**.
+Open **Appearance > Theme Options** and select the **Setup & Health** tab, then select **Run setup**.
 
 The wizard creates or repairs:
 
@@ -60,21 +60,22 @@ It also:
 - Adds missing menu items without duplicating existing links
 - Shows plugin and builder health checks
 
-If anything looks wrong, run **Repair pages and menu** from the same screen.
+If anything looks wrong, run **Repair pages and menu** from the same screen (still the **Setup & Health** tab).
 
 ## 5. Configure the site
 
-### StaffSwap settings
+### Theme Options
 
-Open **Settings > StaffSwap** to edit:
+All StaffSwap settings live on a single page at **Appearance > Theme Options**, split into tabs so nothing sends you to a separate screen:
 
-- Site name
-- Hero title
-- Hero description
-- Primary and secondary CTA labels
-- Homepage statistics
+- **Brand & Homepage** — site name, hero title/description, primary and secondary CTA labels, homepage statistics, and primary action color.
+- **Membership Plans** — editable title and price for each VIP Gold plan (month/quarter/lifetime); saving also updates the price on any already-created WooCommerce product.
+- **Payment Gateway** — enable/disable the Lipila Mobile Money gateway, its title, description, and secret key (write-only; leave blank to keep the existing key).
+- **SMS Notifications** — enable/disable ExciteSMS, sender ID, and API token, for members who opt in to SMS updates from their Profile Settings page.
+- **Setup & Health** — the setup wizard (Run setup / Repair pages and menu) and system health checks.
+- **Quick Links** — one-click links to Moderation Queue, Analytics, Verification Queue, Listings, Messages, Offers, Menus, and Plugins.
 
-Open **Appearance > Customize > StaffSwap Homepage** for live visual customization, including the primary action color.
+Open **Appearance > Customize > StaffSwap Homepage** for live visual customization if you prefer the Customizer for the same hero/color fields.
 
 ### Navigation
 
@@ -139,6 +140,7 @@ from **Templates > Saved Templates > Import Templates**, then insert it into the
 - `[staffswap_save_button id="123"]`
 - `[staffswap_saved_listings]`
 - `[staffswap_save_search]`
+- `[staffswap_alert_signup]` — subscribes an email to a weekly digest of new listings
 
 ### Accounts and profiles
 
@@ -157,6 +159,12 @@ from **Templates > Saved Templates > Import Templates**, then insert it into the
 ### Commerce
 
 - `[staffswap_upgrade]`
+- `[staffswap_upgrade plan="month|quarter|lifetime"]`
+- `[staffswap_plan_price plan="month"]`
+
+### Content
+
+- `[staffswap_success_stories]` — renders published Success Story posts (Swap Listings > Success Stories in wp-admin)
 
 All shortcodes can be placed in Elementor Shortcode widgets, WordPress Shortcode blocks, or normal page content.
 
@@ -167,6 +175,7 @@ StaffSwap Core uses the WordPress database prefix, so a site with prefix `wp_` r
 - `wp_staffswap_matches`: listing-to-listing candidate matches, score, and workflow status.
 - `wp_staffswap_saved_searches`: member search filters and alert frequency.
 - `wp_staffswap_events`: product activity events such as saved searches and future match/contact actions.
+- `wp_staffswap_subscribers`: email addresses subscribed via `[staffswap_alert_signup]` for the weekly new-listings digest.
 
 Never hard-code the `wp_` prefix in custom code. Use the plugin's `staffswap_db_table()` helper or `$wpdb->prefix`.
 
@@ -176,10 +185,12 @@ The schema version is stored in the `staffswap_db_version` option. Database chan
 
 1. Install and configure WooCommerce currency, tax, and payment settings.
 2. Activate **StaffSwap WooCommerce Bridge**.
-3. The bridge creates a virtual `StaffSwap Plus` product if one does not already exist.
+3. The bridge creates a virtual `StaffSwap Plus` product per plan (month/quarter/lifetime) if one does not already exist. Edit plan titles and prices from **Appearance > Theme Options > Membership Plans** rather than editing the products directly; the plugin keeps the WooCommerce product in sync.
 4. Add `[staffswap_upgrade]` to a pricing or account page.
 5. Test checkout in a sandbox/payment-test mode.
-6. A completed order marks the purchaser with `staffswap_plus_active = 1`.
+6. A completed order marks the purchaser with `staffswap_plus_active = 1` and stores an expiry (`staffswap_vip_expires_at`) based on the plan: 1 month or 3 months plans expire automatically; lifetime does not.
+7. A daily check emails a renewal reminder 3 days before a plan expires, and deactivates membership (with a notification) once it actually lapses. Members who already hold the plan they're viewing see a "Current plan" badge with the renewal date instead of a duplicate purchase button.
+8. Guests cannot start checkout from `[staffswap_upgrade]` — they're prompted to sign in first, since a guest order has no account to attribute the membership to.
 
 ### Checkout payment troubleshooting
 
@@ -196,6 +207,13 @@ If a payment attempt still fails, open the failed order under **WooCommerce > Or
 Built-in gateways such as Stripe, PayPal, or bank transfer should appear in both the normal WooCommerce checkout and the Checkout Block when their own requirements are complete. A gateway can be enabled in settings but still be unavailable when its currency, country, minimum order, or checkout compatibility requirements are not met.
 
 The bridge does not replace WooCommerce checkout or payment processing. Configure those in WooCommerce itself.
+
+## 9a. SMS notifications (ExciteSMS)
+
+1. Open **Appearance > Theme Options > SMS Notifications**.
+2. Enable the gateway, set a Sender ID, and paste the ExciteSMS API token, then save.
+3. Members add a mobile number and check "Also text me updates via SMS" from their Profile Settings page to opt in.
+4. Once enabled, every existing notification (new messages, offers, offer status changes, matches, listing moderation decisions, verification updates) is also sent by SMS to opted-in members with a saved phone number, in addition to email.
 
 ## 10. Demo content
 

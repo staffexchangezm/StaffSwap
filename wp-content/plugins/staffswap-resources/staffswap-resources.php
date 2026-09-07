@@ -9,8 +9,44 @@ function staffswap_resources_post_type() { register_post_type( 'staff_resource',
 add_action( 'init', 'staffswap_resources_post_type' );
 register_activation_hook( __FILE__, function() { staffswap_resources_post_type(); flush_rewrite_rules(); } );
 register_deactivation_hook( __FILE__, 'flush_rewrite_rules' );
-function staffswap_resources_shortcode() { $search = isset( $_GET['resource_search'] ) ? sanitize_text_field( wp_unslash( $_GET['resource_search'] ) ) : ''; $query = new WP_Query( array( 'post_type' => 'staff_resource', 'post_status' => 'publish', 'posts_per_page' => 12, 's' => $search ) ); ob_start(); ?>
-<section class="resource-hero"><div><p class="eyebrow">STAFFEXCHANGEHUB LIBRARY</p><h1>Resources Centre</h1><p class="muted">Free guides, templates, policies, forms, and career resources for professionals in healthcare, education, and beyond.</p><form class="resource-search" method="get"><input name="resource_search" value="<?php echo esc_attr( $search ); ?>" placeholder="Search resources, templates, guides..."><input type="submit" value="Search"></form><div class="resource-stats"><div class="resource-stat"><strong>12,500+</strong><span class="muted">Downloads</span></div><div class="resource-stat"><strong><?php echo esc_html( $query->found_posts ); ?>+</strong><span class="muted">Resources</span></div><div class="resource-stat"><strong>20+</strong><span class="muted">Professions</span></div></div></div></section><section><div class="page-heading"><div><p class="eyebrow">BROWSE BY CATEGORY</p><h2>Find what you need</h2></div></div><div class="resource-categories"><?php $categories = get_terms( array( 'taxonomy' => 'resource_category', 'hide_empty' => false, 'number' => 5 ) ); if ( ! is_wp_error( $categories ) ) : foreach ( $categories as $category ) : ?><a class="resource-card" href="<?php echo esc_url( get_term_link( $category ) ); ?>"><h3><?php echo esc_html( $category->name ); ?></h3><p><?php echo esc_html( $category->count ); ?> resources</p></a><?php endforeach; endif; ?></div></section><section style="margin-top:48px"><div class="page-heading"><div><p class="eyebrow">POPULAR RESOURCES</p><h2>Practical tools for your next move</h2></div></div><div class="resource-grid"><?php if ( $query->have_posts() ) : while ( $query->have_posts() ) : $query->the_post(); ?><article class="resource-card"><h3><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></h3><p><?php echo esc_html( wp_trim_words( get_the_excerpt(), 18 ) ); ?></p><a class="resource-link" href="<?php the_permalink(); ?>">View resource <span aria-hidden="true">&#8594;</span></a></article><?php endwhile; wp_reset_postdata(); else : ?><div class="panel"><h2>No resources found</h2><p class="muted">Try another search term.</p></div><?php endif; ?></div></section>
+
+// Admin UI to attach the downloadable file, since it previously had no editor field at all.
+function staffswap_resource_file_meta_box() {
+	add_meta_box( 'staffswap_resource_file', 'Downloadable File', 'staffswap_resource_file_meta_box_render', 'staff_resource', 'side', 'default' );
+}
+add_action( 'add_meta_boxes', 'staffswap_resource_file_meta_box' );
+
+function staffswap_resource_file_meta_box_render( $post ) {
+	wp_nonce_field( 'staffswap_save_resource_file', 'staffswap_resource_file_nonce' );
+	$file_url = get_post_meta( $post->ID, '_staffswap_resource_file', true );
+	echo '<p><input type="url" id="staffswap_resource_file" name="staffswap_resource_file" class="widefat" value="' . esc_attr( $file_url ) . '" placeholder="https://..."></p>';
+	echo '<p><button type="button" class="button" id="staffswap_resource_file_pick">Choose from Media Library</button></p>';
+	echo '<p class="description">Members are redirected here when they click Download. Leave blank to link to the resource page instead.</p>';
+	wp_enqueue_media();
+	echo '<script>(function(){var btn=document.getElementById("staffswap_resource_file_pick"),input=document.getElementById("staffswap_resource_file"),frame;if(!btn)return;btn.addEventListener("click",function(e){e.preventDefault();if(frame){frame.open();return;}frame=wp.media({title:"Select a resource file",button:{text:"Use this file"},multiple:false});frame.on("select",function(){var attachment=frame.state().get("selection").first().toJSON();input.value=attachment.url;});frame.open();});})();</script>';
+}
+
+function staffswap_resource_file_meta_box_save( $post_id ) {
+	if ( ! isset( $_POST['staffswap_resource_file_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['staffswap_resource_file_nonce'] ) ), 'staffswap_save_resource_file' ) ) { return; }
+	if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) { return; }
+	if ( ! current_user_can( 'edit_post', $post_id ) ) { return; }
+	$file_url = sanitize_text_field( wp_unslash( $_POST['staffswap_resource_file'] ?? '' ) );
+	if ( $file_url ) { update_post_meta( $post_id, '_staffswap_resource_file', esc_url_raw( $file_url ) ); } else { delete_post_meta( $post_id, '_staffswap_resource_file' ); }
+}
+add_action( 'save_post_staff_resource', 'staffswap_resource_file_meta_box_save' );
+
+function staffswap_resources_shortcode() {
+	$search = isset( $_GET['resource_search'] ) ? sanitize_text_field( wp_unslash( $_GET['resource_search'] ) ) : '';
+	$category_slug = isset( $_GET['resource_category'] ) ? sanitize_title( wp_unslash( $_GET['resource_category'] ) ) : '';
+	$query_args = array( 'post_type' => 'staff_resource', 'post_status' => 'publish', 'posts_per_page' => 12, 's' => $search );
+	if ( $category_slug ) { $query_args['tax_query'] = array( array( 'taxonomy' => 'resource_category', 'field' => 'slug', 'terms' => $category_slug ) ); }
+	$query = new WP_Query( $query_args );
+	global $wpdb;
+	$total_downloads = (int) $wpdb->get_var( "SELECT SUM(CAST(meta_value AS UNSIGNED)) FROM {$wpdb->postmeta} pm INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id WHERE pm.meta_key = '_staffswap_download_count' AND p.post_type = 'staff_resource' AND p.post_status = 'publish'" );
+	$all_categories = get_terms( array( 'taxonomy' => 'resource_category', 'hide_empty' => false ) );
+	$category_count = ! is_wp_error( $all_categories ) ? count( $all_categories ) : 0;
+	ob_start(); ?>
+<section class="resource-hero"><div><p class="eyebrow">STAFFEXCHANGEHUB LIBRARY</p><h1>Resources Centre</h1><p class="muted">Free guides, templates, policies, forms, and career resources for professionals in healthcare, education, and beyond.</p><form class="resource-search" method="get"><input name="resource_search" value="<?php echo esc_attr( $search ); ?>" placeholder="Search resources, templates, guides..."><select name="resource_category" aria-label="Filter by category"><option value="">All categories</option><?php if ( ! is_wp_error( $all_categories ) ) : foreach ( $all_categories as $category ) : ?><option value="<?php echo esc_attr( $category->slug ); ?>" <?php selected( $category_slug, $category->slug ); ?>><?php echo esc_html( $category->name ); ?></option><?php endforeach; endif; ?></select><input type="submit" value="Search"></form><div class="resource-stats"><div class="resource-stat"><strong><?php echo esc_html( number_format_i18n( $total_downloads ) ); ?>+</strong><span class="muted">Downloads</span></div><div class="resource-stat"><strong><?php echo esc_html( $query->found_posts ); ?>+</strong><span class="muted">Resources</span></div><div class="resource-stat"><strong><?php echo esc_html( $category_count ); ?>+</strong><span class="muted">Categories</span></div></div></div></section><section><div class="page-heading"><div><p class="eyebrow">BROWSE BY CATEGORY</p><h2>Find what you need</h2></div></div><div class="resource-categories"><?php $categories = get_terms( array( 'taxonomy' => 'resource_category', 'hide_empty' => false, 'number' => 5 ) ); if ( ! is_wp_error( $categories ) ) : foreach ( $categories as $category ) : ?><a class="resource-card" href="<?php echo esc_url( get_term_link( $category ) ); ?>"><h3><?php echo esc_html( $category->name ); ?></h3><p><?php echo esc_html( $category->count ); ?> resources</p></a><?php endforeach; endif; ?></div></section><section style="margin-top:48px"><div class="page-heading"><div><p class="eyebrow">POPULAR RESOURCES</p><h2>Practical tools for your next move</h2></div></div><div class="resource-grid"><?php if ( $query->have_posts() ) : while ( $query->have_posts() ) : $query->the_post(); ?><article class="resource-card"><h3><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></h3><p><?php echo esc_html( wp_trim_words( get_the_excerpt(), 18 ) ); ?></p><p class="muted resource-downloads"><?php echo esc_html( number_format_i18n( (int) get_post_meta( get_the_ID(), '_staffswap_download_count', true ) ) ); ?> downloads</p><a class="resource-link" href="<?php the_permalink(); ?>">View resource <span aria-hidden="true">&#8594;</span></a></article><?php endwhile; wp_reset_postdata(); else : ?><div class="panel"><h2>No resources found</h2><p class="muted">Try another search term.</p></div><?php endif; ?></div></section>
 <?php return ob_get_clean(); }
 add_shortcode( 'staffswap_resources', 'staffswap_resources_shortcode' );
 
