@@ -5,7 +5,80 @@
  * Version: 1.0.0
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
-function staffswap_has_active_membership( $user_id = 0 ) { $user_id = $user_id ? absint( $user_id ) : get_current_user_id(); return (bool) ( $user_id && '1' === get_user_meta( $user_id, 'staffswap_plus_active', true ) ); }
+function staffswap_wc_membership_expiry_for_order( $order, $duration ) {
+	$duration = strtolower( trim( (string) $duration ) );
+	if ( 'lifetime' === $duration ) { return 0; }
+	$paid_date = $order ? $order->get_date_paid() : false;
+	if ( ! $duration || ! $paid_date ) { return false; }
+	$normalized_duration = trim( $duration );
+	if ( ! in_array( substr( $normalized_duration, 0, 1 ), array( '+', '-' ), true ) ) { $normalized_duration = '+' . $normalized_duration; }
+	$expiry_ts = strtotime( $normalized_duration, $paid_date->getTimestamp() );
+	if ( ! $expiry_ts || $expiry_ts < current_time( 'timestamp', true ) ) { return false; }
+	return $expiry_ts;
+}
+function staffswap_user_has_paid_vip_order( $user_id, &$active_until_ts = 0 ) {
+	if ( ! $user_id || ! function_exists( 'wc_get_orders' ) ) { return false; }
+	$plans = staffswap_wc_plans();
+	$vip_products = array();
+	foreach ( array_keys( $plans ) as $plan ) {
+		$product_id = (int) get_option( 'staffswap_vip_product_' . $plan, 0 );
+		if ( $product_id ) { $vip_products[ $product_id ] = $plan; }
+	}
+	if ( ! $vip_products ) { return false; }
+	$statuses = function_exists( 'wc_get_is_paid_statuses' ) ? wc_get_is_paid_statuses() : array( 'processing', 'completed' );
+	$statuses = array_values( array_unique( array_map( function( $status ) {
+		$status = (string) $status;
+		return 0 === strpos( $status, 'wc-' ) ? $status : 'wc-' . $status;
+	}, $statuses ) ) );
+	$order_filters = array( array( 'customer_id' => (int) $user_id ) );
+	$user = get_userdata( $user_id );
+	if ( $user && ! empty( $user->user_email ) ) { $order_filters[] = array( 'billing_email' => sanitize_email( $user->user_email ) ); }
+	$seen_order_ids = array();
+	$has_active_membership = false;
+	$active_until_ts = 0;
+	foreach ( $order_filters as $filter ) {
+		$page = 1;
+		do {
+			$order_ids = wc_get_orders( array_merge( $filter, array( 'status' => $statuses, 'limit' => 50, 'page' => $page, 'return' => 'ids' ) ) );
+			if ( ! $order_ids ) { break; }
+			foreach ( $order_ids as $order_id ) {
+				if ( isset( $seen_order_ids[ $order_id ] ) ) { continue; }
+				$seen_order_ids[ $order_id ] = true;
+				$order = wc_get_order( $order_id );
+				if ( ! $order ) { continue; }
+				foreach ( $order->get_items() as $item ) {
+					$product_id = (int) $item->get_product_id();
+					if ( empty( $vip_products[ $product_id ] ) ) { continue; }
+					$plan = $vip_products[ $product_id ];
+					$duration = $plans[ $plan ]['duration'] ?? '';
+					$membership_expiry = staffswap_wc_membership_expiry_for_order( $order, $duration );
+					if ( false === $membership_expiry ) { continue; }
+					if ( 0 === (int) $membership_expiry ) { $active_until_ts = 0; return true; }
+					if ( (int) $membership_expiry > (int) $active_until_ts ) { $active_until_ts = (int) $membership_expiry; }
+					$has_active_membership = true;
+				}
+			}
+			$page++;
+		} while ( count( $order_ids ) === 50 );
+	}
+	return $has_active_membership;
+}
+function staffswap_has_active_membership( $user_id = 0 ) {
+	$user_id = $user_id ? absint( $user_id ) : get_current_user_id();
+	if ( ! $user_id ) { return false; }
+	if ( '1' === get_user_meta( $user_id, 'staffswap_plus_active', true ) ) { return true; }
+	$cache_key = 'staffswap_plus_fallback_' . $user_id;
+	$cached = get_transient( $cache_key );
+	if ( false !== $cached ) { return '1' === $cached; }
+	$active_until_ts = 0;
+	$has_active_membership = staffswap_user_has_paid_vip_order( $user_id, $active_until_ts );
+	if ( $has_active_membership ) {
+		$ttl = 0 === $active_until_ts ? WEEK_IN_SECONDS : max( MINUTE_IN_SECONDS, $active_until_ts - current_time( 'timestamp', true ) );
+		set_transient( $cache_key, '1', $ttl );
+		return true;
+	}
+	return false;
+}
 function staffswap_membership_required_notice( $action = 'use this feature' ) { return '<div class="panel membership-required"><p class="eyebrow">STAFFSWAP PLUS</p><h2>Membership required</h2><p>You need an active membership to ' . esc_html( $action ) . '.</p><a class="button button--primary" href="' . esc_url( home_url( '/pricing/' ) ) . '">View membership plans</a></div>'; }
 function staffswap_wc_plans() { return array( 'month' => array( 'title' => 'StaffSwap VIP Gold - 1 Month', 'price' => '99', 'sku' => 'STAFFSWAP-VIP-1M', 'duration' => '1 month' ), 'quarter' => array( 'title' => 'StaffSwap VIP Gold - 3 Months', 'price' => '249', 'sku' => 'STAFFSWAP-VIP-3M', 'duration' => '3 months' ), 'lifetime' => array( 'title' => 'StaffSwap VIP Gold - Lifetime', 'price' => '799', 'sku' => 'STAFFSWAP-VIP-LIFE', 'duration' => 'lifetime' ) ); }
 function staffswap_wc_product( $plan = 'month' ) {
@@ -71,7 +144,7 @@ function staffswap_wc_payment_complete( $order_id ) {
 	$order = wc_get_order( $order_id );
 	if ( ! $order ) { return; }
 	$user_id = (int) $order->get_user_id();
-	if ( $user_id && $order->get_items() ) { foreach ( $order->get_items() as $item ) { foreach ( array_keys( staffswap_wc_plans() ) as $plan ) { if ( (int) $item->get_product_id() === (int) get_option( 'staffswap_vip_product_' . $plan ) ) { update_user_meta( $user_id, 'staffswap_plus_active', '1' ); update_user_meta( $user_id, 'staffswap_vip_plan', $plan ); } } } }
+	if ( $user_id && $order->get_items() ) { foreach ( $order->get_items() as $item ) { foreach ( array_keys( staffswap_wc_plans() ) as $plan ) { if ( (int) $item->get_product_id() === (int) get_option( 'staffswap_vip_product_' . $plan ) ) { update_user_meta( $user_id, 'staffswap_plus_active', '1' ); update_user_meta( $user_id, 'staffswap_vip_plan', $plan ); delete_transient( 'staffswap_plus_fallback_' . $user_id ); } } } }
 }
 add_action( 'woocommerce_payment_complete', 'staffswap_wc_payment_complete' );
 function staffswap_wc_admin_notice() { if ( current_user_can( 'manage_options' ) && ! class_exists( 'WooCommerce' ) ) { echo '<div class="notice notice-info"><p><strong>StaffSwap WooCommerce Bridge:</strong> Install WooCommerce to enable premium upgrade checkout. The core marketplace remains fully available without it.</p></div>'; } }
