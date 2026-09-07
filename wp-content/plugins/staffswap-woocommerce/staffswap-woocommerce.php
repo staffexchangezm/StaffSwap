@@ -109,6 +109,7 @@ function staffswap_wc_payment_complete( $order_id ) {
 	$user_id = (int) $order->get_user_id();
 	$plan_durations = array( 'month' => '+1 month', 'quarter' => '+3 months', 'lifetime' => '' );
 	if ( $user_id && $order->get_items() ) { foreach ( $order->get_items() as $item ) { foreach ( array_keys( staffswap_wc_plans() ) as $plan ) { if ( (int) $item->get_product_id() === (int) get_option( 'staffswap_vip_product_' . $plan ) ) { update_user_meta( $user_id, 'staffswap_plus_active', '1' ); update_user_meta( $user_id, 'staffswap_vip_plan', $plan ); $duration = $plan_durations[ $plan ] ?? ''; update_user_meta( $user_id, 'staffswap_vip_expires_at', $duration ? gmdate( 'Y-m-d H:i:s', strtotime( $duration, current_time( 'timestamp', true ) ) ) : '' ); delete_user_meta( $user_id, 'staffswap_vip_renewal_notified' ); } } } }
+	if ( $user_id && $order->get_items() ) { foreach ( $order->get_items() as $item ) { foreach ( array_keys( staffswap_wc_plans() ) as $plan ) { if ( (int) $item->get_product_id() === (int) get_option( 'staffswap_vip_product_' . $plan ) ) { update_user_meta( $user_id, 'staffswap_plus_active', '1' ); update_user_meta( $user_id, 'staffswap_vip_plan', $plan ); delete_transient( 'staffswap_plus_fallback_' . $user_id ); } } } }
 }
 add_action( 'woocommerce_payment_complete', 'staffswap_wc_payment_complete' );
 // Some gateways (bank transfer, manual admin completion, COD) never call $order->payment_complete(),
