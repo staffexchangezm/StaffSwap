@@ -288,6 +288,7 @@ function staffswap_theme_options_hub_tabs() {
 		'plans' => array( 'label' => 'Membership Plans', 'icon' => 'dashicons-tickets-alt' ),
 		'payments' => array( 'label' => 'Payment Gateway', 'icon' => 'dashicons-money-alt' ),
 		'sms' => array( 'label' => 'SMS Notifications', 'icon' => 'dashicons-smartphone' ),
+		'ai' => array( 'label' => 'AI Drafting', 'icon' => 'dashicons-lightbulb' ),
 		'setup' => array( 'label' => 'Setup & Health', 'icon' => 'dashicons-admin-tools' ),
 		'links' => array( 'label' => 'Quick Links', 'icon' => 'dashicons-admin-links' ),
 	);
@@ -415,6 +416,33 @@ function staffswap_hub_tab_sms() {
 		</div>
 		<?php wp_nonce_field( 'staffswap_save_sms', 'staffswap_sms_nonce' ); ?>
 		<p><button type="submit" name="staffswap_save_sms" class="button button-primary">Save SMS settings</button></p>
+	</form>
+	<?php
+}
+
+function staffswap_hub_tab_ai() {
+	$settings = get_option( 'staffswap_ai_settings', array() );
+	$settings = wp_parse_args( is_array( $settings ) ? $settings : array(), array( 'enabled' => 'no', 'model' => 'gpt-4o-mini', 'api_key' => '' ) );
+	if ( isset( $_POST['staffswap_save_ai'] ) && check_admin_referer( 'staffswap_save_ai', 'staffswap_ai_nonce' ) ) {
+		$settings['enabled'] = isset( $_POST['ai_enabled'] ) ? 'yes' : 'no';
+		$settings['model'] = sanitize_text_field( wp_unslash( $_POST['ai_model'] ?? $settings['model'] ) );
+		$submitted_key = wp_unslash( $_POST['ai_api_key'] ?? '' );
+		if ( '' !== trim( (string) $submitted_key ) ) {
+			$settings['api_key'] = sanitize_text_field( $submitted_key );
+		}
+		update_option( 'staffswap_ai_settings', $settings );
+		echo '<div class="notice notice-success is-dismissible"><p>AI drafting settings saved.</p></div>';
+	}
+	?>
+	<p>AI is optional. It can generate a concise summary paragraph for accepted swap documents, but the agreement itself should still be reviewed before it is used as a final business record.</p>
+	<form method="post">
+		<div class="staffswap-hub__grid">
+			<label class="staffswap-hub__checkbox"><input type="checkbox" name="ai_enabled" <?php checked( 'yes', $settings['enabled'] ); ?>> Enable AI summary drafting</label>
+			<label>Model<input name="ai_model" value="<?php echo esc_attr( $settings['model'] ); ?>" placeholder="gpt-4o-mini"></label>
+			<label class="staffswap-hub__full">OpenAI API key<input type="password" name="ai_api_key" placeholder="<?php echo $settings['api_key'] ? 'Key saved — leave blank to keep it' : ''; ?>" autocomplete="off"><small>Stored securely; leave blank to keep the current key.</small></label>
+		</div>
+		<?php wp_nonce_field( 'staffswap_save_ai', 'staffswap_ai_nonce' ); ?>
+		<p><button type="submit" name="staffswap_save_ai" class="button button-primary">Save AI settings</button></p>
 	</form>
 	<?php
 }
