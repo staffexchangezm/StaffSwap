@@ -11,8 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 // Sends a member notification SMS through ExciteSMS, if the gateway is configured and enabled.
 function staffswap_send_sms( $phone, $message ) {
     $settings = get_option( 'staffswap_sms_settings', array() );
-    if ( empty( $settings['enabled'] ) || empty( $settings['api_token'] ) || ! $phone ) { return false; }
-    $recipient = preg_replace( '/\D+/', '', (string) $phone );
+    if ( 'yes' !== ( $settings['enabled'] ?? '' ) || empty( $settings['api_token'] ) || ! $phone ) { return false; }
     if ( ! $recipient ) { return false; }
     $response = wp_remote_post( 'https://gateway.excitesms.com/api/v3/sms/send', array(
         'timeout' => 20,
