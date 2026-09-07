@@ -599,9 +599,8 @@ function staffswap_subscriber_digest_send() {
     if ( ! $recent ) { return; }
     $lines = array();
     foreach ( $recent as $listing ) { $lines[] = get_the_title( $listing ) . ' - ' . get_post_meta( $listing->ID, '_staffswap_current_location', true ) . ' to ' . get_post_meta( $listing->ID, '_staffswap_desired_location', true ) . ': ' . get_permalink( $listing ); }
-    $body = "New swap listings this week:\n\n" . implode( "\n", $lines ) . "\n\nBrowse all listings: " . home_url( '/swaps/' );
     foreach ( $subscribers as $email ) {
-        $unsubscribe_url = wp_nonce_url( add_query_arg( array( 'action' => 'staffswap_unsubscribe_alerts', 'email' => rawurlencode( $email ) ), admin_url( 'admin-post.php' ) ), 'staffswap_unsubscribe_' . $email );
+        $unsubscribe_url = wp_nonce_url( add_query_arg( array( 'action' => 'staffswap_unsubscribe_alerts', 'email' => $email ), admin_url( 'admin-post.php' ) ), 'staffswap_unsubscribe_' . $email );
         wp_mail( $email, '[' . get_bloginfo( 'name' ) . '] New swap listings this week', $body . "\n\nUnsubscribe: " . $unsubscribe_url );
     }
     update_option( 'staffswap_subscriber_digest_last_sent', time() );
