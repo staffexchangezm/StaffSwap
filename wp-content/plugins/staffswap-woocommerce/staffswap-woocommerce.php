@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: StaffSwap WooCommerce Bridge
- * Description: Optional WooCommerce integration for StaffSwap Plus upgrades and premium visibility.
+ * Description: Optional WooCommerce integration for StaffSwap Plus upgrades, hosted Lenco card/mobile-money payments, and premium visibility.
  * Version: 1.0.0
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
@@ -152,35 +152,80 @@ function staffswap_lenco_gateway_init() {
 	if ( ! class_exists( 'WC_Payment_Gateway' ) ) { return; }
 	class StaffSwap_Lenco_Gateway extends WC_Payment_Gateway {
 		public function __construct() {
-			$this->id = 'staffswap_lenco'; $this->method_title = 'Lenco Mobile Money'; $this->method_description = 'MTN Mobile Money, Airtel Money, and Zamtel collections through Lenco.'; $this->has_fields = true;
+			$this->id = 'staffswap_lenco'; $this->method_title = 'Lenco Payments'; $this->method_description = 'Card and Zambian mobile-money collections through Lenco.'; $this->has_fields = false;
 			$this->init_form_fields(); $this->init_settings(); $this->title = $this->get_option( 'title', 'Mobile Money' ); $this->description = $this->get_option( 'description', 'Pay securely using MTN Mobile Money, Airtel Money, or Zamtel Kwacha.' ); $this->api_key = trim( (string) $this->get_option( 'api_key' ) );
 			add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
 		}
-		public function init_form_fields() { $this->form_fields = array( 'enabled' => array( 'title' => 'Enable', 'type' => 'checkbox', 'label' => 'Enable Lenco Mobile Money', 'default' => 'no' ), 'title' => array( 'title' => 'Title', 'type' => 'text', 'default' => 'Mobile Money' ), 'description' => array( 'title' => 'Description', 'type' => 'textarea', 'default' => 'Pay securely using MTN Mobile Money, Airtel Money, or Zamtel.' ), 'api_key' => array( 'title' => 'Lenco API token', 'type' => 'password', 'description' => 'Get this from Lenco. Requests use the Authorization: Bearer header.' ) ); }
-		public function payment_fields() { if ( $this->description ) { echo wpautop( wp_kses_post( $this->description ) ); } ?><p class="form-row form-row-wide"><label for="staffswap_lenco_phone">Mobile number <span class="required">*</span></label><input id="staffswap_lenco_phone" name="staffswap_lenco_phone" type="tel" placeholder="097XXXXXXX" required></p><p class="form-row form-row-wide"><label for="staffswap_lenco_operator">Mobile network <span class="required">*</span></label><select id="staffswap_lenco_operator" name="staffswap_lenco_operator" required><option value="">Select network</option><option value="airtel">Airtel</option><option value="mtn">MTN</option><option value="zamtel">Zamtel</option></select></p><?php }
-		public function validate_fields() { $phone = preg_replace( '/\D+/', '', wc_clean( wp_unslash( $_POST['staffswap_lenco_phone'] ?? '' ) ) ); $operator = sanitize_key( wp_unslash( $_POST['staffswap_lenco_operator'] ?? '' ) ); if ( 12 === strlen( $phone ) && 0 === strpos( $phone, '260' ) ) { $phone = '0' . substr( $phone, 3 ); } if ( ! preg_match( '/^0[0-9]{9}$/', $phone ) ) { wc_add_notice( 'Enter a valid Zambian mobile number, for example 097XXXXXXX.', 'error' ); return false; } if ( ! in_array( $operator, array( 'airtel', 'mtn', 'zamtel' ), true ) ) { wc_add_notice( 'Select your Zambian mobile network.', 'error' ); return false; } return true; }
+		public function init_form_fields() { $this->form_fields = array( 'enabled' => array( 'title' => 'Enable', 'type' => 'checkbox', 'label' => 'Enable Lenco Payments', 'default' => 'no' ), 'title' => array( 'title' => 'Title', 'type' => 'text', 'default' => 'Card or Mobile Money' ), 'description' => array( 'title' => 'Description', 'type' => 'textarea', 'default' => 'Pay securely by card or Zambian mobile money.' ), 'public_key' => array( 'title' => 'Lenco public key', 'type' => 'text', 'description' => 'Used by the hosted payment widget. This is safe to expose in checkout.' ), 'api_key' => array( 'title' => 'Lenco API token', 'type' => 'password', 'description' => 'Keep this secret. Server requests use the Authorization: Bearer header.' ) ); }
+		public function payment_fields() { if ( $this->description ) { echo wpautop( wp_kses_post( $this->description ) ); } }
+		public function validate_fields() { return true; }
 		public function process_payment( $order_id ) {
 			$order = wc_get_order( $order_id );
-			if ( ! $this->api_key ) { wc_add_notice( 'Mobile Money is not configured. Please contact support.', 'error' ); return array( 'result' => 'failure' ); }
-			$phone = preg_replace( '/\D+/', '', wc_clean( wp_unslash( $_POST['staffswap_lenco_phone'] ?? '' ) ) );
-			if ( 12 === strlen( $phone ) && 0 === strpos( $phone, '260' ) ) { $phone = '0' . substr( $phone, 3 ); }
-			$operator = sanitize_key( wp_unslash( $_POST['staffswap_lenco_operator'] ?? '' ) );
+			$public_key = trim( (string) $this->get_option( 'public_key' ) );
+			if ( ! $this->api_key || ! $public_key ) { wc_add_notice( 'Lenco Payments is not configured. Please contact support.', 'error' ); return array( 'result' => 'failure' ); }
 			$reference = 'STAFFSWAP-' . $order->get_order_number() . '-' . wp_generate_password( 8, false, false );
-			$response = wp_remote_post( 'https://api.lenco.co/access/v2/collections/mobile-money', array( 'timeout' => 45, 'headers' => array( 'accept' => 'application/json', 'content-type' => 'application/json', 'Authorization' => 'Bearer ' . $this->api_key ), 'body' => wp_json_encode( array( 'amount' => (float) $order->get_total(), 'reference' => $reference, 'phone' => $phone, 'operator' => $operator, 'country' => 'zm', 'bearer' => 'merchant' ) ) ) );
-			if ( is_wp_error( $response ) ) { $order->add_order_note( 'Lenco request failed: ' . $response->get_error_message() ); wc_add_notice( 'We could not reach the Mobile Money service. Please try again.', 'error' ); return array( 'result' => 'failure' ); }
-			$response_code = wp_remote_retrieve_response_code( $response );
-			if ( 200 > $response_code || 299 < $response_code ) { $body_text = wp_remote_retrieve_body( $response ); $order->add_order_note( 'Lenco request rejected (HTTP ' . absint( $response_code ) . '): ' . sanitize_text_field( wp_trim_words( $body_text, 30 ) ) ); wc_add_notice( 401 === $response_code ? 'Mobile Money authentication failed. Please contact support.' : 'We could not start the Mobile Money request. Please try again.', 'error' ); return array( 'result' => 'failure' ); }
-			$body = json_decode( wp_remote_retrieve_body( $response ), true );
-			$data = is_array( $body['data'] ?? null ) ? $body['data'] : array();
-			if ( empty( $data['reference'] ) || empty( $data['status'] ) ) { wc_add_notice( 'Lenco did not return a valid payment reference. Please try again.', 'error' ); return array( 'result' => 'failure' ); }
-			$order->update_meta_data( '_staffswap_lenco_reference', sanitize_text_field( $data['reference'] ) ); $order->update_meta_data( '_staffswap_lenco_reference_id', sanitize_text_field( $data['lencoReference'] ?? '' ) ); $order->update_meta_data( '_staffswap_lenco_status', sanitize_key( $data['status'] ) ); $order->save(); $order->update_status( 'on-hold', 'Awaiting Lenco Mobile Money authorization.' ); wc_reduce_stock_levels( $order_id ); WC()->cart->empty_cart();
-			return array( 'result' => 'success', 'redirect' => $this->get_return_url( $order ) );
+			$order->update_meta_data( '_staffswap_lenco_reference', $reference ); $order->update_meta_data( '_staffswap_lenco_status', 'pending' ); $order->save(); $order->update_status( 'on-hold', 'Awaiting Lenco card or mobile-money authorization.' ); wc_reduce_stock_levels( $order_id ); WC()->cart->empty_cart();
+			return array( 'result' => 'success', 'redirect' => add_query_arg( array( 'staffswap_lenco_pay' => $order_id, 'key' => $order->get_order_key() ), home_url( '/' ) ) );
 		}
 	}
 }
 add_action( 'plugins_loaded', 'staffswap_lenco_gateway_init', 20 );
 function staffswap_lenco_add_gateway( $gateways ) { $gateways[] = 'StaffSwap_Lenco_Gateway'; return $gateways; }
 add_filter( 'woocommerce_payment_gateways', 'staffswap_lenco_add_gateway' );
+
+function staffswap_lenco_settings() {
+	$settings = get_option( 'woocommerce_staffswap_lenco_settings', array() );
+	return is_array( $settings ) ? $settings : array();
+}
+
+function staffswap_lenco_fetch_status( $reference, $api_key ) {
+	if ( ! $reference || ! $api_key ) { return false; }
+	$response = wp_remote_get( 'https://api.lenco.co/access/v2/collections/status/' . rawurlencode( $reference ), array( 'timeout' => 20, 'headers' => array( 'accept' => 'application/json', 'Authorization' => 'Bearer ' . $api_key ) ) );
+	if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) { return false; }
+	$body = json_decode( wp_remote_retrieve_body( $response ), true );
+	return is_array( $body['data'] ?? null ) ? $body['data'] : false;
+}
+
+function staffswap_lenco_update_order_from_status( $order, $data, $source = 'status check' ) {
+	if ( ! $order || ! is_array( $data ) ) { return false; }
+	$status = strtolower( sanitize_text_field( $data['status'] ?? '' ) );
+	$reference = sanitize_text_field( $data['reference'] ?? $order->get_meta( '_staffswap_lenco_reference' ) );
+	if ( $reference && $reference !== $order->get_meta( '_staffswap_lenco_reference' ) ) { return false; }
+	if ( $status ) { $order->update_meta_data( '_staffswap_lenco_status', $status ); $order->save(); }
+	if ( 'successful' === $status && ! $order->is_paid() ) { $order->payment_complete( $reference ); $order->add_order_note( 'Lenco payment confirmed by ' . $source . '.' ); return true; }
+	if ( 'failed' === $status && ! $order->is_paid() ) { $order->update_status( 'failed', 'Lenco payment was not completed.' ); return true; }
+	return false;
+}
+
+function staffswap_lenco_payment_page() {
+	$order_id = absint( $_GET['staffswap_lenco_pay'] ?? 0 );
+	$order_key = wc_clean( wp_unslash( $_GET['key'] ?? '' ) );
+	if ( ! $order_id ) { return; }
+	$order = wc_get_order( $order_id );
+	$settings = staffswap_lenco_settings();
+	$public_key = trim( (string) ( $settings['public_key'] ?? '' ) );
+	if ( ! $order || ! hash_equals( $order->get_order_key(), $order_key ) || 'staffswap_lenco' !== $order->get_payment_method() || ! $public_key ) { status_header( 404 ); exit; }
+	$reference = $order->get_meta( '_staffswap_lenco_reference' );
+	$return_url = $order->get_checkout_order_received_url();
+	$customer = array_filter( array( 'firstName' => $order->get_billing_first_name(), 'lastName' => $order->get_billing_last_name(), 'phone' => $order->get_billing_phone() ) );
+	$verify_url = add_query_arg( array( 'wc-api' => 'staffswap_lenco_verify', 'order_id' => $order_id, 'key' => $order_key ), home_url( '/' ) );
+	$config = array( 'key' => $public_key, 'reference' => $reference, 'email' => $order->get_billing_email(), 'amount' => (float) $order->get_total(), 'currency' => $order->get_currency(), 'channels' => array( 'card', 'mobile-money' ), 'customer' => $customer );
+	$html = '<!doctype html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Complete payment</title></head><body><p>Opening secure Lenco payment...</p><script src="https://pay.lenco.co/js/v1/inline.js"></script><script>window.addEventListener("load",function(){LencoPay.getPaid(Object.assign(' . wp_json_encode( $config ) . ',{onSuccess:function(response){window.location.href=' . wp_json_encode( $verify_url ) . ' + "&reference=" + encodeURIComponent(response.reference);},onClose:function(){window.location.href=' . wp_json_encode( $return_url ) . ';},onConfirmationPending:function(){window.location.href=' . wp_json_encode( $return_url ) . ';}}));});</script></body></html>';
+	wp_die( $html, 'StaffSwap Lenco Payment' );
+}
+add_action( 'template_redirect', 'staffswap_lenco_payment_page' );
+
+function staffswap_lenco_verify() {
+	$order = wc_get_order( absint( $_REQUEST['order_id'] ?? 0 ) );
+	$order_key = wc_clean( wp_unslash( $_REQUEST['key'] ?? '' ) );
+	$reference = sanitize_text_field( wp_unslash( $_REQUEST['reference'] ?? '' ) );
+	if ( ! $order || ! hash_equals( $order->get_order_key(), $order_key ) || 'staffswap_lenco' !== $order->get_payment_method() || ! $reference || $reference !== $order->get_meta( '_staffswap_lenco_reference' ) ) { wp_send_json_error( array( 'message' => 'Invalid payment verification request.' ), 400 ); }
+	$data = staffswap_lenco_fetch_status( $reference, trim( (string) ( staffswap_lenco_settings()['api_key'] ?? '' ) ) );
+	if ( ! $data ) { wp_send_json_error( array( 'message' => 'Payment status could not be verified yet.' ), 502 ); }
+	staffswap_lenco_update_order_from_status( $order, $data, 'verification' );
+	wp_send_json_success( array( 'status' => sanitize_key( $data['status'] ?? '' ), 'redirect' => $order->get_checkout_order_received_url() ) );
+}
+add_action( 'woocommerce_api_staffswap_lenco_verify', 'staffswap_lenco_verify' );
 
 function staffswap_lenco_callback() {
 	$raw_body = file_get_contents( 'php://input' );
@@ -190,12 +235,10 @@ function staffswap_lenco_callback() {
 	if ( ! $api_key || ! $signature || ! hash_equals( $expected, $signature ) ) { status_header( 401 ); exit; }
 	$payload = json_decode( $raw_body, true );
 	$reference = sanitize_text_field( $payload['data']['reference'] ?? '' );
-	$status = strtolower( sanitize_text_field( $payload['data']['status'] ?? '' ) );
 	$orders = $reference ? wc_get_orders( array( 'limit' => 1, 'meta_key' => '_staffswap_lenco_reference', 'meta_value' => $reference ) ) : array();
 	$order = $orders ? $orders[0] : false;
 	if ( ! $order ) { status_header( 400 ); exit; }
-	if ( 'successful' === $status && ! $order->is_paid() ) { $order->payment_complete( $reference ); $order->add_order_note( 'Lenco Mobile Money payment confirmed.' ); }
-	elseif ( 'failed' === $status ) { $order->update_status( 'failed', 'Lenco Mobile Money payment was not completed.' ); }
+	staffswap_lenco_update_order_from_status( $order, $payload['data'] ?? array(), 'webhook' );
 	status_header( 200 ); echo 'OK'; exit;
 }
 add_action( 'woocommerce_api_staffswap_lenco_callback', 'staffswap_lenco_callback' );
@@ -204,14 +247,22 @@ function staffswap_lenco_check_order_status( $order_id ) {
 	$order = wc_get_order( $order_id );
 	if ( ! $order || $order->is_paid() || 'staffswap_lenco' !== $order->get_payment_method() ) { return; }
 	$reference = $order->get_meta( '_staffswap_lenco_reference' );
-	$settings = get_option( 'woocommerce_staffswap_lenco_settings', array() );
-	$api_key = $settings['api_key'] ?? '';
-	if ( ! $reference || ! $api_key ) { return; }
-	$response = wp_remote_get( 'https://api.lenco.co/access/v2/collections/status/' . rawurlencode( $reference ), array( 'timeout' => 20, 'headers' => array( 'accept' => 'application/json', 'Authorization' => 'Bearer ' . $api_key ) ) );
-	if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) { return; }
-	$body = json_decode( wp_remote_retrieve_body( $response ), true );
-	$status = strtolower( sanitize_text_field( $body['data']['status'] ?? '' ) );
-	if ( 'successful' === $status && ! $order->is_paid() ) { $order->payment_complete( $reference ); $order->add_order_note( 'Lenco Mobile Money payment confirmed by status check.' ); }
-	elseif ( 'failed' === $status ) { $order->update_status( 'failed', 'Lenco Mobile Money payment was not completed.' ); }
+	$data = staffswap_lenco_fetch_status( $reference, trim( (string) ( staffswap_lenco_settings()['api_key'] ?? '' ) ) );
+	if ( $data ) { staffswap_lenco_update_order_from_status( $order, $data ); }
 }
 add_action( 'woocommerce_thankyou_staffswap_lenco', 'staffswap_lenco_check_order_status' );
+
+function staffswap_lenco_cron_schedules( $schedules ) {
+	$schedules['staffswap_every_thirty_minutes'] = array( 'interval' => 30 * MINUTE_IN_SECONDS, 'display' => 'Every 30 minutes' );
+	return $schedules;
+}
+add_filter( 'cron_schedules', 'staffswap_lenco_cron_schedules' );
+function staffswap_lenco_schedule_status_checks() {
+	if ( ! wp_next_scheduled( 'staffswap_lenco_status_check' ) ) { wp_schedule_event( time() + 30 * MINUTE_IN_SECONDS, 'staffswap_every_thirty_minutes', 'staffswap_lenco_status_check' ); }
+}
+add_action( 'wp', 'staffswap_lenco_schedule_status_checks' );
+function staffswap_lenco_status_check_cron() {
+	$orders = wc_get_orders( array( 'limit' => 50, 'status' => array( 'pending', 'on-hold' ), 'payment_method' => 'staffswap_lenco', 'meta_key' => '_staffswap_lenco_reference', 'meta_compare' => 'EXISTS' ) );
+	foreach ( $orders as $order ) { staffswap_lenco_check_order_status( $order->get_id() ); }
+}
+add_action( 'staffswap_lenco_status_check', 'staffswap_lenco_status_check_cron' );
