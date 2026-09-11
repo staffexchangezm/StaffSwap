@@ -70,7 +70,7 @@ All StaffSwap settings live on a single page at **Appearance > Theme Options**, 
 
 - **Brand & Homepage** — site name, hero title/description, primary and secondary CTA labels, homepage statistics, and primary action color.
 - **Membership Plans** — editable title and price for each VIP Gold plan (month/quarter/lifetime); saving also updates the price on any already-created WooCommerce product.
-- **Payment Gateway** — enable/disable the Lipila Mobile Money gateway, its title, description, and secret key (write-only; leave blank to keep the existing key).
+- **Payment Gateway** — enable/disable the Lenco Mobile Money gateway, its title, description, and API token (write-only; leave blank to keep the existing token).
 - **SMS Notifications** — enable/disable ExciteSMS, sender ID, and API token, for members who opt in to SMS updates from their Profile Settings page.
 - **Setup & Health** — the setup wizard (Run setup / Repair pages and menu) and system health checks.
 - **Quick Links** — one-click links to Moderation Queue, Analytics, Verification Queue, Listings, Messages, Offers, Menus, and Plugins.
@@ -197,12 +197,12 @@ The schema version is stored in the `staffswap_db_version` option. Database chan
 If checkout says **There are no payment methods available**, check the following:
 
 1. Go to **WooCommerce > Settings > Payments** and confirm the intended gateway is enabled.
-2. If using the StaffSwap Lipila gateway, enter the Lipila Secret Key and save the settings. The gateway is disabled by default. The key must be a live/test key from the matching Lipila environment; a wrong or expired key returns an authentication error.
+2. If using the StaffSwap Lenco gateway, enter the Lenco API token and save the settings. The gateway is disabled by default. The token must be from the matching Lenco environment; a wrong or expired token returns an authentication error.
 3. Confirm the store currency, selling location, and customer billing country are supported by the gateway.
-4. For StaffSwap Lipila, use a classic Checkout page containing the shortcode `[woocommerce_checkout]`. The custom gateway currently supports the classic WooCommerce checkout, not the WooCommerce Checkout Block.
+4. For StaffSwap Lenco, use a classic Checkout page containing the shortcode `[woocommerce_checkout]`. The custom gateway currently supports the classic WooCommerce checkout, not the WooCommerce Checkout Block.
 5. Clear any cache and test in a private browser window.
 
-If a payment attempt still fails, open the failed order under **WooCommerce > Orders** and read the order notes. StaffSwap records the Lipila HTTP status there without exposing the secret key. HTTP `401` means the configured key is invalid, expired, or from the wrong environment; other `4xx` responses usually indicate a rejected amount, currency, phone number, or request field.
+If a payment attempt still fails, open the failed order under **WooCommerce > Orders** and read the order notes. StaffSwap records the Lenco HTTP status there without exposing the API token. HTTP `401` means the configured token is invalid, expired, or from the wrong environment; other `4xx` responses usually indicate a rejected amount, currency, phone number, operator, or request field. Register the webhook URL shown in **Appearance > Theme Options > Payment Gateway** with Lenco support so successful and failed collection events can update orders promptly.
 
 Built-in gateways such as Stripe, PayPal, or bank transfer should appear in both the normal WooCommerce checkout and the Checkout Block when their own requirements are complete. A gateway can be enabled in settings but still be unavailable when its currency, country, minimum order, or checkout compatibility requirements are not met.
 
