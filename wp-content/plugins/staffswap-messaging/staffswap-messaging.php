@@ -102,6 +102,196 @@ function staffswap_offer_post_type() {
 }
 add_action( 'init', 'staffswap_offer_post_type' );
 
+function staffswap_offer_document_directory() {
+	$directory = trailingslashit( dirname( ABSPATH ) ) . 'staffswap-private-documents';
+	if ( ! wp_mkdir_p( $directory ) ) {
+		return '';
+	}
+	return $directory;
+}
+
+function staffswap_offer_document_url( $offer_id ) {
+	$offer_id = absint( $offer_id );
+	$path = get_post_meta( $offer_id, '_staffswap_offer_agreement_file', true );
+	if ( ! $offer_id || empty( $path ) || ! is_readable( $path ) ) {
+		return '';
+	}
+	$nonce = wp_create_nonce( 'staffswap_offer_document_' . $offer_id );
+	return add_query_arg( array( 'action' => 'staffswap_download_offer_document', 'offer_id' => $offer_id, 'file' => rawurlencode( basename( $path ) ), '_wpnonce' => $nonce ), admin_url( 'admin-post.php' ) );
+}
+
+function staffswap_generate_ai_swap_summary( $data ) {
+	$settings = get_option( 'staffswap_ai_settings', array() );
+	$api_key = trim( (string) ( $settings['api_key'] ?? '' ) );
+	if ( 'yes' !== ( $settings['enabled'] ?? '' ) || empty( $api_key ) ) {
+		return '';
+	}
+
+	$prompt = sprintf(
+		"Draft a concise summary for a staff swap agreement between %s and %s. Include their current and desired locations, profession, effective date, and any notes about housing or logistics.\n\nCurrent: %s\nDesired: %s\nProfession: %s\nEffective date: %s\nHousing: %s\nNotes: %s",
+		wp_strip_all_tags( $data['sender_name'] ?? '' ),
+		wp_strip_all_tags( $data['recipient_name'] ?? '' ),
+		wp_strip_all_tags( $data['sender_current_location'] ?? '' ),
+		wp_strip_all_tags( $data['recipient_desired_location'] ?? '' ),
+		wp_strip_all_tags( $data['profession'] ?? '' ),
+		wp_strip_all_tags( $data['effective_date'] ?? '' ),
+		wp_strip_all_tags( $data['housing'] ?? 'Not specified' ),
+		wp_strip_all_tags( $data['notes'] ?? 'No additional notes.' )
+	);
+
+	$response = wp_remote_post(
+		'https://api.openai.com/v1/chat/completions',
+		array(
+			'timeout' => 30,
+			'headers' => array(
+				'Authorization' => 'Bearer ' . $api_key,
+				'Content-Type' => 'application/json',
+			),
+			'body' => wp_json_encode( array(
+				'model' => ! empty( $settings['model'] ) ? $settings['model'] : 'gpt-4o-mini',
+				'messages' => array(
+					array(
+						'role' => 'system',
+						'content' => 'You are drafting a short, neutral summary for a staff swap agreement. Keep it concise and factual. Do not invent legal obligations not in the provided data.',
+					),
+					array(
+						'role' => 'user',
+						'content' => $prompt,
+					),
+				),
+				'temperature' => 0.2,
+			) ),
+		)
+	);
+
+	if ( is_wp_error( $response ) ) {
+		return '';
+	}
+
+	$code = wp_remote_retrieve_response_code( $response );
+	if ( 200 !== $code ) {
+		return '';
+	}
+
+	$body = json_decode( wp_remote_retrieve_body( $response ), true );
+	if ( empty( $body['choices'][0]['message']['content'] ) ) {
+		return '';
+	}
+
+	return wp_kses_post( $body['choices'][0]['message']['content'] );
+}
+
+function staffswap_generate_offer_agreement_document( $offer_id ) {
+	$offer_id = absint( $offer_id );
+	$offer = get_post( $offer_id );
+	if ( ! $offer || 'staffswap_offer' !== $offer->post_type ) {
+		return false;
+	}
+
+	$directory = staffswap_offer_document_directory();
+	if ( empty( $directory ) ) {
+		return false;
+	}
+
+	$listing_id = (int) get_post_meta( $offer_id, '_staffswap_offer_listing', true );
+	$recipient_id = (int) get_post_meta( $offer_id, '_staffswap_offer_recipient', true );
+	$sender_id = (int) $offer->post_author;
+	$listing = get_post( $listing_id );
+	if ( ! $listing || 'swap_listing' !== $listing->post_type ) {
+		return false;
+	}
+
+	$sender_name = get_the_author_meta( 'display_name', $sender_id ) ?: 'Sender';
+	$recipient_name = get_the_author_meta( 'display_name', $recipient_id ) ?: 'Recipient';
+	$sender_current = get_post_meta( $listing_id, '_staffswap_current_location', true ) ?: 'Not specified';
+	$sender_desired = get_post_meta( $listing_id, '_staffswap_desired_location', true ) ?: 'Not specified';
+	$profession = get_post_meta( $listing_id, '_staffswap_profession', true ) ?: 'Not specified';
+	$housing = get_post_meta( $offer_id, '_staffswap_offer_housing', true ) ?: 'Not specified';
+	$effective_date = get_post_meta( $offer_id, '_staffswap_offer_effective_date', true ) ?: 'Not specified';
+	$notes = $offer->post_content ?: 'No additional notes provided.';
+	$ai_summary = staffswap_generate_ai_swap_summary( array(
+		'sender_name' => $sender_name,
+		'recipient_name' => $recipient_name,
+		'sender_current_location' => $sender_current,
+		'recipient_desired_location' => $sender_desired,
+		'profession' => $profession,
+		'effective_date' => $effective_date,
+		'housing' => $housing,
+		'notes' => $notes,
+	) );
+
+	$html = '<!doctype html><html><head><meta charset="UTF-8"><title>StaffSwap Agreement</title><style>body{font-family:Arial,sans-serif;margin:32px;color:#111}h1,h2{margin-bottom:8px}table{border-collapse:collapse;width:100%;margin-top:16px}td,th{border:1px solid #d1d5db;padding:10px;text-align:left;vertical-align:top}p{line-height:1.6}</style></head><body>'
+		. '<h1>StaffSwap Agreement</h1>'
+		. '<p><strong>Offer ID:</strong> ' . esc_html( $offer_id ) . '</p>'
+		. '<p><strong>Swap listing:</strong> ' . esc_html( get_the_title( $listing_id ) ) . '</p>'
+		. '<table><tr><th>Field</th><th>Details</th></tr>'
+		. '<tr><td>Sender</td><td>' . esc_html( $sender_name ) . '</td></tr>'
+		. '<tr><td>Recipient</td><td>' . esc_html( $recipient_name ) . '</td></tr>'
+		. '<tr><td>Profession</td><td>' . esc_html( $profession ) . '</td></tr>'
+		. '<tr><td>Current location</td><td>' . esc_html( $sender_current ) . '</td></tr>'
+		. '<tr><td>Desired location</td><td>' . esc_html( $sender_desired ) . '</td></tr>'
+		. '<tr><td>Effective date</td><td>' . esc_html( $effective_date ) . '</td></tr>'
+		. '<tr><td>Housing arrangement</td><td>' . esc_html( $housing ) . '</td></tr>'
+		. '<tr><td>Notes</td><td>' . esc_html( $notes ) . '</td></tr>'
+		. '</table>'
+		. ( $ai_summary ? '<h2>AI summary</h2><p>' . wp_kses_post( nl2br( $ai_summary ) ) . '</p>' : '' )
+		. '<h2>Declaration</h2>'
+		. '<p>This agreement records the agreed staff swap details between the parties listed above. It should be reviewed by both parties before the effective date and may be updated if the parties agree to any material changes.</p>'
+		. '<p><strong>Generated on:</strong> ' . esc_html( current_time( 'mysql' ) ) . '</p>'
+		. '</body></html>';
+
+	$file_name = 'swap-agreement-' . $offer_id . '.html';
+	$file_path = trailingslashit( $directory ) . $file_name;
+	if ( false === file_put_contents( $file_path, $html ) ) {
+		return false;
+	}
+
+	update_post_meta( $offer_id, '_staffswap_offer_agreement_file', $file_path );
+	update_post_meta( $offer_id, '_staffswap_offer_agreement_status', 'generated' );
+	update_post_meta( $offer_id, '_staffswap_offer_agreement_updated_at', current_time( 'mysql', true ) );
+
+	return $file_path;
+}
+
+function staffswap_download_offer_document() {
+	if ( ! is_user_logged_in() ) {
+		wp_die( 'You are not allowed to view this document.', 403 );
+	}
+
+	$offer_id = absint( $_GET['offer_id'] ?? 0 );
+	$file_name = sanitize_file_name( wp_unslash( $_GET['file'] ?? '' ) );
+	$nonce = sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ?? '' ) );
+	if ( ! $offer_id || ! $file_name || ! wp_verify_nonce( $nonce, 'staffswap_offer_document_' . $offer_id ) ) {
+		wp_die( 'You are not allowed to view this document.', 403 );
+	}
+
+	$offer = get_post( $offer_id );
+	if ( ! $offer || 'staffswap_offer' !== $offer->post_type ) {
+		wp_die( 'Document not found.', 404 );
+	}
+
+	$current_user = get_current_user_id();
+	$recipient_id = (int) get_post_meta( $offer_id, '_staffswap_offer_recipient', true );
+	$sender_id = (int) $offer->post_author;
+	if ( $current_user !== $sender_id && $current_user !== $recipient_id && ! current_user_can( 'manage_options' ) ) {
+		wp_die( 'You are not allowed to view this document.', 403 );
+	}
+
+	$stored_path = get_post_meta( $offer_id, '_staffswap_offer_agreement_file', true );
+	if ( empty( $stored_path ) || ! is_readable( $stored_path ) || basename( $stored_path ) !== $file_name ) {
+		wp_die( 'Document not found.', 404 );
+	}
+
+	nocache_headers();
+	http_response_code( 200 );
+	header( 'Content-Type: text/html; charset=utf-8' );
+	header( 'Content-Disposition: inline; filename="' . sanitize_file_name( basename( $stored_path ) ) . '"' );
+	header( 'Content-Length: ' . filesize( $stored_path ) );
+	readfile( $stored_path );
+	exit;
+}
+add_action( 'admin_post_staffswap_download_offer_document', 'staffswap_download_offer_document' );
+
 // Keeps an auditable history of every status change, shown to members and useful for admin dispute review.
 function staffswap_offer_log_status( $offer_id, $status, $user_id = 0, $reason = '' ) {
 	$log = (array) get_post_meta( $offer_id, '_staffswap_offer_status_log', true );
@@ -185,7 +375,22 @@ function staffswap_offer_current_status( $offer_id ) {
 }
 
 function staffswap_offer_action() {
-	if ( ! is_user_logged_in() || ! isset( $_POST['staffswap_offer_action'] ) ) {
+	if ( ! is_user_logged_in() ) {
+		return;
+	}
+
+	if ( isset( $_POST['staffswap_generate_agreement'] ) ) {
+		$offer_id = absint( $_POST['offer_id'] ?? 0 );
+		if ( $offer_id && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['staffswap_offer_action_nonce'] ?? '' ) ), 'staffswap_offer_action_' . $offer_id ) ) {
+			$offer = get_post( $offer_id );
+			if ( $offer && 'staffswap_offer' === $offer->post_type && ( (int) $offer->post_author === get_current_user_id() || (int) get_post_meta( $offer_id, '_staffswap_offer_recipient', true ) === get_current_user_id() || current_user_can( 'manage_options' ) ) ) {
+				staffswap_generate_offer_agreement_document( $offer_id );
+			}
+		}
+		return;
+	}
+
+	if ( ! isset( $_POST['staffswap_offer_action'] ) ) {
 		return;
 	}
 	if ( function_exists( 'staffswap_has_active_membership' ) && ! staffswap_has_active_membership() ) {
@@ -215,6 +420,7 @@ function staffswap_offer_action() {
 	if ( in_array( $action, array( 'accepted', 'completed' ), true ) ) {
 		$admin_email = get_option( 'admin_email' );
 		if ( $admin_email ) { wp_mail( $admin_email, '[' . get_bloginfo( 'name' ) . '] Swap offer ' . $action, 'A swap offer for "' . get_the_title( $listing_id ) . '" between ' . get_the_author_meta( 'display_name', $offer->post_author ) . ' and ' . get_the_author_meta( 'display_name', (int) get_post_meta( $offer_id, '_staffswap_offer_recipient', true ) ) . ' is now ' . $action . '. Review it in Swap Offers.' ); }
+		staffswap_generate_offer_agreement_document( $offer_id );
 	}
 	if ( 'accepted' === $action && function_exists( 'staffswap_db_table' ) ) {
 		global $wpdb;

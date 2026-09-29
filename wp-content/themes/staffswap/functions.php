@@ -288,6 +288,7 @@ function staffswap_theme_options_hub_tabs() {
 		'plans' => array( 'label' => 'Membership Plans', 'icon' => 'dashicons-tickets-alt' ),
 		'payments' => array( 'label' => 'Payment Gateway', 'icon' => 'dashicons-money-alt' ),
 		'sms' => array( 'label' => 'SMS Notifications', 'icon' => 'dashicons-smartphone' ),
+		'ai' => array( 'label' => 'AI Drafting', 'icon' => 'dashicons-lightbulb' ),
 		'setup' => array( 'label' => 'Setup & Health', 'icon' => 'dashicons-admin-tools' ),
 		'links' => array( 'label' => 'Quick Links', 'icon' => 'dashicons-admin-links' ),
 	);
@@ -368,25 +369,28 @@ function staffswap_hub_tab_plans() {
 }
 
 function staffswap_hub_tab_payments() {
-	if ( ! class_exists( 'WC_Payment_Gateway' ) ) { echo '<p>Install and activate WooCommerce to configure the Lipila Mobile Money gateway.</p>'; return; }
-	$settings = get_option( 'woocommerce_staffswap_lipila_settings', array() );
-	$settings = wp_parse_args( is_array( $settings ) ? $settings : array(), array( 'enabled' => 'no', 'title' => 'Mobile Money', 'description' => 'Pay securely using MTN Mobile Money, Airtel Money, or Zamtel Kwacha.', 'api_key' => '' ) );
+	if ( ! class_exists( 'WC_Payment_Gateway' ) ) { echo '<p>Install and activate WooCommerce to configure the Lenco Mobile Money gateway.</p>'; return; }
+	$settings = get_option( 'woocommerce_staffswap_lenco_settings', array() );
+	$settings = wp_parse_args( is_array( $settings ) ? $settings : array(), array( 'enabled' => 'no', 'title' => 'Card or Mobile Money', 'description' => 'Pay securely by card or Zambian mobile money.', 'public_key' => '', 'api_key' => '' ) );
 	if ( isset( $_POST['staffswap_save_payments'] ) && check_admin_referer( 'staffswap_save_payments', 'staffswap_payments_nonce' ) ) {
-		$settings['enabled'] = isset( $_POST['lipila_enabled'] ) ? 'yes' : 'no';
-		$settings['title'] = sanitize_text_field( wp_unslash( $_POST['lipila_title'] ?? $settings['title'] ) );
-		$settings['description'] = sanitize_textarea_field( wp_unslash( $_POST['lipila_description'] ?? $settings['description'] ) );
-		$submitted_key = wp_unslash( $_POST['lipila_api_key'] ?? '' );
+		$settings['enabled'] = isset( $_POST['lenco_enabled'] ) ? 'yes' : 'no';
+		$settings['title'] = sanitize_text_field( wp_unslash( $_POST['lenco_title'] ?? $settings['title'] ) );
+		$settings['description'] = sanitize_textarea_field( wp_unslash( $_POST['lenco_description'] ?? $settings['description'] ) );
+		$settings['public_key'] = sanitize_text_field( wp_unslash( $_POST['lenco_public_key'] ?? $settings['public_key'] ) );
+		$submitted_key = wp_unslash( $_POST['lenco_api_key'] ?? '' );
 		if ( '' !== trim( (string) $submitted_key ) ) { $settings['api_key'] = sanitize_text_field( $submitted_key ); }
-		update_option( 'woocommerce_staffswap_lipila_settings', $settings );
+		update_option( 'woocommerce_staffswap_lenco_settings', $settings );
 		echo '<div class="notice notice-success is-dismissible"><p>Payment gateway settings saved.</p></div>';
 	}
 	?>
 	<form method="post">
 		<div class="staffswap-hub__grid">
-			<label class="staffswap-hub__checkbox"><input type="checkbox" name="lipila_enabled" <?php checked( 'yes', $settings['enabled'] ); ?>> Enable Lipila Mobile Money</label>
-			<label>Gateway title<input name="lipila_title" value="<?php echo esc_attr( $settings['title'] ); ?>"></label>
-			<label class="staffswap-hub__full">Customer description<textarea name="lipila_description" rows="3"><?php echo esc_textarea( $settings['description'] ); ?></textarea></label>
-			<label class="staffswap-hub__full">Lipila secret key<input type="password" name="lipila_api_key" placeholder="<?php echo $settings['api_key'] ? 'Key saved — leave blank to keep it' : ''; ?>" autocomplete="off"><small>Stored securely; leave blank to keep the current key.</small></label>
+			<label class="staffswap-hub__checkbox"><input type="checkbox" name="lenco_enabled" <?php checked( 'yes', $settings['enabled'] ); ?>> Enable Lenco Mobile Money</label>
+			<label>Gateway title<input name="lenco_title" value="<?php echo esc_attr( $settings['title'] ); ?>"></label>
+			<label class="staffswap-hub__full">Customer description<textarea name="lenco_description" rows="3"><?php echo esc_textarea( $settings['description'] ); ?></textarea></label>
+			<label class="staffswap-hub__full">Lenco public key<input name="lenco_public_key" value="<?php echo esc_attr( $settings['public_key'] ); ?>"><small>Used by the secure Lenco checkout widget. This key is designed for browser use.</small></label>
+			<label class="staffswap-hub__full">Lenco API token<input type="password" name="lenco_api_key" placeholder="<?php echo $settings['api_key'] ? 'Token saved — leave blank to keep it' : ''; ?>" autocomplete="off"><small>Stored securely; leave blank to keep the current token.</small></label>
+			<p class="staffswap-hub__full"><strong>Lenco webhook URL:</strong> <code><?php echo esc_html( add_query_arg( 'wc-api', 'staffswap_lenco_callback', home_url( '/' ) ) ); ?></code><br><small>Ask Lenco support to register this public URL. Webhooks are verified with the token above.</small></p>
 		</div>
 		<?php wp_nonce_field( 'staffswap_save_payments', 'staffswap_payments_nonce' ); ?>
 		<p><button type="submit" name="staffswap_save_payments" class="button button-primary">Save payment settings</button></p>
@@ -415,6 +419,33 @@ function staffswap_hub_tab_sms() {
 		</div>
 		<?php wp_nonce_field( 'staffswap_save_sms', 'staffswap_sms_nonce' ); ?>
 		<p><button type="submit" name="staffswap_save_sms" class="button button-primary">Save SMS settings</button></p>
+	</form>
+	<?php
+}
+
+function staffswap_hub_tab_ai() {
+	$settings = get_option( 'staffswap_ai_settings', array() );
+	$settings = wp_parse_args( is_array( $settings ) ? $settings : array(), array( 'enabled' => 'no', 'model' => 'gpt-4o-mini', 'api_key' => '' ) );
+	if ( isset( $_POST['staffswap_save_ai'] ) && check_admin_referer( 'staffswap_save_ai', 'staffswap_ai_nonce' ) ) {
+		$settings['enabled'] = isset( $_POST['ai_enabled'] ) ? 'yes' : 'no';
+		$settings['model'] = sanitize_text_field( wp_unslash( $_POST['ai_model'] ?? $settings['model'] ) );
+		$submitted_key = wp_unslash( $_POST['ai_api_key'] ?? '' );
+		if ( '' !== trim( (string) $submitted_key ) ) {
+			$settings['api_key'] = sanitize_text_field( $submitted_key );
+		}
+		update_option( 'staffswap_ai_settings', $settings );
+		echo '<div class="notice notice-success is-dismissible"><p>AI drafting settings saved.</p></div>';
+	}
+	?>
+	<p>AI is optional. It can generate a concise summary paragraph for accepted swap documents, but the agreement itself should still be reviewed before it is used as a final business record.</p>
+	<form method="post">
+		<div class="staffswap-hub__grid">
+			<label class="staffswap-hub__checkbox"><input type="checkbox" name="ai_enabled" <?php checked( 'yes', $settings['enabled'] ); ?>> Enable AI summary drafting</label>
+			<label>Model<input name="ai_model" value="<?php echo esc_attr( $settings['model'] ); ?>" placeholder="gpt-4o-mini"></label>
+			<label class="staffswap-hub__full">OpenAI API key<input type="password" name="ai_api_key" placeholder="<?php echo $settings['api_key'] ? 'Key saved — leave blank to keep it' : ''; ?>" autocomplete="off"><small>Stored securely; leave blank to keep the current key.</small></label>
+		</div>
+		<?php wp_nonce_field( 'staffswap_save_ai', 'staffswap_ai_nonce' ); ?>
+		<p><button type="submit" name="staffswap_save_ai" class="button button-primary">Save AI settings</button></p>
 	</form>
 	<?php
 }
