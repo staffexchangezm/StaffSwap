@@ -369,9 +369,11 @@ function staffswap_hub_tab_plans() {
 }
 
 function staffswap_hub_tab_payments() {
-	if ( ! class_exists( 'WC_Payment_Gateway' ) ) { echo '<p>Install and activate WooCommerce to configure the Lenco Mobile Money gateway.</p>'; return; }
+	if ( ! class_exists( 'WC_Payment_Gateway' ) ) { echo '<p>Install and activate WooCommerce to configure payment gateways.</p>'; return; }
 	$settings = get_option( 'woocommerce_staffswap_lenco_settings', array() );
 	$settings = wp_parse_args( is_array( $settings ) ? $settings : array(), array( 'enabled' => 'no', 'title' => 'Card or Mobile Money', 'description' => 'Pay securely by card or Zambian mobile money.', 'public_key' => '', 'api_key' => '' ) );
+	$lipila_settings = get_option( 'woocommerce_staffswap_lipila_settings', array() );
+	$lipila_settings = wp_parse_args( is_array( $lipila_settings ) ? $lipila_settings : array(), array( 'enabled' => 'no', 'title' => 'Lipila Mobile Money', 'description' => 'Pay by MTN, Airtel, or Zamtel mobile money.', 'confirmation_timeout' => '10', 'environment' => 'sandbox', 'api_key' => '', 'webhook_secret' => '' ) );
 	if ( isset( $_POST['staffswap_save_payments'] ) && check_admin_referer( 'staffswap_save_payments', 'staffswap_payments_nonce' ) ) {
 		$settings['enabled'] = isset( $_POST['lenco_enabled'] ) ? 'yes' : 'no';
 		$settings['title'] = sanitize_text_field( wp_unslash( $_POST['lenco_title'] ?? $settings['title'] ) );
@@ -380,6 +382,18 @@ function staffswap_hub_tab_payments() {
 		$submitted_key = wp_unslash( $_POST['lenco_api_key'] ?? '' );
 		if ( '' !== trim( (string) $submitted_key ) ) { $settings['api_key'] = sanitize_text_field( $submitted_key ); }
 		update_option( 'woocommerce_staffswap_lenco_settings', $settings );
+		$lipila_settings['enabled'] = isset( $_POST['lipila_enabled'] ) ? 'yes' : 'no';
+		$lipila_settings['title'] = sanitize_text_field( wp_unslash( $_POST['lipila_title'] ?? $lipila_settings['title'] ) );
+		$lipila_settings['description'] = sanitize_textarea_field( wp_unslash( $_POST['lipila_description'] ?? $lipila_settings['description'] ) );
+		$confirmation_timeout = absint( $_POST['lipila_confirmation_timeout'] ?? $lipila_settings['confirmation_timeout'] );
+		$lipila_settings['confirmation_timeout'] = in_array( $confirmation_timeout, array( 5, 10, 15, 20, 30 ), true ) ? (string) $confirmation_timeout : '10';
+		$environment = sanitize_key( wp_unslash( $_POST['lipila_environment'] ?? $lipila_settings['environment'] ) );
+		$lipila_settings['environment'] = in_array( $environment, array( 'sandbox', 'live' ), true ) ? $environment : 'sandbox';
+		$submitted_api_key = wp_unslash( $_POST['lipila_api_key'] ?? '' );
+		if ( '' !== trim( (string) $submitted_api_key ) ) { $lipila_settings['api_key'] = sanitize_text_field( $submitted_api_key ); }
+		$submitted_webhook_secret = wp_unslash( $_POST['lipila_webhook_secret'] ?? '' );
+		if ( '' !== trim( (string) $submitted_webhook_secret ) ) { $lipila_settings['webhook_secret'] = sanitize_text_field( $submitted_webhook_secret ); }
+		update_option( 'woocommerce_staffswap_lipila_settings', $lipila_settings );
 		echo '<div class="notice notice-success is-dismissible"><p>Payment gateway settings saved.</p></div>';
 	}
 	?>
@@ -391,6 +405,14 @@ function staffswap_hub_tab_payments() {
 			<label class="staffswap-hub__full">Lenco public key<input name="lenco_public_key" value="<?php echo esc_attr( $settings['public_key'] ); ?>"><small>Used by the secure Lenco checkout widget. This key is designed for browser use.</small></label>
 			<label class="staffswap-hub__full">Lenco API token<input type="password" name="lenco_api_key" placeholder="<?php echo $settings['api_key'] ? 'Token saved — leave blank to keep it' : ''; ?>" autocomplete="off"><small>Stored securely; leave blank to keep the current token.</small></label>
 			<p class="staffswap-hub__full"><strong>Lenco webhook URL:</strong> <code><?php echo esc_html( add_query_arg( 'wc-api', 'staffswap_lenco_callback', home_url( '/' ) ) ); ?></code><br><small>Ask Lenco support to register this public URL. Webhooks are verified with the token above.</small></p>
+			<label class="staffswap-hub__checkbox"><input type="checkbox" name="lipila_enabled" <?php checked( 'yes', $lipila_settings['enabled'] ); ?>> Enable Lipila</label>
+			<label>Lipila gateway title<input name="lipila_title" value="<?php echo esc_attr( $lipila_settings['title'] ); ?>"></label>
+			<label class="staffswap-hub__full">Customer description<textarea name="lipila_description" rows="3"><?php echo esc_textarea( $lipila_settings['description'] ); ?></textarea></label>
+			<label>USSD confirmation wait time<select name="lipila_confirmation_timeout"><?php foreach ( array( 5, 10, 15, 20, 30 ) as $minutes ) : ?><option value="<?php echo esc_attr( $minutes ); ?>" <?php selected( (string) $minutes, $lipila_settings['confirmation_timeout'] ); ?>><?php echo esc_html( $minutes . ' minutes' ); ?></option><?php endforeach; ?></select><small>Unconfirmed payments are checked and canceled after this time.</small></label>
+			<label>Lipila environment<select name="lipila_environment"><option value="sandbox" <?php selected( 'sandbox', $lipila_settings['environment'] ); ?>>Sandbox</option><option value="live" <?php selected( 'live', $lipila_settings['environment'] ); ?>>Live</option></select></label>
+			<label>Lipila API key<input type="password" name="lipila_api_key" placeholder="<?php echo $lipila_settings['api_key'] ? 'Key saved - leave blank to keep it' : ''; ?>" autocomplete="off"><small>Use the key for the selected environment.</small></label>
+			<label class="staffswap-hub__full">Lipila webhook signing secret<input type="password" name="lipila_webhook_secret" placeholder="<?php echo $lipila_settings['webhook_secret'] ? 'Secret saved - leave blank to keep it' : ''; ?>" autocomplete="off"><small>Base64 signing secret from Lipila. Leave blank to keep the current secret.</small></label>
+			<p class="staffswap-hub__full"><strong>Lipila webhook URL:</strong> <code><?php echo esc_html( add_query_arg( 'wc-api', 'staffswap_lipila_callback', home_url( '/' ) ) ); ?></code><br><small>Register this URL in your Lipila dashboard.</small></p>
 		</div>
 		<?php wp_nonce_field( 'staffswap_save_payments', 'staffswap_payments_nonce' ); ?>
 		<p><button type="submit" name="staffswap_save_payments" class="button button-primary">Save payment settings</button></p>
