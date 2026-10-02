@@ -138,6 +138,28 @@ body{display:block;min-width:0;overflow-x:hidden}.site-header,.site-main,.site-f
 @media print{.site-header--brand,.site-footer,.page-heading,.content-form>form,.content-form>p{display:none!important}.staffswap-letter{border:none!important;box-shadow:none!important;padding:0!important}}
 .offer-timeline{list-style:none;margin:8px 0 14px;padding:0;border-left:2px solid var(--line);padding-left:14px}.offer-timeline li{margin-bottom:8px;font-size:13px}
 
+/* Private document vault */
+.document-vault{width:min(900px,100%);margin:0 auto}
+.document-vault>.page-heading{margin-bottom:20px}
+.vault-upload{margin-bottom:22px}
+.vault-upload h2,.vault-documents h2{font-size:18px;margin:0 0 14px}
+.vault-upload form{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:12px}
+.vault-upload label{grid-column:1/-1;color:var(--muted);font-size:12px;font-weight:700;margin-bottom:-8px}
+.vault-upload input[type=file],.message-reply input[type=file],.message-reply select{width:100%;min-width:0;padding:9px 10px;border:1px solid var(--line);border-radius:5px;background:#fff;color:var(--ink);font:inherit;font-size:12px}
+.vault-documents h2{display:flex;align-items:center;gap:9px}
+.vault-documents h2 span{display:grid;place-items:center;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:#e2e8f0;color:#334155;font-size:11px}
+.vault-documents ul{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.vault-documents li{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid var(--line)}
+.vault-documents li strong,.vault-documents li small{display:block;overflow-wrap:anywhere}
+.vault-documents li strong{font-size:13px}
+.vault-documents li small{margin-top:4px;color:var(--muted);font-size:11px}
+.vault-documents li .button{flex:none;font-size:11px;padding:7px 10px}
+.message-attachment{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:12px 0 2px;padding:10px 12px;border:1px solid #d5dee9;border-radius:5px;background:rgba(255,255,255,.72)}
+.message-attachment>a{color:#155dfc;font-size:12px;font-weight:700;overflow-wrap:anywhere}
+.message-attachment>span{color:#0f766e;font-size:11px;font-weight:700}
+.message-attachment .button{font-size:10px;padding:5px 8px}
+.message-reply input[type=file]{padding:7px;background:#fff}
+.message-reply select{background:#fff}
 /* Conversation workspace */
 .message-inbox{width:min(980px,100%);margin:0 auto}
 .message-inbox>.page-heading{margin-bottom:22px}
@@ -174,4 +196,7 @@ body{display:block;min-width:0;overflow-x:hidden}.site-header,.site-main,.site-f
 	.message-read-form .button{min-height:34px}
 	.message-reply{padding:16px}
 	.message-reply .button{justify-self:stretch}
+	.vault-upload form{grid-template-columns:1fr}
+	.vault-upload label{grid-column:auto;margin-bottom:-8px}
+	.vault-documents li{align-items:flex-start}
 }

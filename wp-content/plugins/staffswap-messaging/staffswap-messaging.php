@@ -94,17 +94,135 @@ function staffswap_secure_inbox_shortcode() {
 	$groups = array(); foreach ( $received as $message ) { $listing_id = absint( get_post_meta( $message->ID, '_staffswap_listing', true ) ); $groups[ $listing_id ?: $message->ID ][] = $message; }
 	ob_start(); ?><div class="message-inbox"><div class="page-heading"><div><p class="eyebrow">PRIVATE CONVERSATIONS</p><h1>Your messages</h1><p class="muted">Connect with potential exchange partners before you make a move.</p></div></div><?php if ( $groups ) : ?><div class="message-conversations"><?php foreach ( $groups as $listing_id => $messages ) : $latest = $messages[0]; $sender_id = (int) $latest->post_author; $unread = false; foreach ( $messages as $message ) { if ( '0' === get_post_meta( $message->ID, '_staffswap_read', true ) ) { $unread = true; break; } } ?><section class="panel message-conversation <?php echo $unread ? 'is-unread' : ''; ?>"><header><div><p class="eyebrow"><?php echo $listing_id && get_post( $listing_id ) ? esc_html( get_the_title( $listing_id ) ) : 'General conversation'; ?></p><h2><?php echo esc_html( get_the_author_meta( 'display_name', $sender_id ) ); ?></h2></div><span class="message-count"><?php echo esc_html( count( $messages ) ); ?> messages</span></header><?php foreach ( $messages as $message ) : ?><article class="message-row <?php echo '0' === get_post_meta( $message->ID, '_staffswap_read', true ) ? 'is-unread' : ''; ?>"><strong><?php echo esc_html( get_the_author_meta( 'display_name', $message->post_author ) ); ?></strong><p><?php echo esc_html( get_the_content( null, false, $message ) ); ?></p><small class="muted"><?php echo esc_html( get_the_date( '', $message ) ); ?></small><?php if ( '0' === get_post_meta( $message->ID, '_staffswap_read', true ) ) : ?><form method="post" class="message-read-form"><input type="hidden" name="message_id" value="<?php echo esc_attr( $message->ID ); ?>"><?php wp_nonce_field( 'staffswap_mark_message_' . $message->ID, 'staffswap_message_read_nonce' ); ?><button type="submit" name="staffswap_mark_message_read" class="button button--outline">Mark as read</button></form><?php endif; ?></article><?php endforeach; ?><?php if ( $listing_id && $sender_id ) : ?><form method="post" class="message-reply"><label for="reply-<?php echo esc_attr( $listing_id ); ?>">Reply</label><textarea id="reply-<?php echo esc_attr( $listing_id ); ?>" name="reply" rows="2" required></textarea><input type="hidden" name="listing_id" value="<?php echo esc_attr( $listing_id ); ?>"><input type="hidden" name="recipient_id" value="<?php echo esc_attr( $sender_id ); ?>"><?php wp_nonce_field( 'staffswap_reply_' . $listing_id, 'staffswap_reply_nonce' ); ?><button type="submit" name="staffswap_send_reply" class="button button--primary">Send reply</button></form><?php endif; ?></section><?php endforeach; ?></div><?php else : ?><section class="panel"><p class="muted">No received messages yet.</p></section><?php endif; ?></div><?php return ob_get_clean();
 }
+function staffswap_document_post_type() {
+	register_post_type( 'staffswap_document', array( 'labels' => array( 'name' => 'Vault Documents', 'singular_name' => 'Vault Document' ), 'public' => false, 'show_ui' => false, 'supports' => array( 'title', 'author' ) ) );
+}
+add_action( 'init', 'staffswap_document_post_type' );
+
+function staffswap_vault_directory() {
+	$directory = trailingslashit( dirname( ABSPATH ) ) . 'staffswap-private-documents';
+	return wp_mkdir_p( $directory ) && is_writable( $directory ) ? $directory : '';
+}
+
+function staffswap_create_document_vault_page() {
+	if ( ! get_page_by_path( 'document-vault' ) ) {
+		wp_insert_post( array( 'post_title' => 'Document Vault', 'post_name' => 'document-vault', 'post_content' => '[staffswap_document_vault]', 'post_status' => 'publish', 'post_type' => 'page' ) );
+	}
+}
+add_action( 'init', 'staffswap_create_document_vault_page', 20 );
+
+function staffswap_vault_document_url( $document_id ) {
+	$document_id = absint( $document_id );
+	return add_query_arg( array( 'action' => 'staffswap_download_vault_document', 'document_id' => $document_id, '_wpnonce' => wp_create_nonce( 'staffswap_vault_document_' . $document_id ) ), admin_url( 'admin-post.php' ) );
+}
+
+function staffswap_vault_store_upload( $owner_id, $file ) {
+	$allowed_types = array( 'pdf' => 'application/pdf', 'jpg|jpeg' => 'image/jpeg', 'png' => 'image/png', 'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' );
+	if ( empty( $file['name'] ) || UPLOAD_ERR_OK !== (int) ( $file['error'] ?? UPLOAD_ERR_NO_FILE ) || empty( $file['tmp_name'] ) || ! is_uploaded_file( $file['tmp_name'] ) || (int) $file['size'] > 10 * MB_IN_BYTES ) {
+		return new WP_Error( 'staffswap_invalid_upload', 'Choose a valid document smaller than 10 MB.' );
+	}
+	$type = wp_check_filetype_and_ext( $file['tmp_name'], $file['name'], $allowed_types );
+	if ( empty( $type['type'] ) || empty( $type['ext'] ) ) {
+		return new WP_Error( 'staffswap_invalid_type', 'Use a PDF, JPG, PNG, or DOCX document.' );
+	}
+	$directory = staffswap_vault_directory();
+	if ( ! $directory ) { return new WP_Error( 'staffswap_storage_unavailable', 'Private document storage is unavailable.' ); }
+	$path = trailingslashit( $directory ) . wp_generate_uuid4() . '.' . sanitize_file_name( $type['ext'] );
+	if ( ! move_uploaded_file( $file['tmp_name'], $path ) ) { return new WP_Error( 'staffswap_upload_failed', 'The document could not be saved.' ); }
+	$document_id = wp_insert_post( array( 'post_type' => 'staffswap_document', 'post_status' => 'publish', 'post_title' => sanitize_file_name( $file['name'] ), 'post_author' => absint( $owner_id ) ), true );
+	if ( is_wp_error( $document_id ) ) { wp_delete_file( $path ); return $document_id; }
+	update_post_meta( $document_id, '_staffswap_document_path', $path );
+	update_post_meta( $document_id, '_staffswap_document_name', sanitize_file_name( $file['name'] ) );
+	update_post_meta( $document_id, '_staffswap_document_type', $type['type'] );
+	update_post_meta( $document_id, '_staffswap_document_shared_with', array() );
+	return $document_id;
+}
+
+function staffswap_vault_saved_copy_id( $document_id, $user_id ) {
+	$copies = get_posts( array( 'post_type' => 'staffswap_document', 'post_status' => 'publish', 'author' => absint( $user_id ), 'posts_per_page' => 1, 'fields' => 'ids', 'meta_query' => array( array( 'key' => '_staffswap_source_document', 'value' => absint( $document_id ) ) ) ) );
+	return $copies ? absint( $copies[0] ) : 0;
+}
+
+function staffswap_vault_copy_shared_document( $document_id, $user_id ) {
+	$source = get_post( absint( $document_id ) );
+	$shared_with = array_map( 'absint', (array) get_post_meta( $document_id, '_staffswap_document_shared_with', true ) );
+	if ( ! $source || 'staffswap_document' !== $source->post_type || ! in_array( absint( $user_id ), $shared_with, true ) ) { return new WP_Error( 'staffswap_document_forbidden', 'This document is not shared with your account.' ); }
+	if ( staffswap_vault_saved_copy_id( $document_id, $user_id ) ) { return true; }
+	$source_path = get_post_meta( $document_id, '_staffswap_document_path', true );
+	$directory = staffswap_vault_directory();
+	if ( ! $directory || ! is_readable( $source_path ) ) { return new WP_Error( 'staffswap_document_missing', 'The shared document could not be found.' ); }
+	$extension = pathinfo( $source_path, PATHINFO_EXTENSION );
+	$copy_path = trailingslashit( $directory ) . wp_generate_uuid4() . '.' . sanitize_file_name( $extension );
+	if ( ! copy( $source_path, $copy_path ) ) { return new WP_Error( 'staffswap_document_copy_failed', 'The document could not be saved to your vault.' ); }
+	$copy_id = wp_insert_post( array( 'post_type' => 'staffswap_document', 'post_status' => 'publish', 'post_title' => get_the_title( $document_id ), 'post_author' => absint( $user_id ) ), true );
+	if ( is_wp_error( $copy_id ) ) { wp_delete_file( $copy_path ); return $copy_id; }
+	update_post_meta( $copy_id, '_staffswap_document_path', $copy_path );
+	update_post_meta( $copy_id, '_staffswap_document_name', get_post_meta( $document_id, '_staffswap_document_name', true ) );
+	update_post_meta( $copy_id, '_staffswap_document_type', get_post_meta( $document_id, '_staffswap_document_type', true ) );
+	update_post_meta( $copy_id, '_staffswap_document_shared_with', array() );
+	update_post_meta( $copy_id, '_staffswap_source_document', absint( $document_id ) );
+	return true;
+}
+
+function staffswap_download_vault_document() {
+	if ( ! is_user_logged_in() ) { wp_die( 'You are not allowed to view this document.', 403 ); }
+	$document_id = absint( $_GET['document_id'] ?? 0 );
+	$nonce = sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ?? '' ) );
+	$document = get_post( $document_id );
+	if ( ! $document_id || ! wp_verify_nonce( $nonce, 'staffswap_vault_document_' . $document_id ) || ! $document || 'staffswap_document' !== $document->post_type ) { wp_die( 'You are not allowed to view this document.', 403 ); }
+	$shared_with = array_map( 'absint', (array) get_post_meta( $document_id, '_staffswap_document_shared_with', true ) );
+	if ( (int) $document->post_author !== get_current_user_id() && ! in_array( get_current_user_id(), $shared_with, true ) && ! current_user_can( 'manage_options' ) ) { wp_die( 'You are not allowed to view this document.', 403 ); }
+	$path = get_post_meta( $document_id, '_staffswap_document_path', true );
+	if ( ! $path || ! is_readable( $path ) ) { wp_die( 'Document not found.', 404 ); }
+	nocache_headers();
+	header( 'Content-Type: ' . sanitize_mime_type( get_post_meta( $document_id, '_staffswap_document_type', true ) ?: 'application/octet-stream' ) );
+	header( 'X-Content-Type-Options: nosniff' );
+	header( 'Content-Disposition: attachment; filename="' . sanitize_file_name( get_post_meta( $document_id, '_staffswap_document_name', true ) ?: basename( $path ) ) . '"' );
+	header( 'Content-Length: ' . filesize( $path ) );
+	readfile( $path );
+	exit;
+}
+add_action( 'admin_post_staffswap_download_vault_document', 'staffswap_download_vault_document' );
+
+function staffswap_document_vault_shortcode() {
+	if ( ! is_user_logged_in() ) { return '<div class="panel"><p>Please sign in to view your document vault.</p></div>'; }
+	$user_id = get_current_user_id();
+	$notice = '';
+	if ( isset( $_POST['staffswap_vault_upload'] ) && check_admin_referer( 'staffswap_vault_upload', 'staffswap_vault_nonce' ) ) {
+		$document_id = staffswap_vault_store_upload( $user_id, $_FILES['staffswap_vault_file'] ?? array() );
+		$notice = is_wp_error( $document_id ) ? '<div class="notice"><p>' . esc_html( $document_id->get_error_message() ) . '</p></div>' : '<div class="notice"><p>Document saved to your vault.</p></div>';
+	}
+	$documents = get_posts( array( 'post_type' => 'staffswap_document', 'post_status' => 'publish', 'author' => $user_id, 'posts_per_page' => 100, 'orderby' => 'date', 'order' => 'DESC' ) );
+	ob_start(); echo $notice; ?>
+	<div class="document-vault"><div class="page-heading"><div><p class="eyebrow">PRIVATE STORAGE</p><h1>Document Vault</h1></div></div>
+		<section class="panel vault-upload"><h2>Add a document</h2><form method="post" enctype="multipart/form-data"><label for="staffswap-vault-file">Choose file</label><input id="staffswap-vault-file" type="file" name="staffswap_vault_file" accept=".pdf,.jpg,.jpeg,.png,.docx" required><?php wp_nonce_field( 'staffswap_vault_upload', 'staffswap_vault_nonce' ); ?><button type="submit" name="staffswap_vault_upload" class="button button--primary">Save to vault</button></form></section>
+		<section class="vault-documents"><h2>Your documents <span><?php echo esc_html( count( $documents ) ); ?></span></h2><?php if ( $documents ) : ?><ul><?php foreach ( $documents as $document ) : $path = get_post_meta( $document->ID, '_staffswap_document_path', true ); ?><li><div><strong><?php echo esc_html( get_post_meta( $document->ID, '_staffswap_document_name', true ) ?: get_the_title( $document ) ); ?></strong><small><?php echo esc_html( get_the_date( '', $document ) ); ?><?php echo is_readable( $path ) ? ' · ' . esc_html( size_format( filesize( $path ) ) ) : ''; ?></small></div><a class="button button--outline" href="<?php echo esc_url( staffswap_vault_document_url( $document->ID ) ); ?>">Download</a></li><?php endforeach; ?></ul><?php else : ?><p class="muted">Your vault is empty.</p><?php endif; ?></section>
+	</div>
+	<?php return ob_get_clean();
+}
+add_shortcode( 'staffswap_document_vault', 'staffswap_document_vault_shortcode' );
+
 function staffswap_complete_inbox_shortcode() {
 	if ( ! is_user_logged_in() ) { return '<div class="panel"><p>Please sign in to view your messages.</p></div>'; }
 	$user_id = get_current_user_id();
+	$notice = '';
 	if ( isset( $_POST['staffswap_mark_message_read'] ) && check_admin_referer( 'staffswap_mark_message_' . absint( $_POST['message_id'] ?? 0 ), 'staffswap_message_read_nonce' ) ) {
 		$message_id = absint( $_POST['message_id'] );
 		if ( (int) get_post_meta( $message_id, '_staffswap_recipient', true ) === $user_id ) { update_post_meta( $message_id, '_staffswap_read', '1' ); }
+	}
+	if ( isset( $_POST['staffswap_save_shared_document'] ) ) {
+		$document_id = absint( $_POST['document_id'] ?? 0 );
+		if ( $document_id && check_admin_referer( 'staffswap_save_shared_document_' . $document_id, 'staffswap_save_document_nonce' ) ) {
+			$saved = staffswap_vault_copy_shared_document( $document_id, $user_id );
+			$notice = is_wp_error( $saved ) ? '<div class="notice"><p>' . esc_html( $saved->get_error_message() ) . '</p></div>' : '<div class="notice"><p>Document saved to your vault.</p></div>';
+		}
 	}
 	if ( isset( $_POST['staffswap_send_reply'] ) && check_admin_referer( 'staffswap_reply_' . absint( $_POST['listing_id'] ?? 0 ), 'staffswap_reply_nonce' ) ) {
 		$listing_id = absint( $_POST['listing_id'] ?? 0 );
 		$recipient = absint( $_POST['recipient_id'] ?? 0 );
 		$reply = sanitize_textarea_field( wp_unslash( $_POST['reply'] ?? '' ) );
+		$document_id = absint( $_POST['vault_document_id'] ?? 0 );
+		$has_upload = ! empty( $_FILES['staffswap_attachment']['name'] );
 		$conversation_args = array(
 			'post_type' => 'staff_message',
 			'post_status' => 'publish',
@@ -130,14 +248,37 @@ function staffswap_complete_inbox_shortcode() {
 				array( 'key' => '_staffswap_recipient', 'value' => $recipient ),
 			),
 		) ) );
-		if ( $listing_id && $recipient && $reply && ( $received_conversation || $sent_conversation ) && 'swap_listing' === get_post_type( $listing_id ) && $recipient !== $user_id ) {
-			$reply_id = wp_insert_post( array( 'post_type' => 'staff_message', 'post_title' => 'Message about: ' . get_the_title( $listing_id ), 'post_content' => $reply, 'post_status' => 'publish', 'post_author' => $user_id ), true );
-			if ( ! is_wp_error( $reply_id ) ) {
-				update_post_meta( $reply_id, '_staffswap_recipient', $recipient );
-				update_post_meta( $reply_id, '_staffswap_listing', $listing_id );
-				update_post_meta( $reply_id, '_staffswap_read', '0' );
-				staffswap_notify_user( $recipient, 'New reply about ' . get_the_title( $listing_id ), wp_get_current_user()->display_name . ' replied to your conversation about "' . get_the_title( $listing_id ) . '":' . "\n\n" . $reply . "\n\n" . 'View it here: ' . home_url( '/messages/' ) );
+		$authorized_thread = $listing_id && $recipient && ( $received_conversation || $sent_conversation ) && 'swap_listing' === get_post_type( $listing_id ) && $recipient !== $user_id;
+		if ( $authorized_thread && ( $reply || $document_id || $has_upload ) ) {
+			if ( $has_upload ) { $document_id = staffswap_vault_store_upload( $user_id, $_FILES['staffswap_attachment'] ); }
+			if ( is_wp_error( $document_id ) ) {
+				$notice = '<div class="notice"><p>' . esc_html( $document_id->get_error_message() ) . '</p></div>';
+			} elseif ( $document_id && ( 'staffswap_document' !== get_post_type( $document_id ) || (int) get_post_field( 'post_author', $document_id ) !== $user_id ) ) {
+				$document_id = 0;
+				$notice = '<div class="notice"><p>Choose a document from your own vault.</p></div>';
+			} else {
+				$document_name = $document_id ? get_post_meta( $document_id, '_staffswap_document_name', true ) : '';
+				$message_body = $reply ?: 'Shared a document: ' . $document_name;
+				$reply_id = wp_insert_post( array( 'post_type' => 'staff_message', 'post_title' => 'Message about: ' . get_the_title( $listing_id ), 'post_content' => $message_body, 'post_status' => 'publish', 'post_author' => $user_id ), true );
+				if ( ! is_wp_error( $reply_id ) ) {
+					update_post_meta( $reply_id, '_staffswap_recipient', $recipient );
+					update_post_meta( $reply_id, '_staffswap_listing', $listing_id );
+					update_post_meta( $reply_id, '_staffswap_read', '0' );
+					if ( $document_id ) {
+						update_post_meta( $reply_id, '_staffswap_message_document', $document_id );
+						$shared_with = array_map( 'absint', (array) get_post_meta( $document_id, '_staffswap_document_shared_with', true ) );
+						$shared_with[] = $recipient;
+						update_post_meta( $document_id, '_staffswap_document_shared_with', array_values( array_unique( $shared_with ) ) );
+					}
+					staffswap_notify_user( $recipient, 'New reply about ' . get_the_title( $listing_id ), wp_get_current_user()->display_name . ' replied to your conversation about "' . get_the_title( $listing_id ) . '":' . "\n\n" . $message_body . "\n\n" . 'View it here: ' . home_url( '/messages/' ) );
+				} else {
+					$notice = '<div class="notice"><p>Your message could not be sent.</p></div>';
+				}
 			}
+		} elseif ( ! $authorized_thread ) {
+			$notice = '<div class="notice"><p>This conversation is no longer available.</p></div>';
+		} else {
+			$notice = '<div class="notice"><p>Write a message or attach a document.</p></div>';
 		}
 	}
 	$received = get_posts( array( 'post_type' => 'staff_message', 'post_status' => 'publish', 'posts_per_page' => 100, 'orderby' => 'date', 'order' => 'DESC', 'meta_query' => array( array( 'key' => '_staffswap_recipient', 'value' => $user_id ) ) ) );
@@ -157,20 +298,22 @@ function staffswap_complete_inbox_shortcode() {
 		if ( ! isset( $groups[ $group_id ] ) ) { $groups[ $group_id ] = array( 'listing_id' => $listing_id, 'participant_id' => $participant_id, 'messages' => array() ); }
 		$groups[ $group_id ]['messages'][] = $message;
 	}
-	ob_start(); ?>
+	$vault_documents = get_posts( array( 'post_type' => 'staffswap_document', 'post_status' => 'publish', 'author' => $user_id, 'posts_per_page' => 100, 'orderby' => 'date', 'order' => 'DESC' ) );
+	ob_start(); echo $notice; ?>
 	<div class="message-inbox">
-		<div class="page-heading"><div><p class="eyebrow">PRIVATE CONVERSATIONS</p><h1>Your messages</h1><p class="muted">Connect with potential exchange partners before you make a move.</p></div></div>
+		<div class="page-heading"><div><p class="eyebrow">PRIVATE CONVERSATIONS</p><h1>Your messages</h1><p class="muted">Connect with potential exchange partners before you make a move.</p></div><a class="button button--outline" href="<?php echo esc_url( home_url( '/document-vault/' ) ); ?>">Document Vault</a></div>
 		<?php if ( $groups ) : ?>
 			<div class="message-conversations">
 				<?php foreach ( $groups as $group ) : $listing_id = $group['listing_id']; $participant_id = $group['participant_id']; $thread_messages = $group['messages']; $unread = false; foreach ( $thread_messages as $thread_message ) { if ( (int) get_post_meta( $thread_message->ID, '_staffswap_recipient', true ) === $user_id && '0' === get_post_meta( $thread_message->ID, '_staffswap_read', true ) ) { $unread = true; break; } } $reply_form_id = 'reply-' . $listing_id . '-' . $participant_id; ?>
 					<section class="panel message-conversation <?php echo $unread ? 'is-unread' : ''; ?>">
 						<header><div><p class="eyebrow"><?php echo $listing_id && get_post( $listing_id ) ? esc_html( get_the_title( $listing_id ) ) : 'General conversation'; ?></p><h2><?php echo esc_html( get_the_author_meta( 'display_name', $participant_id ) ); ?></h2></div><span class="message-count"><?php echo esc_html( count( $thread_messages ) ); ?> messages</span></header>
-						<?php foreach ( $thread_messages as $message ) : $is_own = (int) $message->post_author === $user_id; $is_unread = ! $is_own && '0' === get_post_meta( $message->ID, '_staffswap_read', true ); ?>
+						<?php foreach ( $thread_messages as $message ) : $is_own = (int) $message->post_author === $user_id; $is_unread = ! $is_own && '0' === get_post_meta( $message->ID, '_staffswap_read', true ); $document_id = absint( get_post_meta( $message->ID, '_staffswap_message_document', true ) ); $attached_document = $document_id ? get_post( $document_id ) : false; $shared_with = $document_id ? array_map( 'absint', (array) get_post_meta( $document_id, '_staffswap_document_shared_with', true ) ) : array(); $can_access_document = $attached_document && 'staffswap_document' === $attached_document->post_type && ( (int) $attached_document->post_author === $user_id || in_array( $user_id, $shared_with, true ) ); ?>
 							<article class="message-row <?php echo $is_own ? 'is-own' : ''; ?> <?php echo $is_unread ? 'is-unread' : ''; ?>"><strong><?php echo esc_html( get_the_author_meta( 'display_name', $message->post_author ) ); ?></strong><p><?php echo esc_html( get_the_content( null, false, $message ) ); ?></p><small class="muted"><?php echo esc_html( get_the_date( '', $message ) ); ?></small>
+								<?php if ( $can_access_document ) : ?><div class="message-attachment"><a href="<?php echo esc_url( staffswap_vault_document_url( $document_id ) ); ?>"><?php echo esc_html( get_post_meta( $document_id, '_staffswap_document_name', true ) ?: get_the_title( $document_id ) ); ?></a><?php if ( (int) $attached_document->post_author !== $user_id ) : ?><?php if ( staffswap_vault_saved_copy_id( $document_id, $user_id ) ) : ?><span>Saved to your vault</span><?php else : ?><form method="post"><?php wp_nonce_field( 'staffswap_save_shared_document_' . $document_id, 'staffswap_save_document_nonce' ); ?><input type="hidden" name="document_id" value="<?php echo esc_attr( $document_id ); ?>"><button type="submit" name="staffswap_save_shared_document" class="button button--outline">Save to my vault</button></form><?php endif; ?><?php endif; ?></div><?php endif; ?>
 								<?php if ( $is_unread ) : ?><form method="post" class="message-read-form"><input type="hidden" name="message_id" value="<?php echo esc_attr( $message->ID ); ?>"><?php wp_nonce_field( 'staffswap_mark_message_' . $message->ID, 'staffswap_message_read_nonce' ); ?><button type="submit" name="staffswap_mark_message_read" class="button button--outline">Mark as read</button></form><?php endif; ?>
 							</article>
 						<?php endforeach; ?>
-						<?php if ( $listing_id ) : ?><form method="post" class="message-reply"><label for="<?php echo esc_attr( $reply_form_id ); ?>">Reply</label><textarea id="<?php echo esc_attr( $reply_form_id ); ?>" name="reply" rows="2" required></textarea><input type="hidden" name="listing_id" value="<?php echo esc_attr( $listing_id ); ?>"><input type="hidden" name="recipient_id" value="<?php echo esc_attr( $participant_id ); ?>"><?php wp_nonce_field( 'staffswap_reply_' . $listing_id, 'staffswap_reply_nonce' ); ?><button type="submit" name="staffswap_send_reply" class="button button--primary">Send reply</button></form><?php endif; ?>
+						<?php if ( $listing_id ) : ?><form method="post" enctype="multipart/form-data" class="message-reply"><label for="<?php echo esc_attr( $reply_form_id ); ?>">Reply</label><textarea id="<?php echo esc_attr( $reply_form_id ); ?>" name="reply" rows="2"></textarea><label for="attachment-<?php echo esc_attr( $reply_form_id ); ?>">Attach a document</label><input id="attachment-<?php echo esc_attr( $reply_form_id ); ?>" type="file" name="staffswap_attachment" accept=".pdf,.jpg,.jpeg,.png,.docx"><label for="vault-document-<?php echo esc_attr( $reply_form_id ); ?>">Or share from your vault</label><select id="vault-document-<?php echo esc_attr( $reply_form_id ); ?>" name="vault_document_id"><option value="">No document</option><?php foreach ( $vault_documents as $vault_document ) : ?><option value="<?php echo esc_attr( $vault_document->ID ); ?>"><?php echo esc_html( get_post_meta( $vault_document->ID, '_staffswap_document_name', true ) ?: get_the_title( $vault_document ) ); ?></option><?php endforeach; ?></select><input type="hidden" name="listing_id" value="<?php echo esc_attr( $listing_id ); ?>"><input type="hidden" name="recipient_id" value="<?php echo esc_attr( $participant_id ); ?>"><?php wp_nonce_field( 'staffswap_reply_' . $listing_id, 'staffswap_reply_nonce' ); ?><button type="submit" name="staffswap_send_reply" class="button button--primary">Send</button></form><?php endif; ?>
 					</section>
 				<?php endforeach; ?>
 			</div>
