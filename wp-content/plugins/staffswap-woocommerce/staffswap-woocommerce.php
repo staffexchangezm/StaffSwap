@@ -266,3 +266,220 @@ function staffswap_lenco_status_check_cron() {
 	foreach ( $orders as $order ) { staffswap_lenco_check_order_status( $order->get_id() ); }
 }
 add_action( 'staffswap_lenco_status_check', 'staffswap_lenco_status_check_cron' );
+
+function staffswap_lipila_gateway_init() {
+	if ( ! class_exists( 'WC_Payment_Gateway' ) ) { return; }
+	class StaffSwap_Lipila_Gateway extends WC_Payment_Gateway {
+		public function __construct() {
+			$this->id = 'staffswap_lipila'; $this->method_title = 'Lipila'; $this->method_description = 'Zambian mobile-money collections through Lipila.'; $this->has_fields = true;
+			$this->init_form_fields(); $this->init_settings(); $this->title = $this->get_option( 'title', 'Lipila Mobile Money' ); $this->description = $this->get_option( 'description', 'Pay by MTN, Airtel, or Zamtel mobile money.' );
+			add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
+		}
+		public function init_form_fields() {
+			$callback_url = add_query_arg( 'wc-api', 'staffswap_lipila_callback', home_url( '/' ) );
+			$this->form_fields = array(
+				'enabled' => array( 'title' => 'Enable', 'type' => 'checkbox', 'label' => 'Enable Lipila', 'default' => 'no' ),
+				'title' => array( 'title' => 'Title', 'type' => 'text', 'default' => 'Lipila Mobile Money' ),
+				'description' => array( 'title' => 'Description', 'type' => 'textarea', 'default' => 'Pay by MTN, Airtel, or Zamtel mobile money.' ),
+				'confirmation_timeout' => array( 'title' => 'USSD confirmation wait time', 'type' => 'select', 'default' => '10', 'options' => array( '5' => '5 minutes', '10' => '10 minutes', '15' => '15 minutes', '20' => '20 minutes', '30' => '30 minutes' ), 'description' => 'Unconfirmed orders are checked and canceled when this time expires.' ),
+				'environment' => array( 'title' => 'Environment', 'type' => 'select', 'default' => 'sandbox', 'options' => array( 'sandbox' => 'Sandbox', 'live' => 'Live' ) ),
+				'api_key' => array( 'title' => 'Lipila API key', 'type' => 'password', 'description' => 'Keep this secret. Use the matching sandbox or live API key.' ),
+				'webhook_secret' => array( 'title' => 'Webhook signing secret', 'type' => 'password', 'description' => 'Base64 signing secret from Lipila. Keep this secret.' ),
+				'callback_url' => array( 'title' => 'Webhook callback URL', 'type' => 'title', 'description' => esc_html( $callback_url ) . ' Register this URL in your Lipila dashboard.' ),
+			);
+		}
+		public function payment_fields() {
+			if ( $this->description ) { echo wpautop( wp_kses_post( $this->description ) ); }
+			woocommerce_form_field( 'staffswap_lipila_account_number', array( 'type' => 'tel', 'label' => 'Mobile money number', 'required' => true, 'placeholder' => '260 97 123 4567', 'description' => 'Enter the number that should receive the payment prompt.' ), WC()->customer ? WC()->customer->get_billing_phone() : '' );
+		}
+		public function validate_fields() {
+			$account_number = staffswap_lipila_normalize_account_number( wc_clean( wp_unslash( $_POST['staffswap_lipila_account_number'] ?? '' ) ) );
+			if ( ! $account_number ) { wc_add_notice( 'Enter a valid mobile money number, including its country code when needed.', 'error' ); return false; }
+			return true;
+		}
+		public function process_payment( $order_id ) {
+			$order = wc_get_order( $order_id );
+			$settings = $this->settings;
+			$api_key = trim( (string) ( $settings['api_key'] ?? '' ) );
+			$account_number = staffswap_lipila_normalize_account_number( wc_clean( wp_unslash( $_POST['staffswap_lipila_account_number'] ?? '' ) ) );
+			if ( ! $order || ! $api_key || ! $account_number ) { wc_add_notice( 'Lipila is not configured or the mobile money number is invalid. Please contact support.', 'error' ); return array( 'result' => 'failure' ); }
+			$reference = 'STAFFSWAP-' . $order->get_order_number() . '-' . strtoupper( wp_generate_password( 10, false, false ) );
+			$base_url = 'live' === ( $settings['environment'] ?? 'sandbox' ) ? 'https://blz.lipila.io' : 'https://api.lipila.dev';
+			$callback_url = add_query_arg( 'wc-api', 'staffswap_lipila_callback', home_url( '/' ) );
+			$request = wp_remote_post( $base_url . '/api/v1/collections/mobile-money', array(
+				'timeout' => 30,
+				'headers' => array( 'accept' => 'application/json', 'Content-Type' => 'application/json', 'x-api-key' => $api_key, 'callbackUrl' => $callback_url ),
+				'body' => wp_json_encode( array( 'referenceId' => $reference, 'amount' => (float) $order->get_total(), 'narration' => 'StaffSwap VIP Gold order ' . $order->get_order_number(), 'accountNumber' => $account_number, 'currency' => $order->get_currency(), 'email' => $order->get_billing_email(), 'referenceData' => 'WooCommerce order ' . $order->get_order_number() ) ),
+			) );
+			if ( is_wp_error( $request ) ) { wc_add_notice( 'Lipila could not be reached. Please try again.', 'error' ); return array( 'result' => 'failure' ); }
+			$response_code = wp_remote_retrieve_response_code( $request );
+			$response_data = json_decode( wp_remote_retrieve_body( $request ), true );
+			if ( $response_code < 200 || $response_code >= 300 || ! is_array( $response_data ) || ( isset( $response_data['status'] ) && 'failed' === strtolower( $response_data['status'] ) ) ) {
+				$order->add_order_note( 'Lipila collection could not be started: ' . sanitize_text_field( $response_data['message'] ?? 'Invalid response from Lipila.' ) );
+				wc_add_notice( 'Lipila could not start the payment. Please check the number and try again.', 'error' );
+				return array( 'result' => 'failure' );
+			}
+			$order->update_meta_data( '_staffswap_lipila_reference', $reference );
+			$order->update_meta_data( '_staffswap_lipila_status', sanitize_text_field( $response_data['status'] ?? 'Pending' ) );
+			$timeout = staffswap_lipila_confirmation_timeout( $settings['confirmation_timeout'] ?? 10 );
+			$order->update_meta_data( '_staffswap_lipila_expires_at', time() + ( $timeout * MINUTE_IN_SECONDS ) );
+			$order->update_status( 'on-hold', 'Awaiting Lipila mobile money payment confirmation.' );
+			$expiry_time = time() + ( $timeout * MINUTE_IN_SECONDS );
+			if ( function_exists( 'as_schedule_single_action' ) ) { as_schedule_single_action( $expiry_time, 'staffswap_lipila_expire_order', array( $order_id ), 'staffswap-lipila' ); }
+			else { wp_schedule_single_event( $expiry_time, 'staffswap_lipila_expire_order', array( $order_id ) ); }
+			wc_reduce_stock_levels( $order_id );
+			if ( WC()->cart ) { WC()->cart->empty_cart(); }
+			$wait_url = add_query_arg( array( 'staffswap_lipila_wait' => $order_id, 'key' => $order->get_order_key() ), home_url( '/' ) );
+			return array( 'result' => 'success', 'redirect' => $wait_url );
+		}
+	}
+}
+add_action( 'plugins_loaded', 'staffswap_lipila_gateway_init', 20 );
+function staffswap_lipila_add_gateway( $gateways ) { $gateways[] = 'StaffSwap_Lipila_Gateway'; return $gateways; }
+add_filter( 'woocommerce_payment_gateways', 'staffswap_lipila_add_gateway' );
+
+function staffswap_lipila_normalize_account_number( $account_number ) {
+	$account_number = preg_replace( '/\D+/', '', (string) $account_number );
+	if ( 10 === strlen( $account_number ) && '0' === $account_number[0] ) { $account_number = '260' . substr( $account_number, 1 ); }
+	elseif ( 9 === strlen( $account_number ) ) { $account_number = '260' . $account_number; }
+	return strlen( $account_number ) >= 10 && strlen( $account_number ) <= 15 ? $account_number : '';
+}
+
+function staffswap_lipila_confirmation_timeout( $timeout ) {
+	$allowed = array( 5, 10, 15, 20, 30 );
+	$timeout = absint( $timeout );
+	return in_array( $timeout, $allowed, true ) ? $timeout : 10;
+}
+
+function staffswap_lipila_fetch_status( $reference, $api_key, $base_url ) {
+	if ( ! $reference || ! $api_key ) { return false; }
+	$url = add_query_arg( 'referenceId', $reference, trailingslashit( $base_url ) . 'api/v1/collections/check-status' );
+	$response = wp_remote_get( $url, array( 'timeout' => 20, 'headers' => array( 'accept' => 'application/json', 'x-api-key' => $api_key ) ) );
+	if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) { return false; }
+	$data = json_decode( wp_remote_retrieve_body( $response ), true );
+	return is_array( $data ) ? ( is_array( $data['data'] ?? null ) ? $data['data'] : $data ) : false;
+}
+
+function staffswap_lipila_update_order_from_status( $order, $data, $source = 'status check' ) {
+	if ( ! $order || ! is_array( $data ) || 'staffswap_lipila' !== $order->get_payment_method() ) { return false; }
+	$reference = sanitize_text_field( $data['referenceId'] ?? '' );
+	if ( ! $reference || $reference !== $order->get_meta( '_staffswap_lipila_reference' ) || empty( $data['currency'] ) || ! isset( $data['amount'] ) || 'collection' !== strtolower( sanitize_text_field( $data['type'] ?? '' ) ) ) { return false; }
+	if ( strtoupper( sanitize_text_field( $data['currency'] ) ) !== strtoupper( $order->get_currency() ) ) { return false; }
+	if ( wc_format_decimal( (string) $data['amount'], wc_get_price_decimals() ) !== wc_format_decimal( (string) $order->get_total(), wc_get_price_decimals() ) ) { return false; }
+	$status = strtolower( sanitize_text_field( $data['status'] ?? '' ) );
+	if ( ! in_array( $order->get_status(), array( 'pending', 'on-hold' ), true ) ) {
+		if ( 'successful' === $status && ! $order->get_meta( '_staffswap_lipila_late_success_noted' ) ) {
+			$order->add_order_note( 'Lipila reported a successful payment after this order was closed. Review and reconcile this payment manually.' );
+			$order->update_meta_data( '_staffswap_lipila_late_success_noted', 'yes' );
+			$order->save();
+		}
+		return false;
+	}
+	if ( $status ) { $order->update_meta_data( '_staffswap_lipila_status', $status ); $order->save(); }
+	if ( 'successful' === $status && ! $order->is_paid() ) { $order->payment_complete( $reference ); $order->add_order_note( 'Lipila payment confirmed by ' . sanitize_text_field( $source ) . '.' ); return true; }
+	if ( 'failed' === $status && ! $order->is_paid() ) { $order->update_status( 'failed', 'Lipila mobile money payment was not completed.' ); return true; }
+	return false;
+}
+
+function staffswap_lipila_callback() {
+	$settings = get_option( 'woocommerce_staffswap_lipila_settings', array() );
+	$secret = trim( (string) ( $settings['webhook_secret'] ?? '' ) );
+	$webhook_id = sanitize_text_field( wp_unslash( $_SERVER['HTTP_WEBHOOK_ID'] ?? '' ) );
+	$timestamp = sanitize_text_field( wp_unslash( $_SERVER['HTTP_WEBHOOK_TIMESTAMP'] ?? '' ) );
+	$signatures = sanitize_text_field( wp_unslash( $_SERVER['HTTP_WEBHOOK_SIGNATURE'] ?? '' ) );
+	$raw_body = file_get_contents( 'php://input' );
+	$key = base64_decode( $secret, true );
+	if ( ! $key || 32 !== strlen( $key ) || ! $webhook_id || ! ctype_digit( $timestamp ) || abs( time() - (int) $timestamp ) > 300 || ! $signatures ) { status_header( 401 ); exit; }
+	$expected = 'v1,' . base64_encode( hash_hmac( 'sha256', $webhook_id . '.' . $timestamp . '.' . $raw_body, $key, true ) );
+	$valid_signature = false;
+	foreach ( explode( ' ', $signatures ) as $signature ) { if ( hash_equals( $expected, trim( $signature ) ) ) { $valid_signature = true; break; } }
+	if ( ! $valid_signature ) { status_header( 401 ); exit; }
+	$payload = json_decode( $raw_body, true );
+	$data = is_array( $payload['data'] ?? null ) ? $payload['data'] : $payload;
+	$reference = sanitize_text_field( $data['referenceId'] ?? '' );
+	$orders = $reference ? wc_get_orders( array( 'limit' => 1, 'meta_key' => '_staffswap_lipila_reference', 'meta_value' => $reference ) ) : array();
+	$order = $orders ? $orders[0] : false;
+	if ( ! $order ) { status_header( 400 ); exit; }
+	staffswap_lipila_update_order_from_status( $order, $data, 'webhook' );
+	status_header( 200 ); echo 'OK'; exit;
+}
+add_action( 'woocommerce_api_staffswap_lipila_callback', 'staffswap_lipila_callback' );
+
+function staffswap_lipila_check_order_status( $order_id ) {
+	$order = wc_get_order( $order_id );
+	if ( ! $order || $order->is_paid() || 'staffswap_lipila' !== $order->get_payment_method() || ! in_array( $order->get_status(), array( 'pending', 'on-hold' ), true ) ) { return; }
+	$settings = get_option( 'woocommerce_staffswap_lipila_settings', array() );
+	$base_url = 'live' === ( $settings['environment'] ?? 'sandbox' ) ? 'https://blz.lipila.io' : 'https://api.lipila.dev';
+	$data = staffswap_lipila_fetch_status( $order->get_meta( '_staffswap_lipila_reference' ), trim( (string) ( $settings['api_key'] ?? '' ) ), $base_url );
+	if ( $data ) { staffswap_lipila_update_order_from_status( $order, $data ); }
+}
+add_action( 'woocommerce_thankyou_staffswap_lipila', 'staffswap_lipila_check_order_status' );
+
+function staffswap_lipila_payment_state( $order ) {
+	if ( $order->is_paid() ) { return 'paid'; }
+	if ( in_array( $order->get_status(), array( 'cancelled', 'failed', 'refunded' ), true ) ) { return 'cancelled'; }
+	return 'pending';
+}
+
+function staffswap_lipila_payment_check() {
+	$order_id = absint( $_REQUEST['order_id'] ?? 0 );
+	$order_key = wc_clean( wp_unslash( $_REQUEST['key'] ?? '' ) );
+	$order = wc_get_order( $order_id );
+	if ( ! $order || 'staffswap_lipila' !== $order->get_payment_method() || ! hash_equals( $order->get_order_key(), $order_key ) ) {
+		wp_send_json_error( array( 'message' => 'Invalid payment check.' ), 404 );
+	}
+	staffswap_lipila_check_order_status( $order_id );
+	$order = wc_get_order( $order_id );
+	$expires_at = absint( $order->get_meta( '_staffswap_lipila_expires_at' ) );
+	if ( 'pending' === staffswap_lipila_payment_state( $order ) && $expires_at && time() >= $expires_at ) {
+		staffswap_lipila_expire_order( $order_id );
+		$order = wc_get_order( $order_id );
+	}
+	$state = staffswap_lipila_payment_state( $order );
+	$redirect = 'paid' === $state ? $order->get_checkout_order_received_url() : $order->get_checkout_payment_url();
+	wp_send_json_success( array( 'state' => $state, 'redirect' => $redirect, 'expires_at' => $expires_at ) );
+}
+add_action( 'woocommerce_api_staffswap_lipila_check', 'staffswap_lipila_payment_check' );
+
+function staffswap_lipila_wait_page() {
+	$order_id = absint( $_GET['staffswap_lipila_wait'] ?? 0 );
+	if ( ! $order_id ) { return; }
+	$order_key = wc_clean( wp_unslash( $_GET['key'] ?? '' ) );
+	$order = wc_get_order( $order_id );
+	if ( ! $order || 'staffswap_lipila' !== $order->get_payment_method() || ! hash_equals( $order->get_order_key(), $order_key ) || ! $order->get_meta( '_staffswap_lipila_reference' ) ) {
+		status_header( 404 );
+		wp_die( 'This payment link is invalid or has expired.', 'Payment not found', array( 'response' => 404 ) );
+	}
+	$state = staffswap_lipila_payment_state( $order );
+	if ( 'paid' === $state ) { wp_safe_redirect( $order->get_checkout_order_received_url() ); exit; }
+	nocache_headers();
+	$check_url = add_query_arg( array( 'wc-api' => 'staffswap_lipila_check', 'order_id' => $order_id, 'key' => $order_key ), home_url( '/' ) );
+	$expires_at = absint( $order->get_meta( '_staffswap_lipila_expires_at' ) );
+	$pricing_url = home_url( '/pricing/' );
+	$title = esc_html( get_bloginfo( 'name' ) . ' payment confirmation' );
+	$check_url_json = wp_json_encode( esc_url_raw( $check_url ) );
+	$received_url_json = wp_json_encode( esc_url_raw( $order->get_checkout_order_received_url() ) );
+	$pricing_url_json = wp_json_encode( esc_url_raw( $pricing_url ) );
+	$expires_at_json = wp_json_encode( $expires_at );
+	$html = '<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' . $title . '</title><style>body{margin:0;background:#f5f7f5;color:#17231b;font:16px/1.5 system-ui,sans-serif;display:grid;min-height:100vh;place-items:center}.panel{width:min(440px,calc(100% - 40px));text-align:center;padding:36px 24px;background:#fff;border:1px solid #dce5dd;border-radius:8px;box-sizing:border-box}h1{font-size:24px;margin:16px 0 8px}.muted{color:#59665c}.spinner{width:36px;height:36px;border:3px solid #dce5dd;border-top-color:#18794e;border-radius:50%;margin:auto;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}a{color:#176b46}</style></head><body><main class="panel"><div class="spinner" aria-hidden="true"></div><h1 id="payment-title">Waiting for mobile money approval</h1><p id="payment-message" class="muted">Approve the Lipila payment prompt on your phone. Keep this page open; your order will complete after Lipila confirms the payment.</p><p id="payment-countdown" class="muted" aria-live="polite"></p><p id="payment-retry" hidden><a href="' . esc_url( $pricing_url ) . '">Choose a plan again</a></p><noscript>JavaScript is required to check your payment status. Keep this page open and refresh it to check again.</noscript></main><script>(function(){var checkUrl=' . $check_url_json . ';var receivedUrl=' . $received_url_json . ';var pricingUrl=' . $pricing_url_json . ';var expiresAt=' . $expires_at_json . ';var title=document.getElementById("payment-title");var message=document.getElementById("payment-message");var countdown=document.getElementById("payment-countdown");var retry=document.getElementById("payment-retry");var spinner=document.querySelector(".spinner");function showCancelled(){spinner.hidden=true;title.textContent="Payment not completed";message.textContent="Lipila did not confirm this payment before the wait time expired. The order has been canceled.";countdown.textContent="";retry.hidden=false;retry.querySelector("a").href=pricingUrl;}function poll(){fetch(checkUrl,{credentials:"same-origin",cache:"no-store"}).then(function(response){return response.json();}).then(function(result){if(!result||!result.success){throw new Error("status");}if(result.data.state==="paid"){window.location.replace(receivedUrl);return;}if(result.data.state==="cancelled"){showCancelled();return;}if(expiresAt){var remaining=Math.max(0,expiresAt-Math.floor(Date.now()/1000));countdown.textContent=remaining?"Payment request expires in "+Math.ceil(remaining/60)+" minute(s).":"Checking final payment status...";}window.setTimeout(poll,5000);}).catch(function(){message.textContent="Still waiting for Lipila confirmation. This page will keep checking automatically.";window.setTimeout(poll,8000);});}if(' . wp_json_encode( $state ) . '==="cancelled"){showCancelled();}else{poll();}})();</script></body></html>';
+	status_header( 200 );
+	echo $html;
+	exit;
+}
+add_action( 'template_redirect', 'staffswap_lipila_wait_page', 1 );
+
+function staffswap_lipila_expire_order( $order_id ) {
+	$order = wc_get_order( $order_id );
+	if ( ! $order || $order->is_paid() || 'staffswap_lipila' !== $order->get_payment_method() || ! in_array( $order->get_status(), array( 'pending', 'on-hold' ), true ) ) { return; }
+	staffswap_lipila_check_order_status( $order_id );
+	$order = wc_get_order( $order_id );
+	if ( $order && ! $order->is_paid() && in_array( $order->get_status(), array( 'pending', 'on-hold' ), true ) ) {
+		$order->update_status( 'cancelled', 'Lipila USSD payment was not confirmed before the ' . staffswap_lipila_confirmation_timeout( get_option( 'woocommerce_staffswap_lipila_settings', array() )['confirmation_timeout'] ?? 10 ) . '-minute payment window expired.' );
+	}
+}
+add_action( 'staffswap_lipila_expire_order', 'staffswap_lipila_expire_order' );
+function staffswap_lipila_status_check_cron() {
+	$orders = wc_get_orders( array( 'limit' => 50, 'status' => array( 'pending', 'on-hold' ), 'payment_method' => 'staffswap_lipila', 'meta_key' => '_staffswap_lipila_reference', 'meta_compare' => 'EXISTS' ) );
+	foreach ( $orders as $order ) { staffswap_lipila_check_order_status( $order->get_id() ); }
+}
+add_action( 'staffswap_lenco_status_check', 'staffswap_lipila_status_check_cron' );
