@@ -94,8 +94,92 @@ function staffswap_secure_inbox_shortcode() {
 	$groups = array(); foreach ( $received as $message ) { $listing_id = absint( get_post_meta( $message->ID, '_staffswap_listing', true ) ); $groups[ $listing_id ?: $message->ID ][] = $message; }
 	ob_start(); ?><div class="message-inbox"><div class="page-heading"><div><p class="eyebrow">PRIVATE CONVERSATIONS</p><h1>Your messages</h1><p class="muted">Connect with potential exchange partners before you make a move.</p></div></div><?php if ( $groups ) : ?><div class="message-conversations"><?php foreach ( $groups as $listing_id => $messages ) : $latest = $messages[0]; $sender_id = (int) $latest->post_author; $unread = false; foreach ( $messages as $message ) { if ( '0' === get_post_meta( $message->ID, '_staffswap_read', true ) ) { $unread = true; break; } } ?><section class="panel message-conversation <?php echo $unread ? 'is-unread' : ''; ?>"><header><div><p class="eyebrow"><?php echo $listing_id && get_post( $listing_id ) ? esc_html( get_the_title( $listing_id ) ) : 'General conversation'; ?></p><h2><?php echo esc_html( get_the_author_meta( 'display_name', $sender_id ) ); ?></h2></div><span class="message-count"><?php echo esc_html( count( $messages ) ); ?> messages</span></header><?php foreach ( $messages as $message ) : ?><article class="message-row <?php echo '0' === get_post_meta( $message->ID, '_staffswap_read', true ) ? 'is-unread' : ''; ?>"><strong><?php echo esc_html( get_the_author_meta( 'display_name', $message->post_author ) ); ?></strong><p><?php echo esc_html( get_the_content( null, false, $message ) ); ?></p><small class="muted"><?php echo esc_html( get_the_date( '', $message ) ); ?></small><?php if ( '0' === get_post_meta( $message->ID, '_staffswap_read', true ) ) : ?><form method="post" class="message-read-form"><input type="hidden" name="message_id" value="<?php echo esc_attr( $message->ID ); ?>"><?php wp_nonce_field( 'staffswap_mark_message_' . $message->ID, 'staffswap_message_read_nonce' ); ?><button type="submit" name="staffswap_mark_message_read" class="button button--outline">Mark as read</button></form><?php endif; ?></article><?php endforeach; ?><?php if ( $listing_id && $sender_id ) : ?><form method="post" class="message-reply"><label for="reply-<?php echo esc_attr( $listing_id ); ?>">Reply</label><textarea id="reply-<?php echo esc_attr( $listing_id ); ?>" name="reply" rows="2" required></textarea><input type="hidden" name="listing_id" value="<?php echo esc_attr( $listing_id ); ?>"><input type="hidden" name="recipient_id" value="<?php echo esc_attr( $sender_id ); ?>"><?php wp_nonce_field( 'staffswap_reply_' . $listing_id, 'staffswap_reply_nonce' ); ?><button type="submit" name="staffswap_send_reply" class="button button--primary">Send reply</button></form><?php endif; ?></section><?php endforeach; ?></div><?php else : ?><section class="panel"><p class="muted">No received messages yet.</p></section><?php endif; ?></div><?php return ob_get_clean();
 }
+function staffswap_complete_inbox_shortcode() {
+	if ( ! is_user_logged_in() ) { return '<div class="panel"><p>Please sign in to view your messages.</p></div>'; }
+	$user_id = get_current_user_id();
+	if ( isset( $_POST['staffswap_mark_message_read'] ) && check_admin_referer( 'staffswap_mark_message_' . absint( $_POST['message_id'] ?? 0 ), 'staffswap_message_read_nonce' ) ) {
+		$message_id = absint( $_POST['message_id'] );
+		if ( (int) get_post_meta( $message_id, '_staffswap_recipient', true ) === $user_id ) { update_post_meta( $message_id, '_staffswap_read', '1' ); }
+	}
+	if ( isset( $_POST['staffswap_send_reply'] ) && check_admin_referer( 'staffswap_reply_' . absint( $_POST['listing_id'] ?? 0 ), 'staffswap_reply_nonce' ) ) {
+		$listing_id = absint( $_POST['listing_id'] ?? 0 );
+		$recipient = absint( $_POST['recipient_id'] ?? 0 );
+		$reply = sanitize_textarea_field( wp_unslash( $_POST['reply'] ?? '' ) );
+		$conversation_args = array(
+			'post_type' => 'staff_message',
+			'post_status' => 'publish',
+			'posts_per_page' => 1,
+			'fields' => 'ids',
+			'meta_query' => array(
+				array( 'key' => '_staffswap_listing', 'value' => $listing_id ),
+			),
+		);
+		$received_conversation = get_posts( array_merge( $conversation_args, array(
+			'author' => $recipient,
+			'meta_query' => array(
+				'relation' => 'AND',
+				array( 'key' => '_staffswap_listing', 'value' => $listing_id ),
+				array( 'key' => '_staffswap_recipient', 'value' => $user_id ),
+			),
+		) ) );
+		$sent_conversation = get_posts( array_merge( $conversation_args, array(
+			'author' => $user_id,
+			'meta_query' => array(
+				'relation' => 'AND',
+				array( 'key' => '_staffswap_listing', 'value' => $listing_id ),
+				array( 'key' => '_staffswap_recipient', 'value' => $recipient ),
+			),
+		) ) );
+		if ( $listing_id && $recipient && $reply && ( $received_conversation || $sent_conversation ) && 'swap_listing' === get_post_type( $listing_id ) && $recipient !== $user_id ) {
+			$reply_id = wp_insert_post( array( 'post_type' => 'staff_message', 'post_title' => 'Message about: ' . get_the_title( $listing_id ), 'post_content' => $reply, 'post_status' => 'publish', 'post_author' => $user_id ), true );
+			if ( ! is_wp_error( $reply_id ) ) {
+				update_post_meta( $reply_id, '_staffswap_recipient', $recipient );
+				update_post_meta( $reply_id, '_staffswap_listing', $listing_id );
+				update_post_meta( $reply_id, '_staffswap_read', '0' );
+				staffswap_notify_user( $recipient, 'New reply about ' . get_the_title( $listing_id ), wp_get_current_user()->display_name . ' replied to your conversation about "' . get_the_title( $listing_id ) . '":' . "\n\n" . $reply . "\n\n" . 'View it here: ' . home_url( '/messages/' ) );
+			}
+		}
+	}
+	$received = get_posts( array( 'post_type' => 'staff_message', 'post_status' => 'publish', 'posts_per_page' => 100, 'orderby' => 'date', 'order' => 'DESC', 'meta_query' => array( array( 'key' => '_staffswap_recipient', 'value' => $user_id ) ) ) );
+	$sent = get_posts( array( 'post_type' => 'staff_message', 'post_status' => 'publish', 'author' => $user_id, 'posts_per_page' => 100, 'orderby' => 'date', 'order' => 'DESC' ) );
+	$messages_by_id = array();
+	foreach ( array_merge( $received, $sent ) as $message ) { $messages_by_id[ $message->ID ] = $message; }
+	$messages = array_values( $messages_by_id );
+	usort( $messages, function( $left, $right ) { return strcmp( $right->post_date, $left->post_date ); } );
+	$groups = array();
+	foreach ( $messages as $message ) {
+		$listing_id = absint( get_post_meta( $message->ID, '_staffswap_listing', true ) );
+		$author_id = (int) $message->post_author;
+		$recipient_id = absint( get_post_meta( $message->ID, '_staffswap_recipient', true ) );
+		$participant_id = $author_id === $user_id ? $recipient_id : $author_id;
+		if ( ! $participant_id || $participant_id === $user_id ) { continue; }
+		$group_id = $listing_id ? $listing_id . ':' . $participant_id : 'general:' . $participant_id;
+		if ( ! isset( $groups[ $group_id ] ) ) { $groups[ $group_id ] = array( 'listing_id' => $listing_id, 'participant_id' => $participant_id, 'messages' => array() ); }
+		$groups[ $group_id ]['messages'][] = $message;
+	}
+	ob_start(); ?>
+	<div class="message-inbox">
+		<div class="page-heading"><div><p class="eyebrow">PRIVATE CONVERSATIONS</p><h1>Your messages</h1><p class="muted">Connect with potential exchange partners before you make a move.</p></div></div>
+		<?php if ( $groups ) : ?>
+			<div class="message-conversations">
+				<?php foreach ( $groups as $group ) : $listing_id = $group['listing_id']; $participant_id = $group['participant_id']; $thread_messages = $group['messages']; $unread = false; foreach ( $thread_messages as $thread_message ) { if ( (int) get_post_meta( $thread_message->ID, '_staffswap_recipient', true ) === $user_id && '0' === get_post_meta( $thread_message->ID, '_staffswap_read', true ) ) { $unread = true; break; } } $reply_form_id = 'reply-' . $listing_id . '-' . $participant_id; ?>
+					<section class="panel message-conversation <?php echo $unread ? 'is-unread' : ''; ?>">
+						<header><div><p class="eyebrow"><?php echo $listing_id && get_post( $listing_id ) ? esc_html( get_the_title( $listing_id ) ) : 'General conversation'; ?></p><h2><?php echo esc_html( get_the_author_meta( 'display_name', $participant_id ) ); ?></h2></div><span class="message-count"><?php echo esc_html( count( $thread_messages ) ); ?> messages</span></header>
+						<?php foreach ( $thread_messages as $message ) : $is_own = (int) $message->post_author === $user_id; $is_unread = ! $is_own && '0' === get_post_meta( $message->ID, '_staffswap_read', true ); ?>
+							<article class="message-row <?php echo $is_own ? 'is-own' : ''; ?> <?php echo $is_unread ? 'is-unread' : ''; ?>"><strong><?php echo esc_html( get_the_author_meta( 'display_name', $message->post_author ) ); ?></strong><p><?php echo esc_html( get_the_content( null, false, $message ) ); ?></p><small class="muted"><?php echo esc_html( get_the_date( '', $message ) ); ?></small>
+								<?php if ( $is_unread ) : ?><form method="post" class="message-read-form"><input type="hidden" name="message_id" value="<?php echo esc_attr( $message->ID ); ?>"><?php wp_nonce_field( 'staffswap_mark_message_' . $message->ID, 'staffswap_message_read_nonce' ); ?><button type="submit" name="staffswap_mark_message_read" class="button button--outline">Mark as read</button></form><?php endif; ?>
+							</article>
+						<?php endforeach; ?>
+						<?php if ( $listing_id ) : ?><form method="post" class="message-reply"><label for="<?php echo esc_attr( $reply_form_id ); ?>">Reply</label><textarea id="<?php echo esc_attr( $reply_form_id ); ?>" name="reply" rows="2" required></textarea><input type="hidden" name="listing_id" value="<?php echo esc_attr( $listing_id ); ?>"><input type="hidden" name="recipient_id" value="<?php echo esc_attr( $participant_id ); ?>"><?php wp_nonce_field( 'staffswap_reply_' . $listing_id, 'staffswap_reply_nonce' ); ?><button type="submit" name="staffswap_send_reply" class="button button--primary">Send reply</button></form><?php endif; ?>
+					</section>
+				<?php endforeach; ?>
+			</div>
+		<?php else : ?><section class="panel"><p class="muted">No conversations yet.</p></section><?php endif; ?>
+	</div>
+	<?php return ob_get_clean();
+}
 remove_shortcode( 'staffswap_inbox' );
-add_shortcode( 'staffswap_inbox', 'staffswap_secure_inbox_shortcode' );
+add_shortcode( 'staffswap_inbox', 'staffswap_complete_inbox_shortcode' );
 
 function staffswap_offer_post_type() {
 	register_post_type( 'staffswap_offer', array( 'labels' => array( 'name' => 'Swap Offers', 'singular_name' => 'Swap Offer' ), 'public' => false, 'show_ui' => true, 'show_in_menu' => 'edit.php?post_type=swap_listing', 'supports' => array( 'title', 'editor', 'author' ), 'capability_type' => 'post' ) );
