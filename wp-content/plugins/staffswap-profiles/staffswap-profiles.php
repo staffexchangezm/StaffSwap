@@ -152,7 +152,7 @@ function staffswap_verification_queue_action() {
 		$message = 'verified' === $action
 			? 'You are now a verified member. Your swap listings can publish immediately and display a verified badge.'
 			: 'Your verification request was not approved. Please review your submitted documents and try again.';
-		staffswap_notify_user( $user_id, 'Verification update', $message . "\n\n" . 'Manage your verification here: ' . home_url( '/verification/' ) );
+		staffswap_notify_user( $user_id, 'Verification update', $message . "\n\n" . 'Manage your verification here: ' . home_url( '/verification/' ), 'verification' );
 	}
 	wp_safe_redirect( add_query_arg( array( 'page' => 'staffswap-verification-queue', 'updated' => '1' ), admin_url( 'users.php' ) ) );
 	exit;

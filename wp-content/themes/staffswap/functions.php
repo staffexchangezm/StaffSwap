@@ -505,21 +505,45 @@ function staffswap_hub_tab_payments() {
 function staffswap_hub_tab_sms() {
 	$settings = get_option( 'staffswap_sms_settings', array() );
 	$settings = wp_parse_args( is_array( $settings ) ? $settings : array(), array( 'enabled' => 'no', 'api_token' => '', 'sender_id' => '' ) );
+	$notification_types = function_exists( 'staffswap_sms_notification_types' ) ? staffswap_sms_notification_types() : array( 'general' => array( 'label' => 'Other notifications', 'template' => '{site_name}: {subject}. {message}' ) );
+	$settings['notifications'] = isset( $settings['notifications'] ) && is_array( $settings['notifications'] ) ? $settings['notifications'] : array();
+	$settings['templates'] = isset( $settings['templates'] ) && is_array( $settings['templates'] ) ? $settings['templates'] : array();
 	if ( isset( $_POST['staffswap_save_sms'] ) && check_admin_referer( 'staffswap_save_sms', 'staffswap_sms_nonce' ) ) {
 		$settings['enabled'] = isset( $_POST['sms_enabled'] ) ? 'yes' : 'no';
 		$settings['sender_id'] = sanitize_text_field( wp_unslash( $_POST['sms_sender_id'] ?? $settings['sender_id'] ) );
 		$submitted_token = wp_unslash( $_POST['sms_api_token'] ?? '' );
 		if ( '' !== trim( (string) $submitted_token ) ) { $settings['api_token'] = sanitize_text_field( $submitted_token ); }
+		$posted_notifications = isset( $_POST['sms_type_enabled'] ) && is_array( $_POST['sms_type_enabled'] ) ? wp_unslash( $_POST['sms_type_enabled'] ) : array();
+		$posted_templates = isset( $_POST['sms_templates'] ) && is_array( $_POST['sms_templates'] ) ? wp_unslash( $_POST['sms_templates'] ) : array();
+		foreach ( $notification_types as $type => $definition ) {
+			$settings['notifications'][ $type ] = isset( $posted_notifications[ $type ] ) ? 'yes' : 'no';
+			if ( isset( $posted_templates[ $type ] ) && is_scalar( $posted_templates[ $type ] ) ) {
+				$settings['templates'][ $type ] = sanitize_textarea_field( $posted_templates[ $type ] );
+			}
+		}
 		update_option( 'staffswap_sms_settings', $settings );
 		echo '<div class="notice notice-success is-dismissible"><p>SMS gateway settings saved.</p></div>';
 	}
 	?>
-	<p>Members can opt in to SMS updates for new messages, offers, and matches from their Profile Settings once they add a mobile number.</p>
+	<p>Members can opt in to SMS updates for new messages, offers, and matches from their Profile Settings once they add a mobile number. Numbers are sent to ExciteSMS in international format; local 10-digit Zambian mobile numbers are converted automatically.</p>
 	<form method="post">
 		<div class="staffswap-hub__grid">
 			<label class="staffswap-hub__checkbox"><input type="checkbox" name="sms_enabled" <?php checked( 'yes', $settings['enabled'] ); ?>> Enable ExciteSMS notifications</label>
 			<label>Sender ID<input name="sms_sender_id" value="<?php echo esc_attr( $settings['sender_id'] ); ?>" placeholder="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>"></label>
-			<label class="staffswap-hub__full">ExciteSMS API token<input type="password" name="sms_api_token" placeholder="<?php echo $settings['api_token'] ? 'Token saved — leave blank to keep it' : ''; ?>" autocomplete="off"><small>Stored securely; leave blank to keep the current token.</small></label>
+			<label class="staffswap-hub__full">ExciteSMS API token<input type="password" name="sms_api_token" placeholder="<?php echo $settings['api_token'] ? 'Token saved — leave blank to keep it' : ''; ?>" autocomplete="off"><small>Leave blank to keep the current token. Never share the token publicly.</small></label>
+			<div class="staffswap-hub__full">
+				<h3>Notification types and templates</h3>
+				<p>Choose which events can send SMS and customize each message. Members must also opt in from their profile settings. Available placeholders: <code>{site_name}</code>, <code>{name}</code>, <code>{subject}</code>, <code>{message}</code>, <code>{url}</code>.</p>
+				<?php foreach ( $notification_types as $type => $definition ) :
+					$type_enabled = ! array_key_exists( $type, $settings['notifications'] ) || 'yes' === $settings['notifications'][ $type ];
+					$template = isset( $settings['templates'][ $type ] ) ? $settings['templates'][ $type ] : $definition['template'];
+				?>
+					<div class="staffswap-sms-template">
+						<label class="staffswap-hub__checkbox"><input type="checkbox" name="sms_type_enabled[<?php echo esc_attr( $type ); ?>]" value="1" <?php checked( $type_enabled ); ?>> Enable: <?php echo esc_html( $definition['label'] ); ?></label>
+						<label><?php echo esc_html( $definition['label'] ); ?> SMS template<textarea name="sms_templates[<?php echo esc_attr( $type ); ?>]" rows="2" maxlength="500"><?php echo esc_textarea( $template ); ?></textarea></label>
+					</div>
+				<?php endforeach; ?>
+			</div>
 		</div>
 		<?php wp_nonce_field( 'staffswap_save_sms', 'staffswap_sms_nonce' ); ?>
 		<p><button type="submit" name="staffswap_save_sms" class="button button-primary">Save SMS settings</button></p>
@@ -603,6 +627,7 @@ function staffswap_theme_options_hub_assets( $hook ) {
 	wp_enqueue_style( 'dashicons' );
 	wp_enqueue_script( 'jquery' );
 	wp_add_inline_style( 'dashicons', '.staffswap-hub{max-width:1180px;margin-top:24px}.staffswap-hub__hero{align-items:center;background:#0d2240;color:#fff;display:flex;justify-content:space-between;padding:34px 40px;border-radius:8px}.staffswap-hub__hero span{color:#a4f4cf;font-size:11px;font-weight:700;letter-spacing:.1em}.staffswap-hub__hero h1{color:#fff;font:700 32px/1.2 "Space Grotesk",sans-serif;margin:8px 0}.staffswap-hub__hero p{color:#bedbff;margin:0}.staffswap-hub__hero .button{background:#00bb7f;border-color:#00bb7f;color:#06251d;font-weight:700}.staffswap-hub__tabs{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}.staffswap-hub__tab{align-items:center;background:#fff;border:1px solid #d9e1ec;border-radius:6px;color:#334155;cursor:pointer;display:flex;font-weight:600;gap:6px;padding:10px 16px}.staffswap-hub__tab.is-active{background:#0d2240;border-color:#0d2240;color:#fff}.staffswap-hub__tab .dashicons{font-size:16px;height:16px;width:16px}.staffswap-hub__panel{background:#fff;border:1px solid #d9e1ec;border-radius:8px;display:none;padding:26px}.staffswap-hub__panel.is-active{display:block}.staffswap-hub__grid{display:grid;gap:18px;grid-template-columns:1fr 1fr}.staffswap-hub__grid label{color:#0f172a;display:grid;font-weight:700;gap:7px}.staffswap-hub__grid input,.staffswap-hub__grid textarea{border:1px solid #cbd5e1;border-radius:4px;font:14px "DM Sans",sans-serif;padding:9px 10px;width:100%}.staffswap-hub__grid input[type=color]{height:40px;padding:3px}.staffswap-hub__full{grid-column:1/-1}.staffswap-hub__checkbox{align-items:center;display:flex!important;flex-direction:row!important;font-weight:600!important;gap:8px}.staffswap-hub__plans{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}.staffswap-hub__plan-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:18px;display:grid;gap:12px}.staffswap-hub__plan-card h3{margin:0}.staffswap-hub__plan-card label{display:grid;font-weight:600;gap:6px}.staffswap-hub__setup form{display:inline-block;margin-right:10px}.staffswap-hub__checks{border-top:1px solid #e2e8f0;display:grid;gap:0;margin-top:20px}.staffswap-hub__checks li{border-bottom:1px solid #eef2f0;color:#8a9690;padding:10px 0}.staffswap-hub__checks li.is-ready{color:#0d2240;font-weight:600}.staffswap-hub__checks li.is-ready::before{content:"\\2713";color:#00a875;margin-right:8px}.staffswap-hub__checks li:not(.is-ready)::before{content:"\\25CB";margin-right:8px}.staffswap-hub__links{display:grid;gap:0;list-style:none;margin:0;padding:0}.staffswap-hub__links a{align-items:center;border-bottom:1px solid #e2e8f0;color:#155dfc;display:flex;font-weight:700;justify-content:space-between;padding:14px 4px;text-decoration:none}.staffswap-hub__links a:hover{color:#0f766e}' );
+	wp_add_inline_style( 'dashicons', '.staffswap-sms-template{background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;display:grid;gap:12px;margin-top:12px;padding:14px}.staffswap-hub__grid .staffswap-sms-template textarea{min-height:64px;resize:vertical}.staffswap-hub__grid>div>p{color:#526074;line-height:1.6}.staffswap-hub__grid>div>h3{margin-bottom:6px}@media(max-width:782px){.staffswap-hub__grid{grid-template-columns:1fr}.staffswap-hub__full{grid-column:auto}}' );
 	wp_add_inline_script( 'jquery', '(function(){document.addEventListener("DOMContentLoaded",function(){var tabs=document.querySelectorAll(".staffswap-hub__tab");var panels=document.querySelectorAll(".staffswap-hub__panel");tabs.forEach(function(tab){tab.addEventListener("click",function(){var target=tab.getAttribute("data-staffswap-tab");tabs.forEach(function(t){t.classList.toggle("is-active",t===tab);});panels.forEach(function(p){p.classList.toggle("is-active",p.getAttribute("data-staffswap-panel")===target);});if(window.history&&window.history.replaceState){var url=new URL(window.location.href);url.searchParams.set("tab",target);window.history.replaceState({},"",url);}});});});})();' );
 }
 add_action( 'admin_enqueue_scripts', 'staffswap_theme_options_hub_assets' );

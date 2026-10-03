@@ -24,7 +24,7 @@ function staffswap_email_html_template( $subject, $message ) {
 		. '</div></body></html>';
 }
 // Central email/SMS helper so members can be notified without leaving the site to check for updates.
-function staffswap_notify_user( $user_id, $subject, $message ) {
+function staffswap_notify_user( $user_id, $subject, $message, $notification_type = 'general' ) {
 	$user_id = absint( $user_id );
 	if ( ! $user_id ) { return; }
 	$user = get_userdata( $user_id );
@@ -36,16 +36,23 @@ function staffswap_notify_user( $user_id, $subject, $message ) {
 		wp_mail( $user->user_email, '[' . $site_name . '] ' . $subject, staffswap_email_html_template( $subject, $message ) );
 		remove_filter( 'wp_mail_content_type', $set_html_type );
 	}
-	if ( function_exists( 'staffswap_send_sms' ) && '1' === get_user_meta( $user_id, 'staffswap_sms_notifications_enabled', true ) ) {
+	$sms_settings = get_option( 'staffswap_sms_settings', array() );
+	$sms_settings = is_array( $sms_settings ) ? $sms_settings : array();
+	$type_settings = isset( $sms_settings['notifications'] ) && is_array( $sms_settings['notifications'] ) ? $sms_settings['notifications'] : array();
+	$type_enabled = ! array_key_exists( $notification_type, $type_settings ) || 'yes' === $type_settings[ $notification_type ];
+	if ( function_exists( 'staffswap_send_sms' ) && '1' === get_user_meta( $user_id, 'staffswap_sms_notifications_enabled', true ) && $type_enabled ) {
 		$phone = get_user_meta( $user_id, 'staffswap_phone', true );
-		if ( $phone ) { staffswap_send_sms( $phone, mb_substr( wp_strip_all_tags( $subject . ': ' . $message ), 0, 300 ) ); }
+		if ( $phone ) {
+			$sms_message = function_exists( 'staffswap_sms_template' ) ? staffswap_sms_template( $notification_type, $subject, $message, $user_id ) : $subject . ': ' . $message;
+			staffswap_send_sms( $phone, mb_substr( wp_strip_all_tags( $sms_message ), 0, 300 ) );
+		}
 	}
 }
 function staffswap_message_post_type() { register_post_type( 'staff_message', array( 'labels' => array( 'name' => 'Messages', 'singular_name' => 'Message' ), 'public' => false, 'show_ui' => true, 'show_in_menu' => 'edit.php?post_type=swap_listing', 'supports' => array( 'title', 'editor', 'author' ), 'capability_type' => 'post' ) ); }
 add_action( 'init', 'staffswap_message_post_type' );
 function staffswap_create_messages_page() { if ( ! get_page_by_path( 'messages' ) ) { wp_insert_post( array( 'post_title' => 'Messages', 'post_name' => 'messages', 'post_content' => '[staffswap_inbox]', 'post_status' => 'publish', 'post_type' => 'page' ) ); } }
 register_activation_hook( __FILE__, function() { staffswap_message_post_type(); staffswap_create_messages_page(); flush_rewrite_rules(); } ); register_deactivation_hook( __FILE__, 'flush_rewrite_rules' );
-function staffswap_contact_form_shortcode( $atts ) { $atts = shortcode_atts( array( 'listing' => get_the_ID() ), $atts, 'staffswap_contact' ); if ( ! is_user_logged_in() ) { return '<div class="panel"><p>Please sign in to contact this member.</p><a class="button button--primary" href="' . esc_url( wp_login_url( get_permalink() ) ) . '">Sign in</a></div>'; } $notice = ''; if ( isset( $_POST['staffswap_send_message'] ) && check_admin_referer( 'staffswap_send_message', 'staffswap_message_nonce' ) ) { $listing = get_post( (int) $atts['listing'] ); $message_text = sanitize_textarea_field( wp_unslash( $_POST['message'] ?? '' ) ); if ( $listing && 'swap_listing' === $listing->post_type && 'publish' === $listing->post_status && (int) $listing->post_author !== get_current_user_id() && $message_text ) { $message_id = wp_insert_post( array( 'post_type' => 'staff_message', 'post_title' => 'Message about: ' . $listing->post_title, 'post_content' => $message_text, 'post_status' => 'publish', 'post_author' => get_current_user_id() ), true ); if ( ! is_wp_error( $message_id ) ) { update_post_meta( $message_id, '_staffswap_recipient', (int) $listing->post_author ); update_post_meta( $message_id, '_staffswap_listing', (int) $listing->ID ); update_post_meta( $message_id, '_staffswap_read', '0' ); staffswap_notify_user( (int) $listing->post_author, 'New message about ' . $listing->post_title, wp_get_current_user()->display_name . ' sent you a message about your listing "' . $listing->post_title . '":' . "\n\n" . $message_text . "\n\n" . 'Reply here: ' . home_url( '/messages/' ) ); $notice = '<div class="notice"><div><h2>Message sent</h2><p class="muted">Your message has been sent to the listing owner.</p></div></div>'; } } } ob_start(); echo $notice; ?><div class="panel"><h2>Contact this professional</h2><form method="post"><div class="field"><label for="message">Your message</label><textarea id="message" name="message" rows="5" required placeholder="Introduce yourself and explain why this swap could work..."></textarea></div><?php wp_nonce_field( 'staffswap_send_message', 'staffswap_message_nonce' ); ?><input type="submit" name="staffswap_send_message" value="Send message"></form></div><?php return ob_get_clean(); }
+function staffswap_contact_form_shortcode( $atts ) { $atts = shortcode_atts( array( 'listing' => get_the_ID() ), $atts, 'staffswap_contact' ); if ( ! is_user_logged_in() ) { return '<div class="panel"><p>Please sign in to contact this member.</p><a class="button button--primary" href="' . esc_url( wp_login_url( get_permalink() ) ) . '">Sign in</a></div>'; } $notice = ''; if ( isset( $_POST['staffswap_send_message'] ) && check_admin_referer( 'staffswap_send_message', 'staffswap_message_nonce' ) ) { $listing = get_post( (int) $atts['listing'] ); $message_text = sanitize_textarea_field( wp_unslash( $_POST['message'] ?? '' ) ); if ( $listing && 'swap_listing' === $listing->post_type && 'publish' === $listing->post_status && (int) $listing->post_author !== get_current_user_id() && $message_text ) { $message_id = wp_insert_post( array( 'post_type' => 'staff_message', 'post_title' => 'Message about: ' . $listing->post_title, 'post_content' => $message_text, 'post_status' => 'publish', 'post_author' => get_current_user_id() ), true ); if ( ! is_wp_error( $message_id ) ) { update_post_meta( $message_id, '_staffswap_recipient', (int) $listing->post_author ); update_post_meta( $message_id, '_staffswap_listing', (int) $listing->ID ); update_post_meta( $message_id, '_staffswap_read', '0' ); staffswap_notify_user( (int) $listing->post_author, 'New message about ' . $listing->post_title, wp_get_current_user()->display_name . ' sent you a message about your listing "' . $listing->post_title . '":' . "\n\n" . $message_text . "\n\n" . 'Reply here: ' . home_url( '/messages/' ), 'message' ); $notice = '<div class="notice"><div><h2>Message sent</h2><p class="muted">Your message has been sent to the listing owner.</p></div></div>'; } } } ob_start(); echo $notice; ?><div class="panel"><h2>Contact this professional</h2><form method="post"><div class="field"><label for="message">Your message</label><textarea id="message" name="message" rows="5" required placeholder="Introduce yourself and explain why this swap could work..."></textarea></div><?php wp_nonce_field( 'staffswap_send_message', 'staffswap_message_nonce' ); ?><input type="submit" name="staffswap_send_message" value="Send message"></form></div><?php return ob_get_clean(); }
 add_shortcode( 'staffswap_contact', 'staffswap_contact_form_shortcode' );
 
 function staffswap_inbox_shortcode() { if ( ! is_user_logged_in() ) { return '<div class="panel"><p>Please sign in to view your messages.</p></div>'; } $user_id = get_current_user_id(); $received = new WP_Query( array( 'post_type' => 'staff_message', 'post_status' => 'publish', 'posts_per_page' => 30, 'meta_key' => '_staffswap_recipient', 'meta_value' => $user_id ) ); $sent = new WP_Query( array( 'post_type' => 'staff_message', 'post_status' => 'publish', 'author' => $user_id, 'posts_per_page' => 30 ) ); ob_start(); ?><div class="message-inbox"><div class="page-heading"><div><p class="eyebrow">PRIVATE CONVERSATIONS</p><h1>Your messages</h1><p class="muted">Connect with potential exchange partners before you make a move.</p></div></div><section class="panel"><h2>Received</h2><?php if ( $received->have_posts() ) : while ( $received->have_posts() ) : $received->the_post(); ?><article class="message-row"><strong><?php the_title(); ?></strong><p><?php echo esc_html( wp_trim_words( get_the_content(), 22 ) ); ?></p><small class="muted">From <?php echo esc_html( get_the_author() ); ?></small></article><?php endwhile; wp_reset_postdata(); else : ?><p class="muted">No received messages yet.</p><?php endif; ?></section><section class="panel" style="margin-top:16px"><h2>Sent</h2><?php if ( $sent->have_posts() ) : while ( $sent->have_posts() ) : $sent->the_post(); ?><article class="message-row"><strong><?php the_title(); ?></strong><p><?php echo esc_html( wp_trim_words( get_the_content(), 22 ) ); ?></p><small class="muted">Sent <?php echo esc_html( get_the_date() ); ?></small></article><?php endwhile; wp_reset_postdata(); else : ?><p class="muted">No sent messages yet.</p><?php endif; ?></section></div><?php return ob_get_clean(); }
@@ -88,7 +95,7 @@ function staffswap_secure_inbox_shortcode() {
 	if ( isset( $_POST['staffswap_send_reply'] ) && check_admin_referer( 'staffswap_reply_' . absint( $_POST['listing_id'] ?? 0 ), 'staffswap_reply_nonce' ) ) {
 		$listing_id = absint( $_POST['listing_id'] ?? 0 ); $recipient = absint( $_POST['recipient_id'] ?? 0 ); $reply = sanitize_textarea_field( wp_unslash( $_POST['reply'] ?? '' ) );
 		$conversation = get_posts( array( 'post_type' => 'staff_message', 'post_status' => 'publish', 'author' => $recipient, 'posts_per_page' => 1, 'fields' => 'ids', 'meta_query' => array( 'relation' => 'AND', array( 'key' => '_staffswap_recipient', 'value' => $user_id ), array( 'key' => '_staffswap_listing', 'value' => $listing_id ) ) ) );
-		if ( $listing_id && $recipient && $reply && $conversation && get_post_type( $listing_id ) === 'swap_listing' && $recipient !== $user_id ) { $reply_id = wp_insert_post( array( 'post_type' => 'staff_message', 'post_title' => 'Message about: ' . get_the_title( $listing_id ), 'post_content' => $reply, 'post_status' => 'publish', 'post_author' => $user_id ) ); if ( $reply_id ) { update_post_meta( $reply_id, '_staffswap_recipient', $recipient ); update_post_meta( $reply_id, '_staffswap_listing', $listing_id ); update_post_meta( $reply_id, '_staffswap_read', '0' ); staffswap_notify_user( $recipient, 'New reply about ' . get_the_title( $listing_id ), wp_get_current_user()->display_name . ' replied to your conversation about "' . get_the_title( $listing_id ) . '":' . "\n\n" . $reply . "\n\n" . 'View it here: ' . home_url( '/messages/' ) ); } }
+		if ( $listing_id && $recipient && $reply && $conversation && get_post_type( $listing_id ) === 'swap_listing' && $recipient !== $user_id ) { $reply_id = wp_insert_post( array( 'post_type' => 'staff_message', 'post_title' => 'Message about: ' . get_the_title( $listing_id ), 'post_content' => $reply, 'post_status' => 'publish', 'post_author' => $user_id ) ); if ( $reply_id ) { update_post_meta( $reply_id, '_staffswap_recipient', $recipient ); update_post_meta( $reply_id, '_staffswap_listing', $listing_id ); update_post_meta( $reply_id, '_staffswap_read', '0' ); staffswap_notify_user( $recipient, 'New reply about ' . get_the_title( $listing_id ), wp_get_current_user()->display_name . ' replied to your conversation about "' . get_the_title( $listing_id ) . '":' . "\n\n" . $reply . "\n\n" . 'View it here: ' . home_url( '/messages/' ), 'message' ); } }
 	}
 	$received = get_posts( array( 'post_type' => 'staff_message', 'post_status' => 'publish', 'posts_per_page' => 50, 'orderby' => 'date', 'order' => 'DESC', 'meta_query' => array( array( 'key' => '_staffswap_recipient', 'value' => $user_id ) ) ) );
 	$groups = array(); foreach ( $received as $message ) { $listing_id = absint( get_post_meta( $message->ID, '_staffswap_listing', true ) ); $groups[ $listing_id ?: $message->ID ][] = $message; }
@@ -270,7 +277,7 @@ function staffswap_complete_inbox_shortcode() {
 						$shared_with[] = $recipient;
 						update_post_meta( $document_id, '_staffswap_document_shared_with', array_values( array_unique( $shared_with ) ) );
 					}
-					staffswap_notify_user( $recipient, 'New reply about ' . get_the_title( $listing_id ), wp_get_current_user()->display_name . ' replied to your conversation about "' . get_the_title( $listing_id ) . '":' . "\n\n" . $message_body . "\n\n" . 'View it here: ' . home_url( '/messages/' ) );
+					staffswap_notify_user( $recipient, 'New reply about ' . get_the_title( $listing_id ), wp_get_current_user()->display_name . ' replied to your conversation about "' . get_the_title( $listing_id ) . '":' . "\n\n" . $message_body . "\n\n" . 'View it here: ' . home_url( '/messages/' ), 'message' );
 				} else {
 					$notice = '<div class="notice"><p>Your message could not be sent.</p></div>';
 				}
@@ -582,7 +589,7 @@ function staffswap_offer_form_shortcode( $atts ) {
 				update_post_meta( $offer_id, '_staffswap_offer_housing', isset( $_POST['housing_handover'] ) ? 'handover' : 'independent' );
 				update_post_meta( $offer_id, '_staffswap_offer_status', 'proposed' );
 				staffswap_offer_log_status( $offer_id, 'proposed' );
-				staffswap_notify_user( (int) $listing->post_author, 'New swap offer for ' . $listing->post_title, wp_get_current_user()->display_name . ' sent a formal swap offer for your listing "' . $listing->post_title . '" with a proposed effective date of ' . $effective_date . '.' . "\n\n" . 'Review it here: ' . home_url( '/offers/' ) );
+				staffswap_notify_user( (int) $listing->post_author, 'New swap offer for ' . $listing->post_title, wp_get_current_user()->display_name . ' sent a formal swap offer for your listing "' . $listing->post_title . '" with a proposed effective date of ' . $effective_date . '.' . "\n\n" . 'Review it here: ' . home_url( '/offers/' ), 'offer' );
 				$notice = '<div class="notice"><p>Swap offer sent. You can track its status in Offers.</p></div>';
 			}
 		}
@@ -643,7 +650,7 @@ function staffswap_offer_action() {
 	staffswap_offer_log_status( $offer_id, $action, get_current_user_id(), $reason );
 	$listing_id = (int) get_post_meta( $offer_id, '_staffswap_offer_listing', true );
 	$other_party = $is_recipient ? (int) $offer->post_author : (int) get_post_meta( $offer_id, '_staffswap_offer_recipient', true );
-	if ( $other_party ) { staffswap_notify_user( $other_party, 'Swap offer update: ' . get_the_title( $listing_id ), 'Your swap offer for "' . get_the_title( $listing_id ) . '" is now marked as ' . $action . '.' . ( $reason ? ' Note: ' . $reason : '' ) . "\n\n" . 'View it here: ' . home_url( '/offers/' ) ); }
+	if ( $other_party ) { staffswap_notify_user( $other_party, 'Swap offer update: ' . get_the_title( $listing_id ), 'Your swap offer for "' . get_the_title( $listing_id ) . '" is now marked as ' . $action . '.' . ( $reason ? ' Note: ' . $reason : '' ) . "\n\n" . 'View it here: ' . home_url( '/offers/' ), 'offer' ); }
 	if ( in_array( $action, array( 'accepted', 'completed' ), true ) ) {
 		$admin_email = get_option( 'admin_email' );
 		if ( $admin_email ) { wp_mail( $admin_email, '[' . get_bloginfo( 'name' ) . '] Swap offer ' . $action, 'A swap offer for "' . get_the_title( $listing_id ) . '" between ' . get_the_author_meta( 'display_name', $offer->post_author ) . ' and ' . get_the_author_meta( 'display_name', (int) get_post_meta( $offer_id, '_staffswap_offer_recipient', true ) ) . ' is now ' . $action . '. Review it in Swap Offers.' ); }
@@ -667,7 +674,7 @@ function staffswap_offer_action() {
 			update_post_meta( $counter_id, '_staffswap_offer_parent', $offer_id );
 			update_post_meta( $counter_id, '_staffswap_offer_status', 'proposed' );
 			staffswap_offer_log_status( $counter_id, 'proposed' );
-			staffswap_notify_user( (int) get_post_field( 'post_author', $offer_id ), 'Counter-offer received for ' . get_the_title( $listing_id ), 'You received a counter-offer for "' . get_the_title( $listing_id ) . '". Review it here: ' . home_url( '/offers/' ) );
+			staffswap_notify_user( (int) get_post_field( 'post_author', $offer_id ), 'Counter-offer received for ' . get_the_title( $listing_id ), 'You received a counter-offer for "' . get_the_title( $listing_id ) . '". Review it here: ' . home_url( '/offers/' ), 'offer' );
 		}
 	}
 	if ( function_exists( 'staffswap_record_event' ) ) { staffswap_record_event( 'offer_' . $action, $offer_id, array( 'listing_id' => $listing_id ), get_current_user_id() ); }
@@ -682,8 +689,8 @@ function staffswap_offer_expiry_sweep() {
 		staffswap_offer_log_status( $offer_id, 'expired' );
 		$listing_id = (int) get_post_meta( $offer_id, '_staffswap_offer_listing', true );
 		if ( function_exists( 'staffswap_notify_user' ) ) {
-			staffswap_notify_user( (int) get_post_field( 'post_author', $offer_id ), 'Swap offer expired', 'Your swap offer for "' . get_the_title( $listing_id ) . '" expired without a response.' . "\n\n" . 'View it here: ' . home_url( '/offers/' ) );
-			staffswap_notify_user( (int) get_post_meta( $offer_id, '_staffswap_offer_recipient', true ), 'Swap offer expired', 'A swap offer for "' . get_the_title( $listing_id ) . '" expired without a response.' . "\n\n" . 'View it here: ' . home_url( '/offers/' ) );
+			staffswap_notify_user( (int) get_post_field( 'post_author', $offer_id ), 'Swap offer expired', 'Your swap offer for "' . get_the_title( $listing_id ) . '" expired without a response.' . "\n\n" . 'View it here: ' . home_url( '/offers/' ), 'offer' );
+			staffswap_notify_user( (int) get_post_meta( $offer_id, '_staffswap_offer_recipient', true ), 'Swap offer expired', 'A swap offer for "' . get_the_title( $listing_id ) . '" expired without a response.' . "\n\n" . 'View it here: ' . home_url( '/offers/' ), 'offer' );
 		}
 	}
 }
