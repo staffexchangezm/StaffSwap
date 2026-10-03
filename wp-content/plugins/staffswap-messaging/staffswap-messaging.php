@@ -33,8 +33,9 @@ function staffswap_notify_user( $user_id, $subject, $message, $notification_type
 		$site_name = get_bloginfo( 'name' );
 		$set_html_type = function () { return 'text/html'; };
 		add_filter( 'wp_mail_content_type', $set_html_type );
-		wp_mail( $user->user_email, '[' . $site_name . '] ' . $subject, staffswap_email_html_template( $subject, $message ) );
+		$mail_sent = wp_mail( $user->user_email, '[' . $site_name . '] ' . $subject, staffswap_email_html_template( $subject, $message ) );
 		remove_filter( 'wp_mail_content_type', $set_html_type );
+		if ( ! $mail_sent ) { error_log( 'StaffSwap notification email failed for user ' . $user_id . '.' ); }
 	}
 	$sms_settings = get_option( 'staffswap_sms_settings', array() );
 	$sms_settings = is_array( $sms_settings ) ? $sms_settings : array();

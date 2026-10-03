@@ -129,12 +129,12 @@ Add combined filters for profession, province, employer, experience, housing, ve
 
 **Labels:** `core`, `frontend`, `matching`
 
-Explain why two listings match instead of showing only a percentage score. Consider profession, locations, employer, housing, and verification. Implemented via `staffswap_match_explanation()`.
+Explain why two listings match instead of showing only a percentage score. The score weights profession, reciprocal routes and employers, experience, housing, nearby-town and relocation flexibility, verification, and urgency, and is capped at 100. Implemented via `staffswap_match_score()` and `staffswap_match_explanation()`.
 
 **Acceptance criteria**
 
 - Match factors are understandable to members.
-- Score and explanation use the same data.
+- Score and explanation use the same data, including urgency and relocation flexibility.
 - Missing data does not break the component.
 - The explanation is accessible on mobile.
 
