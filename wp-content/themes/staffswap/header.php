@@ -4,11 +4,14 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 <html <?php language_attributes(); ?>>
 <head>
 	<meta charset="<?php bloginfo( 'charset' ); ?>">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+	<meta name="theme-color" content="<?php echo esc_attr( staffswap_brand_settings()['header_color'] ); ?>">
 	<?php wp_head(); ?>
 </head>
 <body <?php body_class(); ?>>
 <?php wp_body_open(); ?>
+<a class="skip-link" href="#content"><?php echo esc_html__( 'Skip to content', 'staffswap' ); ?></a>
+<?php staffswap_announcement_bar(); ?>
 <?php
 $staffswap_elementor_header = staffswap_builder_location( 'header' );
 if ( ! $staffswap_elementor_header ) :
@@ -21,8 +24,8 @@ if ( ! $staffswap_elementor_header ) :
 	<header class="site-header site-header--brand">
 		<div class="site-header__inner">
 			<a class="brand brand--light" href="<?php echo esc_url( home_url( '/' ) ); ?>" aria-label="<?php echo esc_attr( staffswap_home_setting( 'site_name', 'StaffExchangeHub' ) ); ?>"><?php if ( function_exists( 'the_custom_logo' ) && has_custom_logo() ) : ?><?php the_custom_logo(); ?><?php else : ?><?php echo esc_html( staffswap_home_setting( 'site_name', 'StaffExchangeHub' ) ); ?><?php endif; ?></a>
-			<button class="menu-toggle" type="button" data-mobile-menu aria-label="<?php echo esc_attr__( 'Toggle menu', 'staffswap' ); ?>"><?php echo esc_html__( 'Menu', 'staffswap' ); ?></button>
-			<nav class="primary-nav" aria-label="<?php echo esc_attr__( 'Primary navigation', 'staffswap' ); ?>"><?php if ( ! empty( trim( $staffswap_menu ) ) ) { echo $staffswap_menu; } else { staffswap_fallback_menu(); } ?></nav>
+			<button class="menu-toggle" type="button" data-mobile-menu aria-expanded="false" aria-controls="primary-nav" aria-label="<?php echo esc_attr__( 'Toggle menu', 'staffswap' ); ?>"><?php echo esc_html__( 'Menu', 'staffswap' ); ?></button>
+			<nav class="primary-nav" id="primary-nav" aria-label="<?php echo esc_attr__( 'Primary navigation', 'staffswap' ); ?>"><?php if ( ! empty( trim( $staffswap_menu ) ) ) { echo $staffswap_menu; } else { staffswap_fallback_menu(); } ?></nav>
 			<div class="header-actions">
 				<a class="header-icon" href="<?php echo esc_url( home_url( '/my-profile/' ) ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Matches, %d new', 'staffswap' ), $staffswap_new_matches ) ); ?>"><span class="dashicons dashicons-groups" aria-hidden="true"></span><?php if ( $staffswap_new_matches ) : ?><b><?php echo esc_html( $staffswap_new_matches ); ?></b><?php endif; ?></a>
 				<a class="header-icon" href="<?php echo esc_url( home_url( '/offers/' ) ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Offers, %d pending', 'staffswap' ), $staffswap_pending_offers ) ); ?>"><span class="dashicons dashicons-bell" aria-hidden="true"></span><?php if ( $staffswap_pending_offers ) : ?><b><?php echo esc_html( $staffswap_pending_offers ); ?></b><?php endif; ?></a>

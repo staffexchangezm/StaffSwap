@@ -268,11 +268,49 @@ function staffswap_theme_options_screen() {
 }
 
 function staffswap_theme_options_css() {
-	$settings = get_option( 'staffswap_settings', array() );
-	$color = sanitize_hex_color( $settings['primary_color'] ?? '' );
-	if ( $color ) { echo '<style>:root{--primary:' . esc_attr( $color ) . ';}</style>'; }
+	$s = staffswap_brand_settings();
+	$fonts = staffswap_brand_fonts();
+	$vars = array( '--primary' => sanitize_hex_color( $s['primary_color'] ), '--navy' => sanitize_hex_color( $s['header_color'] ), '--radius' => absint( $s['radius'] ) . 'px', '--container' => absint( $s['container'] ) . 'px', '--font-heading' => $fonts[ $s['heading_font'] ] ?? $fonts['space-grotesk'] );
+	$css = '';
+	foreach ( $vars as $name => $value ) { if ( $value ) { $css .= $name . ':' . $value . ';'; } }
+	echo '<style id="staffswap-tokens">:root{' . wp_strip_all_tags( $css ) . '}</style>';
 }
 add_action( 'wp_head', 'staffswap_theme_options_css', 20 );
+
+function staffswap_brand_body_class( $classes ) {
+	$s = staffswap_brand_settings();
+	if ( 'yes' === $s['sticky_header'] ) { $classes[] = 'has-sticky-header'; }
+	if ( 'yes' === $s['mobile_nav'] ) { $classes[] = 'has-mobile-nav'; }
+	return $classes;
+}
+add_filter( 'body_class', 'staffswap_brand_body_class' );
+
+function staffswap_announcement_bar() {
+	$s = staffswap_brand_settings();
+	if ( 'yes' !== $s['announcement_enabled'] || '' === trim( $s['announcement_text'] ) ) { return; }
+	$text = esc_html( $s['announcement_text'] );
+	echo '<div class="announcement-bar">' . ( $s['announcement_link'] ? '<a href="' . esc_url( $s['announcement_link'] ) . '">' . $text . '</a>' : $text ) . '</div>';
+}
+
+function staffswap_mobile_nav() {
+	global $wp;
+	if ( 'yes' !== staffswap_brand_settings()['mobile_nav'] ) { return; }
+	$items = array(
+		array( home_url( '/' ), 'dashicons-admin-home', __( 'Home', 'staffswap' ) ),
+		array( home_url( '/swaps/' ), 'dashicons-search', __( 'Swaps', 'staffswap' ) ),
+		array( home_url( '/create-swap/' ), 'dashicons-plus-alt2', __( 'Post', 'staffswap' ) ),
+		array( home_url( '/messages/' ), 'dashicons-email-alt', __( 'Inbox', 'staffswap' ) ),
+		array( home_url( is_user_logged_in() ? '/my-profile/' : '/sign-in/' ), 'dashicons-admin-users', is_user_logged_in() ? __( 'Account', 'staffswap' ) : __( 'Sign in', 'staffswap' ) ),
+	);
+	$current = trailingslashit( home_url( $wp->request ) );
+	echo '<nav class="mobile-nav" aria-label="' . esc_attr__( 'Quick navigation', 'staffswap' ) . '">';
+	foreach ( $items as $item ) {
+		$is_current = trailingslashit( $item[0] ) === $current ? ' aria-current="page"' : '';
+		echo '<a href="' . esc_url( $item[0] ) . '"' . $is_current . '><span class="dashicons ' . esc_attr( $item[1] ) . '" aria-hidden="true"></span>' . esc_html( $item[2] ) . '</a>';
+	}
+	echo '</nav>';
+}
+add_action( 'wp_footer', 'staffswap_mobile_nav' );
 
 function staffswap_theme_options_styles( $hook ) {
 	if ( 'appearance_page_staffswap-theme-options' !== $hook ) { return; }
@@ -311,11 +349,39 @@ function staffswap_theme_options_hub() {
 	echo '</div></div>';
 }
 
+function staffswap_brand_defaults() {
+	return array( 'site_name' => 'StaffExchangeHub', 'hero_title' => 'Swap Your Workplace. Change Your Life.', 'hero_text' => 'Connect with verified professionals across Zambia who want to swap their workplace just like you. Secure, efficient, and professional workplace mobility.', 'primary_label' => 'Create Swap Post', 'secondary_label' => 'Browse Swaps', 'stats' => '12,000+|3,200+|150+|10|20+', 'primary_color' => '#00bb7f', 'header_color' => '#0d2240', 'radius' => '6', 'heading_font' => 'space-grotesk', 'container' => '1200', 'sticky_header' => 'yes', 'mobile_nav' => 'yes', 'announcement_enabled' => 'no', 'announcement_text' => '', 'announcement_link' => '', 'footer_text' => 'The professional exchange marketplace helping individuals and institutions find workplace swaps across Zambia.' );
+}
+
+function staffswap_brand_fonts() {
+	return array( 'space-grotesk' => '"Space Grotesk", sans-serif', 'dm-sans' => '"DM Sans", sans-serif', 'system' => 'system-ui, -apple-system, "Segoe UI", sans-serif' );
+}
+
+function staffswap_brand_settings() {
+	return wp_parse_args( array_filter( (array) get_option( 'staffswap_settings', array() ), function ( $v ) { return '' !== $v && null !== $v; } ), staffswap_brand_defaults() );
+}
+
+function staffswap_sanitize_brand( $input, $current ) {
+	$defaults = staffswap_brand_defaults();
+	$out = $current;
+	foreach ( $defaults as $key => $default ) {
+		$raw = isset( $input[ $key ] ) ? wp_unslash( $input[ $key ] ) : null;
+		if ( in_array( $key, array( 'primary_color', 'header_color' ), true ) ) { $out[ $key ] = sanitize_hex_color( (string) $raw ) ?: $default; }
+		elseif ( in_array( $key, array( 'sticky_header', 'mobile_nav', 'announcement_enabled' ), true ) ) { $out[ $key ] = null !== $raw ? 'yes' : 'no'; }
+		elseif ( 'radius' === $key ) { $out[ $key ] = (string) min( 24, max( 0, absint( $raw ) ) ); }
+		elseif ( 'heading_font' === $key ) { $out[ $key ] = array_key_exists( (string) $raw, staffswap_brand_fonts() ) ? $raw : $default; }
+		elseif ( 'container' === $key ) { $out[ $key ] = in_array( (string) $raw, array( '1120', '1200', '1320' ), true ) ? $raw : $default; }
+		elseif ( 'announcement_link' === $key ) { $out[ $key ] = esc_url_raw( (string) $raw ); }
+		elseif ( null !== $raw ) { $out[ $key ] = sanitize_textarea_field( $raw ); }
+	}
+	return $out;
+}
+
 function staffswap_hub_tab_brand() {
-	$defaults = array( 'site_name' => 'StaffExchangeHub', 'hero_title' => 'Swap Your Workplace. Change Your Life.', 'hero_text' => 'Connect with verified professionals across Zambia who want to swap their workplace just like you. Secure, efficient, and professional workplace mobility.', 'primary_label' => 'Create Swap Post', 'secondary_label' => 'Browse Swaps', 'stats' => '12,000+|3,200+|150+|10|20+', 'primary_color' => '#00bb7f' );
-	$settings = wp_parse_args( get_option( 'staffswap_settings', array() ), $defaults );
+	$defaults = staffswap_brand_defaults();
+	$settings = staffswap_brand_settings();
 	if ( isset( $_POST['staffswap_save_theme_options'] ) && check_admin_referer( 'staffswap_save_theme_options', 'staffswap_theme_options_nonce' ) ) {
-		foreach ( $defaults as $key => $default ) { $settings[ $key ] = 'primary_color' === $key ? sanitize_hex_color( wp_unslash( $_POST[ $key ] ?? $default ) ) : sanitize_textarea_field( wp_unslash( $_POST[ $key ] ?? $default ) ); }
+		$settings = staffswap_sanitize_brand( $_POST, $settings );
 		update_option( 'staffswap_settings', $settings );
 		echo '<div class="notice notice-success is-dismissible"><p>Brand settings saved.</p></div>';
 	}
@@ -329,6 +395,22 @@ function staffswap_hub_tab_brand() {
 			<label class="staffswap-hub__full">Homepage headline<input name="hero_title" value="<?php echo esc_attr( $settings['hero_title'] ); ?>"></label>
 			<label class="staffswap-hub__full">Homepage description<textarea name="hero_text" rows="4"><?php echo esc_textarea( $settings['hero_text'] ); ?></textarea></label>
 			<label class="staffswap-hub__full">Network statistics<input name="stats" value="<?php echo esc_attr( $settings['stats'] ); ?>"><small>Five values separated with the | character.</small></label>
+			<label class="staffswap-hub__full">Footer description<textarea name="footer_text" rows="2"><?php echo esc_textarea( $settings['footer_text'] ); ?></textarea></label>
+		</div>
+		<h3>Design</h3>
+		<div class="staffswap-hub__grid">
+			<label>Header colour<input name="header_color" type="color" value="<?php echo esc_attr( $settings['header_color'] ); ?>"></label>
+			<label>Corner radius (px)<input name="radius" type="number" min="0" max="24" value="<?php echo esc_attr( $settings['radius'] ); ?>"></label>
+			<label>Heading font<select name="heading_font"><?php foreach ( array( 'space-grotesk' => 'Space Grotesk', 'dm-sans' => 'DM Sans', 'system' => 'System default' ) as $slug => $name ) : ?><option value="<?php echo esc_attr( $slug ); ?>" <?php selected( $settings['heading_font'], $slug ); ?>><?php echo esc_html( $name ); ?></option><?php endforeach; ?></select></label>
+			<label>Content width<select name="container"><?php foreach ( array( '1120' => 'Compact (1120px)', '1200' => 'Standard (1200px)', '1320' => 'Wide (1320px)' ) as $px => $name ) : ?><option value="<?php echo esc_attr( $px ); ?>" <?php selected( $settings['container'], $px ); ?>><?php echo esc_html( $name ); ?></option><?php endforeach; ?></select></label>
+			<label class="staffswap-hub__checkbox"><input type="checkbox" name="sticky_header" <?php checked( 'yes', $settings['sticky_header'] ); ?>> Sticky header</label>
+			<label class="staffswap-hub__checkbox"><input type="checkbox" name="mobile_nav" <?php checked( 'yes', $settings['mobile_nav'] ); ?>> Mobile bottom navigation bar</label>
+		</div>
+		<h3>Announcement bar</h3>
+		<div class="staffswap-hub__grid">
+			<label class="staffswap-hub__checkbox staffswap-hub__full"><input type="checkbox" name="announcement_enabled" <?php checked( 'yes', $settings['announcement_enabled'] ); ?>> Show announcement bar above the header</label>
+			<label>Message<input name="announcement_text" value="<?php echo esc_attr( $settings['announcement_text'] ); ?>"></label>
+			<label>Link URL (optional)<input name="announcement_link" type="url" value="<?php echo esc_attr( $settings['announcement_link'] ); ?>"></label>
 		</div>
 		<?php wp_nonce_field( 'staffswap_save_theme_options', 'staffswap_theme_options_nonce' ); ?>
 		<p><button type="submit" name="staffswap_save_theme_options" class="button button-primary">Save brand settings</button></p>
