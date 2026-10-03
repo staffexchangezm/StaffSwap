@@ -252,8 +252,14 @@ html{scroll-padding-top:90px}
 	.site-header--brand .profile-menu{padding-left:8px}
 	.site-header--brand .profile-cluster{min-height:40px;padding-left:0;gap:0}
 	.site-header--brand .profile-menu__chevron{display:none}
-	.site-header--brand .menu-toggle{grid-column:3;order:0;min-height:44px;padding:6px 10px}
+	.site-header--brand .menu-toggle{grid-column:3;grid-row:1;order:0;min-height:44px;padding:6px 10px}
+	.site-header--brand .brand{grid-row:1}
+	.site-header--brand .header-actions{grid-row:1;flex-wrap:nowrap}
+	.site-header--brand .profile-cluster>span:not(.profile-avatar){display:none}
+	.site-header--brand .profile-avatar{flex:0 0 36px;width:36px;height:36px;margin:0}
+	.site-header--brand .profile-menu{flex:0 0 auto;padding-left:4px}
 }
+@media(max-width:380px){.site-header--brand .site-header__inner{gap:4px}.site-header--brand .header-icon{width:32px}}
 
 /* Use the same control treatment for the optional phone field as other form inputs. */
 .staffswap-register-form input[type=tel]{width:100%;min-height:40px;border:1px solid var(--line);border-radius:var(--radius);background:#fff;color:var(--ink);font:inherit;padding:10px 11px}
@@ -310,4 +316,25 @@ html{scroll-padding-top:90px}
 	.listing-create__section{padding-top:18px}
 	.listing-create .form-actions>*{flex-basis:100%}
 	.listing-create .form-footnote{line-height:1.45}
+}
+
+/* Offers workspace cards */
+.offers-summary{display:flex;gap:10px;margin:0 0 16px}.offers-summary span{background:var(--mint);color:#0f766e;border-radius:999px;padding:6px 14px;font-size:13px;font-weight:700}.offers-summary b{font-size:15px}
+.offers-panel{margin-bottom:16px}.offers-panel>h2{margin-top:0}
+.offer-card{border:1px solid var(--line);border-left:4px solid #94a3b8;border-radius:var(--radius);background:#fff;padding:16px;margin-top:14px}
+.offer-card--proposed{border-left-color:#f59e0b}.offer-card--accepted,.offer-card--completed{border-left-color:#00bb7f}.offer-card--declined,.offer-card--cancelled,.offer-card--withdrawn,.offer-card--expired{border-left-color:#cbd5e1}.offer-card--countered{border-left-color:#6366f1}
+.offer-card__head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.offer-card__head h3{margin:2px 0 0;font-size:16px;line-height:1.35;overflow-wrap:anywhere}.offer-card__ref{margin:0;color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.08em}
+.offer-status{flex:none;border-radius:999px;padding:4px 11px;font-size:12px;font-weight:700;background:#f1f5f9;color:#475569}.offer-status--proposed{background:#fef3c7;color:#92400e}.offer-status--accepted,.offer-status--completed{background:#d0fae5;color:#0f766e}.offer-status--countered{background:#e0e7ff;color:#4338ca}
+.offer-route{display:grid;grid-template-columns:minmax(0,1fr) 32px minmax(0,1fr);gap:8px;align-items:center;margin:14px 0}.offer-route__party{background:#f8fafc;border:1px solid var(--line);border-radius:var(--radius);padding:10px;min-width:0}.offer-route__party small,.offer-route__party span{display:block;color:var(--muted);font-size:12px;overflow-wrap:anywhere}.offer-route__party strong{display:block;font-size:14px;overflow-wrap:anywhere}.offer-route__swap{text-align:center;color:#0f766e;font-size:22px}
+.offer-facts{display:flex;flex-wrap:wrap;gap:8px 24px;margin:0 0 12px}.offer-facts div{min-width:0}.offer-facts dt{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em}.offer-facts dd{margin:0;font-weight:600;overflow-wrap:anywhere}
+.offer-card__message{background:#f8fafc;border-radius:var(--radius);padding:10px 12px;margin:0 0 12px;overflow-wrap:anywhere}.offer-card__note{margin:0 0 8px}
+.offer-docs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}.offer-docs form{margin:0}
+.offer-history summary,.offer-actions__more summary{cursor:pointer;color:#0f766e;font-weight:600;font-size:13px;padding:6px 0}
+.offer-actions{border-top:1px solid var(--line);margin-top:12px;padding-top:12px;display:grid;gap:10px}.offer-actions__buttons{display:flex;flex-wrap:wrap;gap:8px}.offer-actions__more{display:grid;gap:8px}.offer-actions textarea,.offer-actions input[type=date]{width:100%}
+.offer-actions button.button--ghost{background:#fff;color:#334155;border:1px solid var(--line)}
+@media(max-width:560px){
+	.offer-card{padding:14px}
+	.offer-route{grid-template-columns:1fr;gap:4px}.offer-route__swap{transform:rotate(90deg);font-size:20px;line-height:1}
+	.offer-docs>*,.offer-docs .button,.offer-docs button,.offer-actions__buttons>*{flex:1 1 100%;width:100%;min-height:44px;text-align:center;justify-content:center}
+	.offer-facts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 }
