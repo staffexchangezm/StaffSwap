@@ -366,7 +366,7 @@ function staffswap_offer_letter_url( $offer_id, $user_id = 0 ) {
 		return '';
 	}
 	$party = (int) $offer->post_author === $user_id ? 'sender' : ( (int) get_post_meta( $offer_id, '_staffswap_offer_recipient', true ) === $user_id ? 'recipient' : '' );
-	if ( $party && '3' !== get_post_meta( $offer_id, '_staffswap_offer_letters_version', true ) ) {
+	if ( $party && '4' !== get_post_meta( $offer_id, '_staffswap_offer_letters_version', true ) ) {
 		staffswap_generate_offer_letters( $offer_id );
 	}
 	$path = $party ? get_post_meta( $offer_id, '_staffswap_offer_' . $party . '_letter_file', true ) : '';
@@ -499,7 +499,7 @@ function staffswap_generate_ai_swap_summary( $data ) {
 }
 
 function staffswap_offer_document_shell( $title, $reference, $body ) {
-	$css = '@page{size:A4;margin:22mm}*{box-sizing:border-box}body{margin:0;background:#e9edf0;color:#1f2a36;font:15px/1.75 Georgia,"Times New Roman",serif}.page{max-width:794px;margin:28px auto;background:#fff;padding:56px 72px;box-shadow:0 10px 30px #10243a1f}.letterhead{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #14324c;padding-bottom:12px;margin-bottom:32px;font:12px Arial,sans-serif;color:#5a6b7b}.letterhead b{font:700 18px Georgia,serif;color:#14324c;display:block}h1{font:700 19px/1.4 Georgia,serif;color:#14324c;margin:8px 0 6px}h2{font:700 15px Georgia,serif;color:#14324c;margin:28px 0 4px;border-bottom:1px solid #d9e1e8;padding-bottom:3px}p{margin:10px 0;text-align:justify}.lead,.meta{color:#5a6b7b;font-size:13px;text-align:left}.sigs{display:flex;gap:48px;margin-top:56px}.sig{flex:1;border-top:1px solid #4a5b6b;padding-top:6px;font-size:14px;line-height:1.5}.sig small{color:#5a6b7b;font:11px Arial,sans-serif}.note{margin-top:36px;padding-top:10px;border-top:1px solid #d9e1e8;color:#7a8794;font:11px/1.5 Arial,sans-serif;text-align:left}@media print{body{background:#fff}.page{margin:0;padding:0;box-shadow:none;max-width:none}}@media(max-width:640px){.page{margin:0;padding:28px 20px}.sigs{flex-direction:column;gap:36px}}';
+	$css = '@page{size:A4;margin:22mm}.sender-block{text-align:right;line-height:1.5;margin:0 0 6px;color:#14324c}.date-line{text-align:right;color:#5a6b7b;margin:0 0 26px}.addressee{margin:0 0 22px;line-height:1.55}.salutation{margin-top:22px}.subject{font-weight:700;color:#14324c;text-decoration:underline;text-align:left;margin:18px 0 2px;letter-spacing:.02em}.subject-sub{text-align:left;color:#5a6b7b;font-size:13px;margin:0 0 16px}.closing{margin-top:26px}.cc{text-align:left;font-size:12.5px;color:#4a5b6b;margin-top:34px;line-height:1.6}*{box-sizing:border-box}body{margin:0;background:#e9edf0;color:#1f2a36;font:15px/1.75 Georgia,"Times New Roman",serif}.page{max-width:794px;margin:28px auto;background:#fff;padding:56px 72px;box-shadow:0 10px 30px #10243a1f}.letterhead{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #14324c;padding-bottom:12px;margin-bottom:32px;font:12px Arial,sans-serif;color:#5a6b7b}.letterhead b{font:700 18px Georgia,serif;color:#14324c;display:block}h1{font:700 19px/1.4 Georgia,serif;color:#14324c;margin:8px 0 6px}h2{font:700 15px Georgia,serif;color:#14324c;margin:28px 0 4px;border-bottom:1px solid #d9e1e8;padding-bottom:3px}p{margin:10px 0;text-align:justify}.lead,.meta{color:#5a6b7b;font-size:13px;text-align:left}.sigs{display:flex;gap:48px;margin-top:56px}.sig{flex:1;border-top:1px solid #4a5b6b;padding-top:6px;font-size:14px;line-height:1.5}.sig small{color:#5a6b7b;font:11px Arial,sans-serif}.note{margin-top:36px;padding-top:10px;border-top:1px solid #d9e1e8;color:#7a8794;font:11px/1.5 Arial,sans-serif;text-align:left}@media print{body{background:#fff}.page{margin:0;padding:0;box-shadow:none;max-width:none}}@media(max-width:640px){.page{margin:0;padding:28px 20px}.sigs{flex-direction:column;gap:36px}}';
 	return '<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' . esc_html( $title ) . '</title><style>' . $css . '</style></head><body><main class="page"><header class="letterhead"><span><b>StaffSwap</b>StaffExchangeHub</span><span>Ref. ' . esc_html( $reference ) . '</span></header>' . $body . '<p class="note">Generated ' . esc_html( current_time( 'mysql' ) ) . ' · Private document for the parties named · Print or save as PDF for your records.</p></main></body></html>';
 }
 
@@ -600,18 +600,22 @@ function staffswap_generate_offer_letters( $offer_id ) {
 	foreach ( $parties as $party => $details ) {
 		$member = $details['member'];
 		$counterpart = $details['counterpart'];
-		$body = '<p class="meta">' . esc_html( current_time( 'F j, Y' ) ) . '</p>'
-			. '<p class="meta">The Human Resources Manager / Authorized Approving Officer<br>' . esc_html( $member['current_employer'] ) . '<br>' . esc_html( $member['current_location'] ) . '</p>'
-			. '<p>Dear Sir/Madam,</p>'
-			. '<h1>RE: REQUEST FOR A RECIPROCAL STAFF EXCHANGE (TRANSFER) TO ' . esc_html( strtoupper( $member['desired_location'] ) ) . '</h1>'
-			. '<p>I am writing to formally request your consideration of a reciprocal exchange of duty stations. I am ' . esc_html( $member['name'] ) . ', serving as ' . esc_html( $member['profession'] ) . ' at ' . esc_html( $member['current_employer'] ) . ' in ' . esc_html( $member['current_location'] ) . '.</p>'
-			. '<p>I wish to relocate to ' . esc_html( $member['desired_location'] ) . ( 'Not specified' !== $member['desired_employer'] ? ', to serve with ' . esc_html( $member['desired_employer'] ) : '' ) . '. I have identified a willing counterpart, ' . esc_html( $counterpart['name'] ) . ', a ' . esc_html( $counterpart['profession'] ) . ' currently serving at ' . esc_html( $counterpart['current_employer'] ) . ' in ' . esc_html( $counterpart['current_location'] ) . ', who wishes to move to my present station. We have each agreed in principle to exchange posts, so the arrangement would leave both stations staffed with an officer of the same profession.</p>'
-			. '<p>We propose that the exchange take effect on ' . esc_html( $effective_date ) . ', or on any later date that suits the requirements of both employers. I understand that the exchange can proceed only with the written approval of both employers, and I will comply fully with any procedures, handover requirements or conditions you may set.</p>'
-			. '<p>I would be grateful if you could review this request and advise me of the steps required, as well as any documents you need from me. I am available to provide further information at your convenience.</p>'
-			. '<p>Thank you for your kind consideration.</p>'
-			. '<p>Yours faithfully,</p>'
-			. '<div class="sigs"><div class="sig">' . esc_html( $member['name'] ) . '<br><small>' . esc_html( $member['profession'] ) . ', ' . esc_html( $member['current_employer'] ) . '</small></div></div>'
-			. '<p class="note">Draft prepared through StaffSwap (ref. SS-' . esc_html( $offer_id ) . ') from member-submitted information. It has not been issued, verified or approved by any employer and does not authorize a transfer. Please review and edit before submitting.</p>';
+		$desired_employer = 'Not specified' !== $member['desired_employer'] ? $member['desired_employer'] : '';
+		$body = '<div class="sender-block"><strong>' . esc_html( $member['name'] ) . '</strong><br>' . esc_html( $member['profession'] ) . '<br>' . esc_html( $member['current_employer'] ) . '<br>' . esc_html( $member['current_location'] ) . '</div>'
+			. '<p class="date-line">' . esc_html( current_time( 'j F Y' ) ) . '</p>'
+			. '<div class="addressee">The Human Resources Manager<br>(Attention: Authorized Approving Officer)<br><strong>' . esc_html( $member['current_employer'] ) . '</strong><br>' . esc_html( $member['current_location'] ) . '</div>'
+			. '<p class="salutation">Dear Sir/Madam,</p>'
+			. '<p class="subject">RE: REQUEST FOR RECIPROCAL STAFF EXCHANGE (TRANSFER) FROM ' . esc_html( strtoupper( $member['current_location'] ) ) . ' TO ' . esc_html( strtoupper( $member['desired_location'] ) ) . '</p>'
+			. '<p class="subject-sub">Our reference: SS-' . esc_html( $offer_id ) . '</p>'
+			. '<p>I write to respectfully request your consideration and approval of a reciprocal exchange of duty stations. I am currently serving as <strong>' . esc_html( $member['profession'] ) . '</strong> at <strong>' . esc_html( $member['current_employer'] ) . '</strong> in <strong>' . esc_html( $member['current_location'] ) . '</strong>.</p>'
+			. '<p>For personal and family reasons, I wish to be posted to <strong>' . esc_html( $member['desired_location'] ) . '</strong>' . ( $desired_employer ? ', preferably with <strong>' . esc_html( $desired_employer ) . '</strong>' : '' ) . '. I have identified an officer who is willing to make the reverse move: <strong>' . esc_html( $counterpart['name'] ) . '</strong>, a <strong>' . esc_html( $counterpart['profession'] ) . '</strong> currently serving at <strong>' . esc_html( $counterpart['current_employer'] ) . '</strong> in <strong>' . esc_html( $counterpart['current_location'] ) . '</strong>, who wishes to move to my present station. Both of us have agreed in principle to the exchange.</p>'
+			. '<p>This arrangement is to the mutual benefit of the service: each station would continue to be served by an officer of the same profession, so no vacancy would be created and no additional recruitment or cost to the employer would arise. We propose that the exchange take effect on <strong>' . esc_html( $effective_date ) . '</strong>, or on any later date that better suits the operational requirements of the employers concerned.</p>'
+			. '<p>I understand that the exchange may proceed only with the written approval of both employers. I undertake to comply with all applicable procedures, to complete a proper handover of my duties, and to meet any conditions you may set. I would be grateful if you would review this request and advise me of the steps required and any supporting documents you need from me.</p>'
+			. '<p>Thank you for your kind attention and consideration. I look forward to your favourable response.</p>'
+			. '<p class="closing">Yours faithfully,</p>'
+			. '<div class="sigs"><div class="sig"><strong>' . esc_html( $member['name'] ) . '</strong><br><small>' . esc_html( $member['profession'] ) . ', ' . esc_html( $member['current_employer'] ) . '</small><br><small>Signature and date</small></div></div>'
+			. '<p class="cc"><strong>Enclosure:</strong> Exchange counterpart details — ' . esc_html( $counterpart['name'] ) . ', ' . esc_html( $counterpart['current_employer'] ) . ', ' . esc_html( $counterpart['current_location'] ) . '<br><strong>Copy to:</strong> Receiving employer — ' . esc_html( $counterpart['current_employer'] ) . '</p>'
+			. '<p class="note">Draft prepared through StaffSwap from member-submitted information. It has not been issued, verified or approved by any employer and does not authorize a transfer. Please review and edit before submitting.</p>';
 		$html = staffswap_offer_document_shell( 'Request for staff exchange', 'SS-' . $offer_id, $body );
 		$file_path = trailingslashit( $directory ) . 'swap-transfer-request-' . $offer_id . '-' . $party . '.html';
 		if ( false === file_put_contents( $file_path, $html ) ) {
@@ -622,7 +626,7 @@ function staffswap_generate_offer_letters( $offer_id ) {
 		$generated[] = $file_path;
 	}
 	if ( 2 !== count( $generated ) ) { return false; }
-	update_post_meta( $offer_id, '_staffswap_offer_letters_version', '3' );
+	update_post_meta( $offer_id, '_staffswap_offer_letters_version', '4' );
 	return true;
 }
 
