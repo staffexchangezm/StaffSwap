@@ -358,7 +358,7 @@ function staffswap_offer_document_url( $offer_id ) {
 	return add_query_arg( array( 'action' => 'staffswap_download_offer_document', 'offer_id' => $offer_id, 'file' => rawurlencode( basename( $path ) ), '_wpnonce' => $nonce ), admin_url( 'admin-post.php' ) );
 }
 
-function staffswap_offer_letter_url( $offer_id, $user_id = 0 ) {
+function staffswap_offer_letter_url( $offer_id, $user_id = 0, $format = '' ) {
 	$offer_id = absint( $offer_id );
 	$user_id = $user_id ? absint( $user_id ) : get_current_user_id();
 	$offer = get_post( $offer_id );
@@ -374,12 +374,60 @@ function staffswap_offer_letter_url( $offer_id, $user_id = 0 ) {
 		return '';
 	}
 	$nonce = wp_create_nonce( 'staffswap_offer_document_' . $offer_id );
-	return add_query_arg( array( 'action' => 'staffswap_download_offer_document', 'offer_id' => $offer_id, 'document' => $party . '_letter', 'file' => rawurlencode( basename( $path ) ), '_wpnonce' => $nonce ), admin_url( 'admin-post.php' ) );
+	$args = array( 'action' => 'staffswap_download_offer_document', 'offer_id' => $offer_id, 'document' => $party . '_letter', 'file' => rawurlencode( basename( $path ) ), '_wpnonce' => $nonce );
+	if ( 'pdf' === $format ) { $args['format'] = 'pdf'; }
+	return add_query_arg( $args, admin_url( 'admin-post.php' ) );
+}
+
+// Minimal dependency-free PDF writer (A4, Helvetica) for plain-text letters.
+function staffswap_simple_pdf( $text ) {
+	$text = mb_convert_encoding( $text, 'Windows-1252', 'UTF-8' );
+	$lines = array();
+	foreach ( preg_split( '/\r?\n/', $text ) as $paragraph ) {
+		$paragraph = trim( $paragraph );
+		$lines = '' === $paragraph ? array_merge( $lines, array( '' ) ) : array_merge( $lines, explode( "\n", wordwrap( $paragraph, 88, "\n", true ) ) );
+	}
+	$pages = array_chunk( $lines, 50 );
+	$objects = array( 1 => '<< /Type /Catalog /Pages 2 0 R >>', 3 => '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>' );
+	$kids = array();
+	$next = 4;
+	foreach ( $pages as $page_lines ) {
+		$stream = "BT\n/F1 11 Tf\n15 TL\n60 780 Td\n";
+		foreach ( $page_lines as $line ) {
+			$stream .= '(' . str_replace( array( '\\', '(', ')' ), array( '\\\\', '\\(', '\\)' ), $line ) . ") '\n";
+		}
+		$stream .= 'ET';
+		$objects[ $next ] = '<< /Length ' . strlen( $stream ) . " >>\nstream\n" . $stream . "\nendstream";
+		$objects[ $next + 1 ] = '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents ' . $next . ' 0 R >>';
+		$kids[] = ( $next + 1 ) . ' 0 R';
+		$next += 2;
+	}
+	$objects[2] = '<< /Type /Pages /Kids [' . implode( ' ', $kids ) . '] /Count ' . count( $kids ) . ' >>';
+	ksort( $objects );
+	$pdf = "%PDF-1.4\n";
+	$offsets = array();
+	foreach ( $objects as $number => $body ) {
+		$offsets[ $number ] = strlen( $pdf );
+		$pdf .= $number . " 0 obj\n" . $body . "\nendobj\n";
+	}
+	$xref = strlen( $pdf );
+	$pdf .= "xref\n0 " . ( count( $objects ) + 1 ) . "\n0000000000 65535 f \n";
+	foreach ( $offsets as $offset ) { $pdf .= sprintf( "%010d 00000 n \n", $offset ); }
+	return $pdf . 'trailer << /Size ' . ( count( $objects ) + 1 ) . ' /Root 1 0 R >>' . "\nstartxref\n" . $xref . "\n%%EOF";
+}
+
+function staffswap_letter_html_to_text( $html ) {
+	$html = preg_replace( '#<(style|header)\b.*?</\1>#is', '', $html );
+	$html = preg_replace( '#</(p|h[1-6])>#i', "\n\n", $html );
+	$html = preg_replace( '#<br\s*/?>|</div>#i', "\n", $html );
+	$text = html_entity_decode( wp_strip_all_tags( $html ), ENT_QUOTES, 'UTF-8' );
+	$text = preg_replace( '/[ \t]+/', ' ', $text );
+	return trim( preg_replace( "/\n{3,}/", "\n\n", $text ) );
 }
 
 function staffswap_offer_letter_link( $offer_id, $user_id = 0 ) {
 	$url = staffswap_offer_letter_url( $offer_id, $user_id );
-	return $url ? '<p><a class="button button--outline" href="' . esc_url( $url ) . '" target="_blank" rel="noopener">View / print your transfer request letter</a></p>' : '';
+	return $url ? '<p><a class="button button--outline" href="' . esc_url( $url ) . '" target="_blank" rel="noopener">View / print your transfer request letter</a> <a class="button button--outline" href="' . esc_url( staffswap_offer_letter_url( $offer_id, $user_id, 'pdf' ) ) . '">Download PDF</a></p>' : '';
 }
 
 function staffswap_offer_listing_details( $listing_id ) {
@@ -672,6 +720,14 @@ function staffswap_download_offer_document() {
 
 	nocache_headers();
 	http_response_code( 200 );
+	if ( 'pdf' === sanitize_key( wp_unslash( $_GET['format'] ?? '' ) ) && in_array( $document, array( 'sender_letter', 'recipient_letter' ), true ) ) {
+		$pdf = staffswap_simple_pdf( staffswap_letter_html_to_text( (string) file_get_contents( $stored_path ) ) );
+		header( 'Content-Type: application/pdf' );
+		header( 'Content-Disposition: attachment; filename="' . sanitize_file_name( preg_replace( '/\.html$/', '.pdf', basename( $stored_path ) ) ) . '"' );
+		header( 'Content-Length: ' . strlen( $pdf ) );
+		echo $pdf; // phpcs:ignore WordPress.Security.EscapeOutput
+		exit;
+	}
 	header( 'Content-Type: text/html; charset=utf-8' );
 	header( 'Content-Disposition: inline; filename="' . sanitize_file_name( basename( $stored_path ) ) . '"' );
 	header( 'Content-Length: ' . filesize( $stored_path ) );
@@ -724,7 +780,13 @@ add_action( 'pre_get_posts', 'staffswap_offer_admin_status_filter_query' );
 function staffswap_offer_form_shortcode( $atts ) {
 	$atts = shortcode_atts( array( 'listing' => get_the_ID() ), $atts, 'staffswap_offer_form' );
 	$listing = get_post( absint( $atts['listing'] ) );
-	if ( ! $listing || 'swap_listing' !== $listing->post_type || ! is_user_logged_in() || (int) $listing->post_author === get_current_user_id() ) {
+	if ( ! $listing || 'swap_listing' !== $listing->post_type ) {
+		return '';
+	}
+	if ( ! is_user_logged_in() ) {
+		return '<section class="panel" style="margin-top:16px"><h2>Send a formal swap offer</h2><p class="muted">Sign in to send a formal swap offer for this listing.</p><a class="button button--primary" href="' . esc_url( wp_login_url( get_permalink( $listing->ID ) ) ) . '">Sign in to send an offer</a></section>';
+	}
+	if ( (int) $listing->post_author === get_current_user_id() ) {
 		return '';
 	}
 	$sender_listings = get_posts( array( 'post_type' => 'swap_listing', 'post_status' => 'publish', 'author' => get_current_user_id(), 'posts_per_page' => -1, 'orderby' => 'date', 'order' => 'DESC' ) );
@@ -759,7 +821,7 @@ function staffswap_offer_form_shortcode( $atts ) {
 			}
 		}
 	}
-	ob_start(); echo $notice; ?><section class="panel" style="margin-top:16px"><h2>Send a formal swap offer</h2><?php if ( ! $sender_listings ) : ?><p class="muted">Publish one of your own swap listings before sending an offer. The listing will be included with the other member’s details in the offer documents.</p><a class="button button--outline" href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>">Create a swap listing</a><?php else : ?><form method="post"><div class="field"><label for="sender_listing">Your swap listing</label><select id="sender_listing" name="sender_listing" required><option value="">Select the listing you want to exchange</option><?php foreach ( $sender_listings as $sender_listing_option ) : ?><option value="<?php echo esc_attr( $sender_listing_option->ID ); ?>" <?php selected( absint( $_POST['sender_listing'] ?? 0 ), $sender_listing_option->ID ); ?>><?php echo esc_html( get_the_title( $sender_listing_option ) . ' — ' . get_post_meta( $sender_listing_option->ID, '_staffswap_current_location', true ) . ' to ' . get_post_meta( $sender_listing_option->ID, '_staffswap_desired_location', true ) ); ?></option><?php endforeach; ?></select><small class="muted">Both your listing and the listing you are responding to will appear in the offer.</small></div><div class="field"><label for="effective_date">Proposed effective date</label><input id="effective_date" name="effective_date" type="date" value="<?php echo esc_attr( sanitize_text_field( wp_unslash( $_POST['effective_date'] ?? '' ) ) ); ?>" required></div><div class="field"><label for="expires_at">Offer expires on</label><input id="expires_at" name="expires_at" type="date" min="<?php echo esc_attr( gmdate( 'Y-m-d' ) ); ?>"></div><label class="check"><input name="housing_handover" type="checkbox" value="1"> Include staff housing handover</label><div class="field"><label for="offer_notes">Notes or contingencies</label><textarea id="offer_notes" name="notes" rows="3"><?php echo esc_textarea( wp_unslash( $_POST['notes'] ?? '' ) ); ?></textarea></div><?php wp_nonce_field( 'staffswap_send_offer_' . $listing->ID, 'staffswap_offer_nonce' ); ?><input type="submit" name="staffswap_send_offer" value="Submit offer"></form><?php endif; ?></section><?php return ob_get_clean();
+	ob_start(); echo $notice; ?><section class="panel" style="margin-top:16px"><h2>Send a formal swap offer</h2><?php if ( ! $sender_listings ) : $pending_listings = get_posts( array( 'post_type' => 'swap_listing', 'post_status' => 'pending', 'author' => get_current_user_id(), 'posts_per_page' => 1, 'fields' => 'ids' ) ); ?><p class="muted"><?php echo $pending_listings ? 'Your swap listing is still awaiting approval. You can send offers as soon as it is published.' : 'Publish one of your own swap listings before sending an offer. The listing will be included with the other member’s details in the offer documents.'; ?></p><a class="button button--outline" href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>">Create a swap listing</a><?php else : ?><form method="post"><div class="field"><label for="sender_listing">Your swap listing</label><select id="sender_listing" name="sender_listing" required><option value="">Select the listing you want to exchange</option><?php foreach ( $sender_listings as $sender_listing_option ) : ?><option value="<?php echo esc_attr( $sender_listing_option->ID ); ?>" <?php selected( absint( $_POST['sender_listing'] ?? 0 ), $sender_listing_option->ID ); ?>><?php echo esc_html( get_the_title( $sender_listing_option ) . ' — ' . get_post_meta( $sender_listing_option->ID, '_staffswap_current_location', true ) . ' to ' . get_post_meta( $sender_listing_option->ID, '_staffswap_desired_location', true ) ); ?></option><?php endforeach; ?></select><small class="muted">Both your listing and the listing you are responding to will appear in the offer.</small></div><div class="field"><label for="effective_date">Proposed effective date</label><input id="effective_date" name="effective_date" type="date" value="<?php echo esc_attr( sanitize_text_field( wp_unslash( $_POST['effective_date'] ?? '' ) ) ); ?>" required></div><div class="field"><label for="expires_at">Offer expires on</label><input id="expires_at" name="expires_at" type="date" min="<?php echo esc_attr( gmdate( 'Y-m-d' ) ); ?>"></div><label class="check"><input name="housing_handover" type="checkbox" value="1"> Include staff housing handover</label><div class="field"><label for="offer_notes">Notes or contingencies</label><textarea id="offer_notes" name="notes" rows="3"><?php echo esc_textarea( wp_unslash( $_POST['notes'] ?? '' ) ); ?></textarea></div><?php wp_nonce_field( 'staffswap_send_offer_' . $listing->ID, 'staffswap_offer_nonce' ); ?><input type="submit" name="staffswap_send_offer" value="Submit offer"></form><?php endif; ?></section><?php return ob_get_clean();
 }
 add_shortcode( 'staffswap_offer_form', 'staffswap_offer_form_shortcode' );
 
@@ -925,7 +987,7 @@ function staffswap_offer_item( $offer, $can_respond = false ) {
 		<div class="offer-docs">
 			<?php if ( $document_url ) : ?><a class="button button--outline" href="<?php echo esc_url( $document_url ); ?>" target="_blank" rel="noopener">View offer document</a>
 			<?php else : ?><form method="post"><?php echo $hidden . $nonce; ?><button type="submit" name="staffswap_generate_agreement" value="1">Generate offer document</button></form><?php endif; ?>
-			<?php if ( $letter_url ) : ?><a class="button button--outline" href="<?php echo esc_url( $letter_url ); ?>" target="_blank" rel="noopener">Your transfer letter</a><?php endif; ?>
+			<?php if ( $letter_url ) : ?><a class="button button--outline" href="<?php echo esc_url( $letter_url ); ?>" target="_blank" rel="noopener">Your transfer letter</a><a class="button button--outline" href="<?php echo esc_url( staffswap_offer_letter_url( $offer_id, get_current_user_id(), 'pdf' ) ); ?>">Download letter (PDF)</a><?php endif; ?>
 		</div>
 		<?php if ( $status_log ) : ?>
 			<details class="offer-history"><summary>History (<?php echo esc_html( count( $status_log ) ); ?>)</summary>
