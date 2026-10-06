@@ -273,7 +273,17 @@ function staffswap_theme_options_css() {
 	$vars = array( '--primary' => sanitize_hex_color( $s['primary_color'] ), '--navy' => sanitize_hex_color( $s['header_color'] ), '--radius' => absint( $s['radius'] ) . 'px', '--container' => absint( $s['container'] ) . 'px', '--font-heading' => $fonts[ $s['heading_font'] ] ?? $fonts['space-grotesk'] );
 	$css = '';
 	foreach ( $vars as $name => $value ) { if ( $value ) { $css .= $name . ':' . $value . ';'; } }
-	echo '<style id="staffswap-tokens">:root{' . wp_strip_all_tags( $css ) . '}</style>';
+	$px = function ( $key ) use ( $s ) { return absint( $s[ $key ] ) . 'px'; };
+	$rules = '.site-header--brand .site-header__inner{min-height:' . $px( 'header_height' ) . '}'
+		. '.site-header--brand .brand{overflow:visible;flex-shrink:0}.site-header--brand .custom-logo-link{display:flex;align-items:center}'
+		. '.site-header--brand .custom-logo{height:' . $px( 'logo_height' ) . ';max-height:' . $px( 'logo_height' ) . ';width:auto;max-width:' . $px( 'logo_max_width' ) . ';object-fit:contain}'
+		. '.site-header--brand .primary-nav a{font-size:' . $px( 'nav_font_size' ) . ';color:' . sanitize_hex_color( $s['nav_color'] ) . '}'
+		. '@media(max-width:760px){.site-header--brand .site-header__inner{min-height:0;padding-block:8px}.site-header--brand .custom-logo{height:' . $px( 'logo_height_mobile' ) . ';max-height:' . $px( 'logo_height_mobile' ) . ';max-width:min(' . $px( 'logo_max_width' ) . ',55vw)}}';
+	if ( 'yes' !== $s['header_shadow'] ) { $rules .= '.site-header--brand{box-shadow:none}'; }
+	if ( sanitize_hex_color( $s['body_bg'] ) ) { $rules .= 'body{background:' . sanitize_hex_color( $s['body_bg'] ) . '}'; }
+	if ( ! empty( $s['footer_bg'] ) && sanitize_hex_color( $s['footer_bg'] ) ) { $rules .= '.site-footer{background:' . sanitize_hex_color( $s['footer_bg'] ) . '}'; }
+	if ( ! empty( $s['footer_text_color'] ) && sanitize_hex_color( $s['footer_text_color'] ) ) { $rules .= '.site-footer,.site-footer a,.site-footer h3,.site-footer .footer-brand{color:' . sanitize_hex_color( $s['footer_text_color'] ) . '}'; }
+	echo '<style id="staffswap-tokens">:root{' . wp_strip_all_tags( $css ) . '}' . wp_strip_all_tags( $rules ) . '</style>';
 }
 add_action( 'wp_head', 'staffswap_theme_options_css', 20 );
 
@@ -350,7 +360,7 @@ function staffswap_theme_options_hub() {
 }
 
 function staffswap_brand_defaults() {
-	return array( 'site_name' => 'StaffExchangeHub', 'hero_title' => 'Swap Your Workplace. Change Your Life.', 'hero_text' => 'Connect with verified professionals across Zambia who want to swap their workplace just like you. Secure, efficient, and professional workplace mobility.', 'primary_label' => 'Create Swap Post', 'secondary_label' => 'Browse Swaps', 'stats' => '12,000+|3,200+|150+|10|20+', 'primary_color' => '#00bb7f', 'header_color' => '#0d2240', 'radius' => '6', 'heading_font' => 'space-grotesk', 'container' => '1200', 'sticky_header' => 'yes', 'mobile_nav' => 'yes', 'announcement_enabled' => 'no', 'announcement_text' => '', 'announcement_link' => '', 'footer_text' => 'The professional exchange marketplace helping individuals and institutions find workplace swaps across Zambia.' );
+	return array( 'site_name' => 'StaffExchangeHub', 'hero_title' => 'Swap Your Workplace. Change Your Life.', 'hero_text' => 'Connect with verified professionals across Zambia who want to swap their workplace just like you. Secure, efficient, and professional workplace mobility.', 'primary_label' => 'Create Swap Post', 'secondary_label' => 'Browse Swaps', 'stats' => '12,000+|3,200+|150+|10|20+', 'primary_color' => '#00bb7f', 'header_color' => '#0d2240', 'radius' => '6', 'heading_font' => 'space-grotesk', 'container' => '1200', 'sticky_header' => 'yes', 'mobile_nav' => 'yes', 'announcement_enabled' => 'no', 'announcement_text' => '', 'announcement_link' => '', 'logo_height' => '44', 'logo_height_mobile' => '32', 'logo_max_width' => '260', 'header_height' => '80', 'nav_font_size' => '13', 'nav_color' => '#ffffff', 'header_shadow' => 'yes', 'body_bg' => '#f6f8fb', 'footer_bg' => '', 'footer_text_color' => '', 'footer_text' => 'The professional exchange marketplace helping individuals and institutions find workplace swaps across Zambia.' );
 }
 
 function staffswap_brand_fonts() {
@@ -367,7 +377,13 @@ function staffswap_sanitize_brand( $input, $current ) {
 	foreach ( $defaults as $key => $default ) {
 		$raw = isset( $input[ $key ] ) ? wp_unslash( $input[ $key ] ) : null;
 		if ( in_array( $key, array( 'primary_color', 'header_color' ), true ) ) { $out[ $key ] = sanitize_hex_color( (string) $raw ) ?: $default; }
-		elseif ( in_array( $key, array( 'sticky_header', 'mobile_nav', 'announcement_enabled' ), true ) ) { $out[ $key ] = null !== $raw ? 'yes' : 'no'; }
+		elseif ( 'logo_height' === $key ) { $out[ $key ] = (string) min( 160, max( 16, absint( $raw ) ) ); }
+		elseif ( 'logo_height_mobile' === $key ) { $out[ $key ] = (string) min( 100, max( 16, absint( $raw ) ) ); }
+		elseif ( 'logo_max_width' === $key ) { $out[ $key ] = (string) min( 600, max( 40, absint( $raw ) ) ); }
+		elseif ( 'header_height' === $key ) { $out[ $key ] = (string) min( 220, max( 48, absint( $raw ) ) ); }
+		elseif ( 'nav_font_size' === $key ) { $out[ $key ] = (string) min( 20, max( 11, absint( $raw ) ) ); }
+		elseif ( in_array( $key, array( 'nav_color', 'body_bg', 'footer_bg', 'footer_text_color' ), true ) ) { $out[ $key ] = sanitize_hex_color( (string) $raw ) ?: $default; }
+		elseif ( in_array( $key, array( 'sticky_header', 'mobile_nav', 'announcement_enabled', 'header_shadow' ), true ) ) { $out[ $key ] = null !== $raw ? 'yes' : 'no'; }
 		elseif ( 'radius' === $key ) { $out[ $key ] = (string) min( 24, max( 0, absint( $raw ) ) ); }
 		elseif ( 'heading_font' === $key ) { $out[ $key ] = array_key_exists( (string) $raw, staffswap_brand_fonts() ) ? $raw : $default; }
 		elseif ( 'container' === $key ) { $out[ $key ] = in_array( (string) $raw, array( '1120', '1200', '1320' ), true ) ? $raw : $default; }
@@ -377,12 +393,75 @@ function staffswap_sanitize_brand( $input, $current ) {
 	return $out;
 }
 
+function staffswap_footer_default_columns() {
+	return array(
+		array( 'title' => 'Platform', 'items' => array( array( 'text' => 'Browse Swaps', 'url' => home_url( '/swaps/' ) ), array( 'text' => 'Create Listing', 'url' => home_url( '/create-swap/' ) ) ) ),
+		array( 'title' => 'Resources', 'items' => array( array( 'text' => 'Career Advice', 'url' => home_url( '/resources/' ) ), array( 'text' => 'Help Center', 'url' => home_url( '/help/' ) ) ) ),
+		array( 'title' => 'Legal', 'items' => array( array( 'text' => 'Privacy Policy', 'url' => home_url( '/privacy-policy/' ) ), array( 'text' => 'Terms of Service', 'url' => home_url( '/terms/' ) ) ) ),
+	);
+}
+
+function staffswap_footer_columns() {
+	$columns = get_option( 'staffswap_footer_columns', null );
+	return is_array( $columns ) ? $columns : staffswap_footer_default_columns();
+}
+
+function staffswap_sanitize_footer_columns( $input ) {
+	$out = array();
+	foreach ( (array) $input as $column ) {
+		if ( ! is_array( $column ) ) { continue; }
+		$title = sanitize_text_field( wp_unslash( $column['title'] ?? '' ) );
+		$items = array();
+		foreach ( (array) ( $column['items'] ?? array() ) as $item ) {
+			$text = sanitize_text_field( wp_unslash( $item['text'] ?? '' ) );
+			$url = trim( (string) wp_unslash( $item['url'] ?? '' ) );
+			$url = $url ? esc_url_raw( $url, array( 'http', 'https', 'mailto', 'tel' ) ) : '';
+			if ( '' !== $text ) { $items[] = array( 'text' => $text, 'url' => $url ); }
+		}
+		if ( '' !== $title || $items ) { $out[] = array( 'title' => $title, 'items' => $items ); }
+	}
+	return $out;
+}
+
+function staffswap_footer_columns_editor( $columns ) {
+	$row = function ( $c, $i, $text = '', $url = '' ) {
+		return '<div class="sfe-item"><input name="footer_columns[' . $c . '][items][' . $i . '][text]" value="' . esc_attr( $text ) . '" placeholder="Text, e.g. Phone: +260 ..."><input name="footer_columns[' . $c . '][items][' . $i . '][url]" value="' . esc_attr( $url ) . '" placeholder="Link (optional): https://, mailto:, tel:"><button type="button" class="button sfe-del-item" aria-label="Delete item">&times;</button></div>';
+	};
+	$col = function ( $c, $title, $items ) use ( $row ) {
+		$html = '<div class="sfe-col"><div class="sfe-col__head"><input name="footer_columns[' . $c . '][title]" value="' . esc_attr( $title ) . '" placeholder="Column heading"><button type="button" class="button sfe-del-col">Delete column</button></div><div class="sfe-items">';
+		foreach ( array_values( $items ) as $i => $item ) { $html .= $row( $c, $i, $item['text'], $item['url'] ); }
+		return $html . '</div><button type="button" class="button sfe-add-item">+ Add item</button></div>';
+	};
+	echo '<div class="staffswap-hub__full" id="sfe"><h3>Footer columns</h3><p><small>Add, edit or delete footer columns and their links or contact details (leave link empty for plain text).</small></p><div class="sfe-cols">';
+	foreach ( array_values( $columns ) as $c => $column ) { echo $col( $c, $column['title'], $column['items'] ); } // phpcs:ignore WordPress.Security.EscapeOutput
+	echo '</div><button type="button" class="button" id="sfe-add-col">+ Add column</button>';
+	echo '<template id="sfe-col-tpl">' . $col( '__C__', '', array() ) . '</template><template id="sfe-item-tpl">' . $row( '__C__', '__I__' ) . '</template></div>'; // phpcs:ignore WordPress.Security.EscapeOutput
+	?>
+	<style>.sfe-col{border:1px solid #ddd;border-radius:6px;padding:12px;margin:10px 0;background:#fff}.sfe-col__head,.sfe-item{display:flex;gap:8px;margin-bottom:6px}.sfe-col__head input,.sfe-item input{flex:1}</style>
+	<script>
+	(function(){var root=document.getElementById('sfe');if(!root){return;}
+	function renumber(){root.querySelectorAll('.sfe-col').forEach(function(col,c){col.querySelectorAll('[name]').forEach(function(el){el.name=el.name.replace(/footer_columns\[[^\]]*\]/,'footer_columns['+c+']');});col.querySelectorAll('.sfe-item').forEach(function(it,i){it.querySelectorAll('[name]').forEach(function(el){el.name=el.name.replace(/\[items\]\[[^\]]*\]/,'[items]['+i+']');});});});}
+	root.addEventListener('click',function(e){var t=e.target;
+	if(t.id==='sfe-add-col'){root.querySelector('.sfe-cols').insertAdjacentHTML('beforeend',document.getElementById('sfe-col-tpl').innerHTML);renumber();}
+	else if(t.classList.contains('sfe-add-item')){t.parentNode.querySelector('.sfe-items').insertAdjacentHTML('beforeend',document.getElementById('sfe-item-tpl').innerHTML);renumber();}
+	else if(t.classList.contains('sfe-del-item')){t.closest('.sfe-item').remove();renumber();}
+	else if(t.classList.contains('sfe-del-col')){t.closest('.sfe-col').remove();renumber();}});
+	})();
+	</script>
+	<?php
+}
+
 function staffswap_hub_tab_brand() {
 	$defaults = staffswap_brand_defaults();
 	$settings = staffswap_brand_settings();
 	if ( isset( $_POST['staffswap_save_theme_options'] ) && check_admin_referer( 'staffswap_save_theme_options', 'staffswap_theme_options_nonce' ) ) {
 		$settings = staffswap_sanitize_brand( $_POST, $settings );
 		update_option( 'staffswap_settings', $settings );
+		if ( isset( $_POST['site_logo_id'] ) ) {
+			$logo_id = absint( $_POST['site_logo_id'] );
+			if ( ! $logo_id ) { remove_theme_mod( 'custom_logo' ); } elseif ( wp_attachment_is_image( $logo_id ) ) { set_theme_mod( 'custom_logo', $logo_id ); }
+		}
+		update_option( 'staffswap_footer_columns', staffswap_sanitize_footer_columns( $_POST['footer_columns'] ?? array() ) );
 		echo '<div class="notice notice-success is-dismissible"><p>Brand settings saved.</p></div>';
 	}
 	?>
@@ -396,9 +475,35 @@ function staffswap_hub_tab_brand() {
 			<label class="staffswap-hub__full">Homepage description<textarea name="hero_text" rows="4"><?php echo esc_textarea( $settings['hero_text'] ); ?></textarea></label>
 			<label class="staffswap-hub__full">Network statistics<input name="stats" value="<?php echo esc_attr( $settings['stats'] ); ?>"><small>Five values separated with the | character.</small></label>
 			<label class="staffswap-hub__full">Footer description<textarea name="footer_text" rows="2"><?php echo esc_textarea( $settings['footer_text'] ); ?></textarea></label>
+			<?php staffswap_footer_columns_editor( staffswap_footer_columns() ); ?>
 		</div>
+		<h3>Header &amp; logo</h3>
+		<div class="staffswap-hub__grid">
+			<?php $logo_id = absint( get_theme_mod( 'custom_logo' ) ); ?>
+			<div class="staffswap-hub__full" id="ssw-logo">
+				<span class="ssw-logo__preview"><?php echo $logo_id ? wp_get_attachment_image( $logo_id, 'medium', false, array( 'style' => 'max-height:80px;width:auto;background:#0d2240;padding:6px' ) ) : '<em>No logo - site name is shown as text.</em>'; ?></span>
+				<input type="hidden" name="site_logo_id" value="<?php echo esc_attr( $logo_id ); ?>">
+				<p><button type="button" class="button" id="ssw-logo-pick">Choose / upload logo</button> <button type="button" class="button" id="ssw-logo-remove">Remove logo</button></p>
+				<small>Any size or shape works: the logo keeps its proportions and scales to the height and width limits below.</small>
+			</div>
+			<label>Logo height - desktop (px)<input name="logo_height" type="number" min="16" max="160" value="<?php echo esc_attr( $settings['logo_height'] ); ?>"></label>
+			<label>Logo height - mobile (px)<input name="logo_height_mobile" type="number" min="16" max="100" value="<?php echo esc_attr( $settings['logo_height_mobile'] ); ?>"></label>
+			<label>Logo maximum width (px)<input name="logo_max_width" type="number" min="40" max="600" value="<?php echo esc_attr( $settings['logo_max_width'] ); ?>"></label>
+			<label>Header minimum height (px)<input name="header_height" type="number" min="48" max="220" value="<?php echo esc_attr( $settings['header_height'] ); ?>"></label>
+			<label>Menu text size (px)<input name="nav_font_size" type="number" min="11" max="20" value="<?php echo esc_attr( $settings['nav_font_size'] ); ?>"></label>
+			<label>Menu text colour<input name="nav_color" type="color" value="<?php echo esc_attr( $settings['nav_color'] ); ?>"></label>
+			<label class="staffswap-hub__checkbox"><input type="checkbox" name="header_shadow" <?php checked( 'yes', $settings['header_shadow'] ); ?>> Header shadow</label>
+		</div>
+		<script>
+		(function(){var pick=document.getElementById('ssw-logo-pick'),rm=document.getElementById('ssw-logo-remove'),box=document.getElementById('ssw-logo');if(!pick||!window.wp||!wp.media){return;}
+		var f;pick.addEventListener('click',function(){if(!f){f=wp.media({title:'Choose logo',button:{text:'Use this logo'},library:{type:'image'},multiple:false});f.on('select',function(){var a=f.state().get('selection').first().toJSON();box.querySelector('[name=site_logo_id]').value=a.id;box.querySelector('.ssw-logo__preview').innerHTML='<img src="'+(a.sizes&&a.sizes.medium?a.sizes.medium.url:a.url)+'" style="max-height:80px;width:auto;background:#0d2240;padding:6px" alt="">';});}f.open();});
+		rm.addEventListener('click',function(){box.querySelector('[name=site_logo_id]').value='';box.querySelector('.ssw-logo__preview').innerHTML='<em>No logo - site name is shown as text.</em>';});})();
+		</script>
 		<h3>Design</h3>
 		<div class="staffswap-hub__grid">
+			<label>Page background<input name="body_bg" type="color" value="<?php echo esc_attr( $settings['body_bg'] ); ?>"></label>
+			<label>Footer background<input name="footer_bg" type="color" value="<?php echo esc_attr( $settings['footer_bg'] ?: $settings['header_color'] ); ?>"></label>
+			<label>Footer text colour<input name="footer_text_color" type="color" value="<?php echo esc_attr( $settings['footer_text_color'] ?: '#ffffff' ); ?>"></label>
 			<label>Header colour<input name="header_color" type="color" value="<?php echo esc_attr( $settings['header_color'] ); ?>"></label>
 			<label>Corner radius (px)<input name="radius" type="number" min="0" max="24" value="<?php echo esc_attr( $settings['radius'] ); ?>"></label>
 			<label>Heading font<select name="heading_font"><?php foreach ( array( 'space-grotesk' => 'Space Grotesk', 'dm-sans' => 'DM Sans', 'system' => 'System default' ) as $slug => $name ) : ?><option value="<?php echo esc_attr( $slug ); ?>" <?php selected( $settings['heading_font'], $slug ); ?>><?php echo esc_html( $name ); ?></option><?php endforeach; ?></select></label>
@@ -624,6 +729,7 @@ function staffswap_hub_tab_links() {
 
 function staffswap_theme_options_hub_assets( $hook ) {
 	if ( 'appearance_page_staffswap-theme-options' !== $hook ) { return; }
+	wp_enqueue_media();
 	wp_enqueue_style( 'dashicons' );
 	wp_enqueue_script( 'jquery' );
 	wp_add_inline_style( 'dashicons', '.staffswap-hub{max-width:1180px;margin-top:24px}.staffswap-hub__hero{align-items:center;background:#0d2240;color:#fff;display:flex;justify-content:space-between;padding:34px 40px;border-radius:8px}.staffswap-hub__hero span{color:#a4f4cf;font-size:11px;font-weight:700;letter-spacing:.1em}.staffswap-hub__hero h1{color:#fff;font:700 32px/1.2 "Space Grotesk",sans-serif;margin:8px 0}.staffswap-hub__hero p{color:#bedbff;margin:0}.staffswap-hub__hero .button{background:#00bb7f;border-color:#00bb7f;color:#06251d;font-weight:700}.staffswap-hub__tabs{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}.staffswap-hub__tab{align-items:center;background:#fff;border:1px solid #d9e1ec;border-radius:6px;color:#334155;cursor:pointer;display:flex;font-weight:600;gap:6px;padding:10px 16px}.staffswap-hub__tab.is-active{background:#0d2240;border-color:#0d2240;color:#fff}.staffswap-hub__tab .dashicons{font-size:16px;height:16px;width:16px}.staffswap-hub__panel{background:#fff;border:1px solid #d9e1ec;border-radius:8px;display:none;padding:26px}.staffswap-hub__panel.is-active{display:block}.staffswap-hub__grid{display:grid;gap:18px;grid-template-columns:1fr 1fr}.staffswap-hub__grid label{color:#0f172a;display:grid;font-weight:700;gap:7px}.staffswap-hub__grid input,.staffswap-hub__grid textarea{border:1px solid #cbd5e1;border-radius:4px;font:14px "DM Sans",sans-serif;padding:9px 10px;width:100%}.staffswap-hub__grid input[type=color]{height:40px;padding:3px}.staffswap-hub__full{grid-column:1/-1}.staffswap-hub__checkbox{align-items:center;display:flex!important;flex-direction:row!important;font-weight:600!important;gap:8px}.staffswap-hub__plans{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}.staffswap-hub__plan-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:18px;display:grid;gap:12px}.staffswap-hub__plan-card h3{margin:0}.staffswap-hub__plan-card label{display:grid;font-weight:600;gap:6px}.staffswap-hub__setup form{display:inline-block;margin-right:10px}.staffswap-hub__checks{border-top:1px solid #e2e8f0;display:grid;gap:0;margin-top:20px}.staffswap-hub__checks li{border-bottom:1px solid #eef2f0;color:#8a9690;padding:10px 0}.staffswap-hub__checks li.is-ready{color:#0d2240;font-weight:600}.staffswap-hub__checks li.is-ready::before{content:"\\2713";color:#00a875;margin-right:8px}.staffswap-hub__checks li:not(.is-ready)::before{content:"\\25CB";margin-right:8px}.staffswap-hub__links{display:grid;gap:0;list-style:none;margin:0;padding:0}.staffswap-hub__links a{align-items:center;border-bottom:1px solid #e2e8f0;color:#155dfc;display:flex;font-weight:700;justify-content:space-between;padding:14px 4px;text-decoration:none}.staffswap-hub__links a:hover{color:#0f766e}' );
@@ -631,3 +737,15 @@ function staffswap_theme_options_hub_assets( $hook ) {
 	wp_add_inline_script( 'jquery', '(function(){document.addEventListener("DOMContentLoaded",function(){var tabs=document.querySelectorAll(".staffswap-hub__tab");var panels=document.querySelectorAll(".staffswap-hub__panel");tabs.forEach(function(tab){tab.addEventListener("click",function(){var target=tab.getAttribute("data-staffswap-tab");tabs.forEach(function(t){t.classList.toggle("is-active",t===tab);});panels.forEach(function(p){p.classList.toggle("is-active",p.getAttribute("data-staffswap-panel")===target);});if(window.history&&window.history.replaceState){var url=new URL(window.location.href);url.searchParams.set("tab",target);window.history.replaceState({},"",url);}});});});})();' );
 }
 add_action( 'admin_enqueue_scripts', 'staffswap_theme_options_hub_assets' );
+// Render StaffSwap shortcodes that were saved in a way WordPress skipped (e.g. inside code/preformatted blocks) and warn admins when the providing plugin is inactive.
+function staffswap_force_page_shortcodes( $content ) {
+	if ( ! is_singular( 'page' ) || ! in_the_loop() || ! is_main_query() ) { return $content; }
+	$plain = trim( html_entity_decode( wp_strip_all_tags( html_entity_decode( $content, ENT_QUOTES, 'UTF-8' ) ), ENT_QUOTES, 'UTF-8' ) );
+	if ( preg_match( '/^\[(staffswap_[a-z_]+)(?:\s[^\]]*)?\]$/i', $plain, $only ) && shortcode_exists( $only[1] ) ) { return do_shortcode( $plain ); }
+	$content = preg_replace( '/(?:&#91;|&lsqb;|&lbrack;)(staffswap_[a-z_]+[^\]&]*)(?:&#93;|&rsqb;|&rbrack;)/i', '[$1]', $content );
+	return preg_replace_callback( '/(?:<(?:p|pre|code)[^>]*>\s*)*(\[(staffswap_[a-z_]+)[^\]]*\])(?:\s*<\/(?:p|pre|code)>)*/i', function ( $m ) {
+		if ( shortcode_exists( $m[2] ) ) { return do_shortcode( $m[1] ); }
+		return current_user_can( 'manage_options' ) ? '<div class="notice"><p>The <code>' . esc_html( $m[1] ) . '</code> shortcode is not available. Activate the StaffSwap plugin that provides it (Plugins screen).</p></div>' : '<div class="notice"><p>' . esc_html__( 'This section is temporarily unavailable. Please try again later.', 'staffswap' ) . '</p></div>';
+	}, $content );
+}
+add_filter( 'the_content', 'staffswap_force_page_shortcodes', 12 );

@@ -214,10 +214,6 @@ function staffswap_complete_inbox_shortcode() {
 	if ( ! is_user_logged_in() ) { return '<div class="panel"><p>Please sign in to view your messages.</p></div>'; }
 	$user_id = get_current_user_id();
 	$notice = '';
-	if ( isset( $_POST['staffswap_mark_message_read'] ) && check_admin_referer( 'staffswap_mark_message_' . absint( $_POST['message_id'] ?? 0 ), 'staffswap_message_read_nonce' ) ) {
-		$message_id = absint( $_POST['message_id'] );
-		if ( (int) get_post_meta( $message_id, '_staffswap_recipient', true ) === $user_id ) { update_post_meta( $message_id, '_staffswap_read', '1' ); }
-	}
 	if ( isset( $_POST['staffswap_save_shared_document'] ) ) {
 		$document_id = absint( $_POST['document_id'] ?? 0 );
 		if ( $document_id && check_admin_referer( 'staffswap_save_shared_document_' . $document_id, 'staffswap_save_document_nonce' ) ) {
@@ -306,28 +302,88 @@ function staffswap_complete_inbox_shortcode() {
 		if ( ! isset( $groups[ $group_id ] ) ) { $groups[ $group_id ] = array( 'listing_id' => $listing_id, 'participant_id' => $participant_id, 'messages' => array() ); }
 		$groups[ $group_id ]['messages'][] = $message;
 	}
+	$newly_read = array();
+	foreach ( $groups as $group ) {
+		foreach ( $group['messages'] as $thread_message ) {
+			if ( (int) get_post_meta( $thread_message->ID, '_staffswap_recipient', true ) === $user_id && '0' === get_post_meta( $thread_message->ID, '_staffswap_read', true ) ) { $newly_read[] = $thread_message->ID; }
+		}
+	}
 	$vault_documents = get_posts( array( 'post_type' => 'staffswap_document', 'post_status' => 'publish', 'author' => $user_id, 'posts_per_page' => 100, 'orderby' => 'date', 'order' => 'DESC' ) );
 	ob_start(); echo $notice; ?>
 	<div class="message-inbox">
 		<div class="page-heading"><div><p class="eyebrow">PRIVATE CONVERSATIONS</p><h1>Your messages</h1><p class="muted">Connect with potential exchange partners before you make a move.</p></div><a class="button button--outline" href="<?php echo esc_url( home_url( '/document-vault/' ) ); ?>">Document Vault</a></div>
 		<?php if ( $groups ) : ?>
 			<div class="message-conversations">
-				<?php foreach ( $groups as $group ) : $listing_id = $group['listing_id']; $participant_id = $group['participant_id']; $thread_messages = $group['messages']; $unread = false; foreach ( $thread_messages as $thread_message ) { if ( (int) get_post_meta( $thread_message->ID, '_staffswap_recipient', true ) === $user_id && '0' === get_post_meta( $thread_message->ID, '_staffswap_read', true ) ) { $unread = true; break; } } $reply_form_id = 'reply-' . $listing_id . '-' . $participant_id; ?>
+				<?php foreach ( $groups as $group ) : $listing_id = $group['listing_id']; $participant_id = $group['participant_id']; $thread_messages = array_reverse( $group['messages'] ); $unread = (bool) array_intersect( wp_list_pluck( $thread_messages, 'ID' ), $newly_read ); $reply_form_id = 'reply-' . $listing_id . '-' . $participant_id; ?>
 					<section class="panel message-conversation <?php echo $unread ? 'is-unread' : ''; ?>">
-						<header><div><p class="eyebrow"><?php echo $listing_id && get_post( $listing_id ) ? esc_html( get_the_title( $listing_id ) ) : 'General conversation'; ?></p><h2><?php echo esc_html( get_the_author_meta( 'display_name', $participant_id ) ); ?></h2></div><span class="message-count"><?php echo esc_html( count( $thread_messages ) ); ?> messages</span></header>
-						<?php foreach ( $thread_messages as $message ) : $is_own = (int) $message->post_author === $user_id; $is_unread = ! $is_own && '0' === get_post_meta( $message->ID, '_staffswap_read', true ); $document_id = absint( get_post_meta( $message->ID, '_staffswap_message_document', true ) ); $attached_document = $document_id ? get_post( $document_id ) : false; $shared_with = $document_id ? array_map( 'absint', (array) get_post_meta( $document_id, '_staffswap_document_shared_with', true ) ) : array(); $can_access_document = $attached_document && 'staffswap_document' === $attached_document->post_type && ( (int) $attached_document->post_author === $user_id || in_array( $user_id, $shared_with, true ) ); ?>
-							<article class="message-row <?php echo $is_own ? 'is-own' : ''; ?> <?php echo $is_unread ? 'is-unread' : ''; ?>"><strong><?php echo esc_html( get_the_author_meta( 'display_name', $message->post_author ) ); ?></strong><p><?php echo esc_html( get_the_content( null, false, $message ) ); ?></p><small class="muted"><?php echo esc_html( get_the_date( '', $message ) ); ?></small>
-								<?php if ( $can_access_document ) : ?><div class="message-attachment"><a href="<?php echo esc_url( staffswap_vault_document_url( $document_id ) ); ?>"><?php echo esc_html( get_post_meta( $document_id, '_staffswap_document_name', true ) ?: get_the_title( $document_id ) ); ?></a><?php if ( (int) $attached_document->post_author !== $user_id ) : ?><?php if ( staffswap_vault_saved_copy_id( $document_id, $user_id ) ) : ?><span>Saved to your vault</span><?php else : ?><form method="post"><?php wp_nonce_field( 'staffswap_save_shared_document_' . $document_id, 'staffswap_save_document_nonce' ); ?><input type="hidden" name="document_id" value="<?php echo esc_attr( $document_id ); ?>"><button type="submit" name="staffswap_save_shared_document" class="button button--outline">Save to my vault</button></form><?php endif; ?><?php endif; ?></div><?php endif; ?>
-								<?php if ( $is_unread ) : ?><form method="post" class="message-read-form"><input type="hidden" name="message_id" value="<?php echo esc_attr( $message->ID ); ?>"><?php wp_nonce_field( 'staffswap_mark_message_' . $message->ID, 'staffswap_message_read_nonce' ); ?><button type="submit" name="staffswap_mark_message_read" class="button button--outline">Mark as read</button></form><?php endif; ?>
+						<header>
+							<span class="chat-avatar"><?php echo get_avatar( $participant_id, 44 ); ?></span>
+							<div><h2><?php echo esc_html( get_the_author_meta( 'display_name', $participant_id ) ); ?></h2><p class="eyebrow"><?php echo $listing_id && get_post( $listing_id ) ? esc_html( get_the_title( $listing_id ) ) : 'General conversation'; ?></p></div>
+							<?php if ( $unread ) : ?><span class="message-count">New</span><?php endif; ?>
+						</header>
+						<div class="chat-thread">
+						<?php foreach ( $thread_messages as $message ) : $is_own = (int) $message->post_author === $user_id; $is_unread = in_array( $message->ID, $newly_read, true ); $document_id = absint( get_post_meta( $message->ID, '_staffswap_message_document', true ) ); $attached_document = $document_id ? get_post( $document_id ) : false; $shared_with = $document_id ? array_map( 'absint', (array) get_post_meta( $document_id, '_staffswap_document_shared_with', true ) ) : array(); $can_access_document = $attached_document && 'staffswap_document' === $attached_document->post_type && ( (int) $attached_document->post_author === $user_id || in_array( $user_id, $shared_with, true ) ); ?>
+							<article class="message-row <?php echo $is_own ? 'is-own' : ''; ?> <?php echo $is_unread ? 'is-unread' : ''; ?>">
+								<?php if ( $message->post_content && ! ( $can_access_document && 0 === strpos( $message->post_content, 'Shared a document:' ) ) ) : ?><p><?php echo nl2br( esc_html( get_the_content( null, false, $message ) ) ); ?></p><?php endif; ?>
+								<?php if ( $can_access_document ) : ?><div class="message-attachment"><span aria-hidden="true">📎</span> <a href="<?php echo esc_url( staffswap_vault_document_url( $document_id ) ); ?>"><?php echo esc_html( get_post_meta( $document_id, '_staffswap_document_name', true ) ?: get_the_title( $document_id ) ); ?></a><?php if ( (int) $attached_document->post_author !== $user_id ) : ?><?php if ( staffswap_vault_saved_copy_id( $document_id, $user_id ) ) : ?><span>Saved to your vault</span><?php else : ?><form method="post"><?php wp_nonce_field( 'staffswap_save_shared_document_' . $document_id, 'staffswap_save_document_nonce' ); ?><input type="hidden" name="document_id" value="<?php echo esc_attr( $document_id ); ?>"><button type="submit" name="staffswap_save_shared_document" class="button button--outline">Save to my vault</button></form><?php endif; ?><?php endif; ?></div><?php endif; ?>
+								<small class="muted"><?php echo esc_html( get_the_date( 'j M, H:i', $message ) ); ?></small>
 							</article>
 						<?php endforeach; ?>
-						<?php if ( $listing_id ) : ?><form method="post" enctype="multipart/form-data" class="message-reply"><label for="<?php echo esc_attr( $reply_form_id ); ?>">Reply</label><textarea id="<?php echo esc_attr( $reply_form_id ); ?>" name="reply" rows="2"></textarea><label for="attachment-<?php echo esc_attr( $reply_form_id ); ?>">Attach a document</label><input id="attachment-<?php echo esc_attr( $reply_form_id ); ?>" type="file" name="staffswap_attachment" accept=".pdf,.jpg,.jpeg,.png,.docx"><label for="vault-document-<?php echo esc_attr( $reply_form_id ); ?>">Or share from your vault</label><select id="vault-document-<?php echo esc_attr( $reply_form_id ); ?>" name="vault_document_id"><option value="">No document</option><?php foreach ( $vault_documents as $vault_document ) : ?><option value="<?php echo esc_attr( $vault_document->ID ); ?>"><?php echo esc_html( get_post_meta( $vault_document->ID, '_staffswap_document_name', true ) ?: get_the_title( $vault_document ) ); ?></option><?php endforeach; ?></select><input type="hidden" name="listing_id" value="<?php echo esc_attr( $listing_id ); ?>"><input type="hidden" name="recipient_id" value="<?php echo esc_attr( $participant_id ); ?>"><?php wp_nonce_field( 'staffswap_reply_' . $listing_id, 'staffswap_reply_nonce' ); ?><button type="submit" name="staffswap_send_reply" class="button button--primary">Send</button></form><?php endif; ?>
+						</div>
+						<?php if ( $listing_id ) : ?><form method="post" enctype="multipart/form-data" class="message-reply chat-composer">
+							<div class="chat-composer__file" hidden></div>
+							<div class="chat-composer__bar">
+								<button type="button" class="chat-btn chat-emoji-toggle" aria-label="Add emoji">😊</button>
+								<label class="chat-btn chat-attach" title="Attach a file" aria-label="Attach a file">📎<input type="file" name="staffswap_attachment" accept=".pdf,.jpg,.jpeg,.png,.docx" hidden></label>
+								<textarea id="<?php echo esc_attr( $reply_form_id ); ?>" name="reply" rows="1" placeholder="Type a message" aria-label="Message"></textarea>
+								<button type="submit" name="staffswap_send_reply" class="chat-send" aria-label="Send">➤</button>
+							</div>
+							<div class="chat-emoji-panel" hidden></div>
+							<?php if ( $vault_documents ) : ?><details class="chat-vault"><summary>Share from your vault</summary><select name="vault_document_id"><option value="">No document</option><?php foreach ( $vault_documents as $vault_document ) : ?><option value="<?php echo esc_attr( $vault_document->ID ); ?>"><?php echo esc_html( get_post_meta( $vault_document->ID, '_staffswap_document_name', true ) ?: get_the_title( $vault_document ) ); ?></option><?php endforeach; ?></select></details><?php endif; ?>
+							<input type="hidden" name="listing_id" value="<?php echo esc_attr( $listing_id ); ?>"><input type="hidden" name="recipient_id" value="<?php echo esc_attr( $participant_id ); ?>"><?php wp_nonce_field( 'staffswap_reply_' . $listing_id, 'staffswap_reply_nonce' ); ?>
+						</form><?php endif; ?>
 					</section>
 				<?php endforeach; ?>
 			</div>
 		<?php else : ?><section class="panel"><p class="muted">No conversations yet.</p></section><?php endif; ?>
 	</div>
-	<?php return ob_get_clean();
+	<?php
+	foreach ( $newly_read as $read_id ) { update_post_meta( $read_id, '_staffswap_read', '1' ); }
+	staffswap_chat_assets();
+	return ob_get_clean();
+}
+function staffswap_chat_assets() {
+	static $done = false;
+	if ( $done ) { return; }
+	$done = true;
+	?>
+<style>
+.message-conversation{padding:0;overflow:hidden}.message-conversation>header{display:flex;align-items:center;gap:12px;padding:12px 16px;background:#0d2240;color:#fff;border:0;margin:0}.message-conversation>header h2{margin:0;font-size:1rem;color:#fff}.message-conversation>header .eyebrow{margin:0;color:#b8c7dc;font-size:.75rem}.message-conversation>header .message-count{margin-left:auto;background:#00bb7f;color:#fff;border-radius:999px;padding:2px 10px;font-size:.75rem}.chat-avatar img{border-radius:50%;display:block}
+.chat-thread{display:flex;flex-direction:column;gap:6px;padding:16px;max-height:460px;overflow-y:auto;background:#efeae2}
+.chat-thread .message-row{max-width:78%;align-self:flex-start;background:#fff;border-radius:10px 10px 10px 2px;padding:7px 10px 4px;box-shadow:0 1px 1px rgba(0,0,0,.12);border:0;margin:0}.chat-thread .message-row.is-own{align-self:flex-end;background:#d9fdd3;border-radius:10px 10px 2px 10px}.chat-thread .message-row.is-unread{box-shadow:0 0 0 2px #00bb7f}
+.chat-thread .message-row p{margin:0 0 2px;overflow-wrap:anywhere}.chat-thread .message-row small{display:block;text-align:right;font-size:.7rem}.chat-thread .message-attachment{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:rgba(0,0,0,.05);border-radius:8px;padding:8px;margin:2px 0}
+.chat-composer{position:relative;padding:10px 12px;background:#f0f2f5;display:block;margin:0}.chat-composer__bar{display:flex;align-items:flex-end;gap:8px}.chat-composer textarea{flex:1;border:0;border-radius:20px;padding:10px 14px;resize:none;max-height:120px;min-height:40px;margin:0}
+.chat-btn{background:none;border:0;font-size:1.35rem;cursor:pointer;padding:6px;line-height:1;margin:0}.chat-send{width:42px;height:42px;border-radius:50%;border:0;background:#00bb7f;color:#fff;font-size:1.1rem;cursor:pointer;flex:none}
+.chat-composer__file{background:#fff;border-radius:8px;padding:6px 10px;margin-bottom:8px;font-size:.85rem;display:flex;justify-content:space-between;gap:8px}.chat-composer__file[hidden],.chat-emoji-panel[hidden]{display:none}.chat-composer__file button{border:0;background:none;cursor:pointer}
+.chat-emoji-panel{display:grid;grid-template-columns:repeat(auto-fill,minmax(36px,1fr));gap:2px;background:#fff;border-radius:10px;padding:8px;margin-top:8px;max-height:170px;overflow-y:auto}.chat-emoji-panel button{border:0;background:none;font-size:1.4rem;cursor:pointer;border-radius:6px}.chat-emoji-panel button:hover{background:#f0f2f5}
+.chat-vault{margin-top:8px;font-size:.85rem}.chat-vault select{width:100%;margin-top:6px}
+</style>
+<script>
+(function(){
+var E='😀 😃 😄 😁 😆 😅 😂 🤣 😊 😇 🙂 😉 😍 🥰 😘 😋 😎 🤩 🥳 🤔 😐 😴 😢 😭 😡 🤝 👍 👎 👏 🙏 💪 🙌 👋 ✅ ❌ ⭐ 🔥 🎉 ❤️ 💼 🏢 🏠 📍 📄 📎 📞 ✉️ 🚗 ✈️'.split(' ');
+function init(){document.querySelectorAll('.chat-composer').forEach(function(f){
+var ta=f.querySelector('textarea'),panel=f.querySelector('.chat-emoji-panel'),file=f.querySelector('input[type=file]'),box=f.querySelector('.chat-composer__file');
+E.forEach(function(e){var b=document.createElement('button');b.type='button';b.textContent=e;b.onclick=function(){var s=ta.selectionStart||ta.value.length;ta.value=ta.value.slice(0,s)+e+ta.value.slice(ta.selectionEnd||s);ta.focus();ta.selectionStart=ta.selectionEnd=s+e.length;};panel.appendChild(b);});
+f.querySelector('.chat-emoji-toggle').onclick=function(){panel.hidden=!panel.hidden;};
+file.onchange=function(){if(!file.files.length){box.hidden=true;return;}box.innerHTML='';var n=document.createElement('span');n.textContent='📎 '+file.files[0].name;var x=document.createElement('button');x.type='button';x.textContent='✕';x.setAttribute('aria-label','Remove file');x.onclick=function(){file.value='';box.hidden=true;};box.append(n,x);box.hidden=false;};
+ta.addEventListener('input',function(){ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight,120)+'px';});
+ta.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();if(ta.value.trim()||file.files.length){f.querySelector('.chat-send').click();}}});
+var t=f.parentNode.querySelector('.chat-thread');if(t){t.scrollTop=t.scrollHeight;}
+});}
+if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}else{init();}
+})();
+</script>
+	<?php
 }
 remove_shortcode( 'staffswap_inbox' );
 add_shortcode( 'staffswap_inbox', 'staffswap_complete_inbox_shortcode' );

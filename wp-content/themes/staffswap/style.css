@@ -338,3 +338,6 @@ html{scroll-padding-top:90px}
 	.offer-docs>*,.offer-docs .button,.offer-docs button,.offer-actions__buttons>*{flex:1 1 100%;width:100%;min-height:44px;text-align:center;justify-content:center}
 	.offer-facts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 }
+
+/* Editable footer: adapt to any number of columns */
+@media(min-width:851px){.site-footer__inner{grid-template-columns:1.6fr repeat(auto-fit,minmax(140px,1fr))}.site-footer__inner .footer-bottom{grid-column:1/-1}}
