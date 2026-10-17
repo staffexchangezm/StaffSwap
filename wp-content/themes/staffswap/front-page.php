@@ -12,41 +12,78 @@ $benefits = array(
 ?>
 <?php if ( ! empty( $elementor_content ) || $elementor_preview ) : ?><div id="content" class="staffswap-elementor-content"><?php while ( have_posts() ) : the_post(); the_content(); endwhile; ?></div><?php get_footer(); return; endif; ?>
 <section class="landing-hero">
-    <div class="landing-hero__copy">
-        <p class="eyebrow">WORKPLACE MOBILITY, MADE SIMPLE</p>
-        <h1><?php echo esc_html( $hero_title ); ?></h1>
-        <p><?php echo esc_html( $hero_text ); ?></p>
-        <div class="hero-actions">
-            <a class="button button--primary" href="<?php echo esc_url( home_url( '/register/' ) ); ?>"><?php echo esc_html( get_theme_mod( 'staffswap_hero_primary_label', 'Sign Up Free' ) ); ?></a>
-            <a class="button button--outline" href="<?php echo esc_url( home_url( '/swaps/' ) ); ?>"><?php echo esc_html( get_theme_mod( 'staffswap_hero_secondary_label', 'Find Swaps' ) ); ?></a>
+    <div class="landing-hero__frame">
+        <div class="landing-hero__nav">
+            <div class="landing-brand">
+                <span class="landing-brand__mark">S</span>
+                <span>StaffExchangeHub</span>
+            </div>
+            <nav class="landing-hero__links" aria-label="Primary navigation">
+                <a href="<?php echo esc_url( home_url( '/' ) ); ?>">Home</a>
+                <a href="<?php echo esc_url( home_url( '/swaps/' ) ); ?>">Find Swaps</a>
+                <a href="<?php echo esc_url( home_url( '/resources/' ) ); ?>">Resources</a>
+                <a href="<?php echo esc_url( home_url( '/how-it-works/' ) ); ?>">How It Works</a>
+                <a href="<?php echo esc_url( home_url( '/pricing/' ) ); ?>">Pricing</a>
+                <a href="<?php echo esc_url( home_url( '/blog/' ) ); ?>">Updates &amp; Opportunities</a>
+            </nav>
+            <div class="landing-hero__nav-actions">
+                <a class="button button--ghost" href="<?php echo esc_url( home_url( '/sign-in/' ) ); ?>">Sign In</a>
+                <a class="button button--primary" href="<?php echo esc_url( home_url( '/register/' ) ); ?>"><?php echo esc_html( get_theme_mod( 'staffswap_hero_primary_label', 'Sign Up Free' ) ); ?></a>
+            </div>
         </div>
-        <div class="benefits-row">
-            <?php foreach ( $benefits as $benefit ) : ?>
-                <div class="benefit-item"><span class="benefit-icon">✓</span><strong><?php echo esc_html( $benefit[0] ); ?></strong></div>
-            <?php endforeach; ?>
+
+        <div class="landing-hero__inner">
+            <div class="landing-hero__copy">
+                <p class="eyebrow">WORKPLACE MOBILITY, MADE SIMPLE</p>
+                <h1>Swap Your Workplace. Change Your Life.</h1>
+                <p><?php echo esc_html( $hero_text ); ?></p>
+                <div class="hero-actions">
+                    <a class="button button--primary" href="<?php echo esc_url( home_url( '/register/' ) ); ?>"><?php echo esc_html( get_theme_mod( 'staffswap_hero_primary_label', 'Sign Up Free' ) ); ?></a>
+                    <a class="button button--outline" href="<?php echo esc_url( home_url( '/swaps/' ) ); ?>"><?php echo esc_html( get_theme_mod( 'staffswap_hero_secondary_label', 'Find Swaps' ) ); ?></a>
+                    <a class="button button--ghost button--ghost-inline" href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>">Post a Swap</a>
+                </div>
+                <div class="benefits-row">
+                    <?php foreach ( $benefits as $benefit ) : ?>
+                        <div class="benefit-item"><span class="benefit-icon">✓</span><strong><?php echo esc_html( $benefit[0] ); ?></strong></div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+
+            <div class="swap-visual" aria-label="Swap illustration">
+                <div class="swap-node swap-node--from">
+                    <div class="swap-avatar">LM</div>
+                    <div class="swap-node__meta">
+                        <strong>Lusaka</strong>
+                        <small>Current workplace</small>
+                    </div>
+                </div>
+                <div class="swap-connector"><b>&harr;</b><small>Current → Desired</small></div>
+                <div class="swap-node swap-node--to">
+                    <div class="swap-avatar swap-avatar--blue">BM</div>
+                    <div class="swap-node__meta">
+                        <strong>Ndola</strong>
+                        <small>Preferred location</small>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
-    <div class="swap-visual">
-        <div class="swap-node swap-node--from">
-            <div class="swap-avatar">LM</div>
-            <strong>Lusaka</strong>
-            <small>Current workplace</small>
-        </div>
-        <div class="swap-connector"><b>&harr;</b><small>Current → Desired</small></div>
-        <div class="swap-node swap-node--to">
-            <div class="swap-avatar swap-avatar--blue">BM</div>
-            <strong>Ndola</strong>
-            <small>Preferred location</small>
+
+        <form class="quick-search panel" method="get" action="<?php echo esc_url( home_url( '/search/' ) ); ?>">
+            <div class="field"><label for="hero-current">Current Location</label><input id="hero-current" name="current_location" placeholder="Select province"></div>
+            <div class="field"><label for="hero-desired">Desired Location</label><input id="hero-desired" name="desired_location" placeholder="Select province"></div>
+            <div class="field"><label for="hero-profession">Profession</label><input id="hero-profession" name="profession" placeholder="Select profession"></div>
+            <div class="field"><label for="hero-employer">Employer Type</label><input id="hero-employer" name="current_employer" placeholder="All types"></div>
+            <button type="submit" class="quick-search__submit">Find Matching Swaps</button>
+        </form>
+
+        <div class="hero-stats" aria-label="Platform highlights">
+            <div class="hero-stat"><strong>100+</strong><span>Growing community of professionals</span></div>
+            <div class="hero-stat"><strong>10</strong><span>Provinces</span></div>
+            <div class="hero-stat"><strong>20+</strong><span>Professional categories</span></div>
+            <div class="hero-stat"><strong>Real Opportunities</strong><span>Find people to swap with nearby</span></div>
         </div>
     </div>
 </section>
-<form class="quick-search panel" method="get" action="<?php echo esc_url( home_url( '/search/' ) ); ?>">
-    <div class="field"><label for="hero-current">Current Location</label><input id="hero-current" name="current_location" placeholder="Select province"></div>
-    <div class="field"><label for="hero-desired">Desired Location</label><input id="hero-desired" name="desired_location" placeholder="Select province"></div>
-    <div class="field"><label for="hero-profession">Profession</label><input id="hero-profession" name="profession" placeholder="Select profession"></div>
-    <div class="field"><label for="hero-employer">Employer Type</label><input id="hero-employer" name="current_employer" placeholder="All types"></div>
-    <input type="submit" value="Search Swaps">
-</form>
 <section class="how-it-works">
     <div class="section-heading section-heading--center">
         <p class="eyebrow">A CLEARER WAY FORWARD</p>
