@@ -10,8 +10,8 @@ For the complete installation, Elementor, WooCommerce, database, import, cache, 
 - `wp-content/plugins/staffswap-core`: `swap_listing` custom post type, secure listing metadata, admin editing fields, filterable `[staffswap_listings]` shortcode with sort/filter chips/pagination, authenticated `[staffswap_create_form]` submission flow, `[staffswap_save_button]`, `[staffswap_saved_listings]`, a Listing Moderation queue with author verification/waiting-time context, an Analytics dashboard, and a new-listings subscriber digest.
 - `wp-content/plugins/staffswap-resources`: searchable `staff_resource` content type, resource categories with a filter dropdown, an admin media-library file picker for downloads, `[staffswap_resources]` Resources Centre layout with real download counts, secure download tracking, and `[staffswap_resource_download]`.
 - `wp-content/plugins/staffswap-profiles`: member profession, location, employer, phone number, and notification-preference fields with `[staffswap_profile]` display output and a Verification Queue that emails members the outcome.
-- `wp-content/plugins/staffswap-messaging`: private `staff_message` content type, `[staffswap_contact listing="123"]` contact form, `[staffswap_inbox]` inbox, and branded HTML email + optional SMS notifications for messages, replies, offers, and offer status changes. Activating it creates a Messages page.
-- `wp-content/plugins/staffswap-woocommerce`: optional WooCommerce bridge with `[staffswap_upgrade]`, configurable VIP Gold plans, Lenco card/mobile-money and Lipila mobile-money payment gateways, checkout CTA, membership activation with automatic expiry/renewal reminders for term plans, and a "Current plan" state once a member is subscribed.
+- `wp-content/plugins/staffswap-messaging`: private `staff_message` content type, `[staffswap_contact listing="123"]` contact form, `[staffswap_inbox]` inbox, branded HTML email + optional SMS notifications, and private print-ready offer documents. Each offer records both members’ published swap listings, and the styled proposal/agreement shows both sets of work, employer, and location details. Acceptance also generates separate personalized draft transfer request letters; each party can access only their own. Activating it creates a Messages page.
+- `wp-content/plugins/staffswap-woocommerce`: optional WooCommerce bridge with `[staffswap_upgrade]`, configurable VIP Gold plans, Lenco card/mobile-money and Lipila mobile-money payment gateways, checkout CTA, automatic completion of paid membership-only orders, membership activation with automatic expiry/renewal reminders for term plans, and a "Current plan" state once a member is subscribed.
 - `wp-content/themes/staffswap/elementor-templates/staffswap-homepage.json`: importable Elementor homepage starter with hero, workflow, and CTA sections.
 
 The theme is compatible with Elementor and other page builders through normal WordPress templates, menus, widgets, and shortcodes. Elementor is not bundled with this repository: install and activate the Elementor plugin separately before looking for Elementor admin menus. Use an Elementor Shortcode widget with `[staffswap_listings]`, `[staffswap_search]`, `[staffswap_create_form]`, `[staffswap_resources]`, `[staffswap_profile]`, or `[staffswap_contact listing="123"]`. The theme's header, footer, fonts, CSS variables, and scripts remain available to Elementor pages.
@@ -129,12 +129,12 @@ Add combined filters for profession, province, employer, experience, housing, ve
 
 **Labels:** `core`, `frontend`, `matching`
 
-Explain why two listings match instead of showing only a percentage score. Consider profession, locations, employer, housing, and verification. Implemented via `staffswap_match_explanation()`.
+Explain why two listings match instead of showing only a percentage score. The score weights profession, reciprocal routes and employers, experience, housing, nearby-town and relocation flexibility, verification, and urgency, and is capped at 100. Implemented via `staffswap_match_score()` and `staffswap_match_explanation()`.
 
 **Acceptance criteria**
 
 - Match factors are understandable to members.
-- Score and explanation use the same data.
+- Score and explanation use the same data, including urgency and relocation flexibility.
 - Missing data does not break the component.
 - The explanation is accessible on mobile.
 

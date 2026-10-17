@@ -8,18 +8,88 @@
  * Text Domain: staffswap-core
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
+function staffswap_sms_notification_types() {
+    return array(
+        'message' => array( 'label' => 'Messages and replies', 'template' => '{site_name}: {subject}. Open {url}' ),
+        'offer' => array( 'label' => 'Swap offers and updates', 'template' => '{site_name}: {subject}. Open {url}' ),
+        'match' => array( 'label' => 'New swap matches', 'template' => '{site_name}: {subject}. Open {url}' ),
+        'verification' => array( 'label' => 'Verification updates', 'template' => '{site_name}: {subject}. Open {url}' ),
+        'listing' => array( 'label' => 'Listing review updates', 'template' => '{site_name}: {subject}. Open {url}' ),
+        'membership' => array( 'label' => 'Membership reminders', 'template' => '{site_name}: {subject}. Open {url}' ),
+        'general' => array( 'label' => 'Other notifications', 'template' => '{site_name}: {subject}. {message}' ),
+    );
+}
+
+function staffswap_sms_template( $type, $subject, $message, $user_id ) {
+    $types = staffswap_sms_notification_types();
+    $type = isset( $types[ $type ] ) ? $type : 'general';
+    $settings = get_option( 'staffswap_sms_settings', array() );
+    $settings = is_array( $settings ) ? $settings : array();
+    $templates = isset( $settings['templates'] ) && is_array( $settings['templates'] ) ? $settings['templates'] : array();
+    $template = isset( $templates[ $type ] ) ? (string) $templates[ $type ] : $types[ $type ]['template'];
+    $url = '';
+    if ( preg_match( '~https?://[^\s<>"]+~i', $message, $url_match ) ) {
+        $url = rtrim( $url_match[0], '.,);' );
+        $message = str_replace( $url_match[0], '', $message );
+    }
+    $user = get_userdata( $user_id );
+    $values = array(
+        '{site_name}' => sanitize_text_field( get_bloginfo( 'name' ) ),
+        '{name}' => $user ? sanitize_text_field( $user->display_name ) : '',
+        '{subject}' => sanitize_text_field( $subject ),
+        '{message}' => trim( wp_strip_all_tags( $message ) ),
+        '{url}' => $url,
+    );
+    return trim( strtr( $template, $values ) );
+}
+
 // Sends a member notification SMS through ExciteSMS, if the gateway is configured and enabled.
 function staffswap_send_sms( $phone, $message ) {
     $settings = get_option( 'staffswap_sms_settings', array() );
-    if ( 'yes' !== ( $settings['enabled'] ?? '' ) || empty( $settings['api_token'] ) || ! $phone ) { return false; }
-    if ( ! $recipient ) { return false; }
+    if ( ! is_array( $settings ) || 'yes' !== ( $settings['enabled'] ?? '' ) || empty( $settings['api_token'] ) ) { return false; }
+    if ( ! is_scalar( $phone ) || ! is_scalar( $message ) ) { return false; }
+
+    $recipient = preg_replace( '/\D+/', '', (string) $phone );
+    if ( 10 === strlen( $recipient ) && '0' === $recipient[0] ) { $recipient = '260' . substr( $recipient, 1 ); }
+    if ( ! preg_match( '/^[1-9]\d{7,14}$/', $recipient ) ) {
+        error_log( 'StaffSwap ExciteSMS request skipped: invalid recipient number.' );
+        return false;
+    }
+
+    $message = trim( (string) $message );
+    if ( '' === $message ) { return false; }
+
+    $payload = wp_json_encode( array(
+        'recipient' => $recipient,
+        'sender_id' => ! empty( $settings['sender_id'] ) ? sanitize_text_field( $settings['sender_id'] ) : sanitize_text_field( get_bloginfo( 'name' ) ),
+        'type' => 'plain',
+        'message' => $message,
+    ) );
+    if ( ! is_string( $payload ) ) {
+        error_log( 'StaffSwap ExciteSMS request failed: could not encode request.' );
+        return false;
+    }
+
     $response = wp_remote_post( 'https://gateway.excitesms.com/api/v3/sms/send', array(
         'timeout' => 20,
-        'headers' => array( 'Authorization' => 'Bearer ' . $settings['api_token'], 'Content-Type' => 'application/json', 'Accept' => 'application/json' ),
-        'body' => wp_json_encode( array( 'recipient' => $recipient, 'sender_id' => ! empty( $settings['sender_id'] ) ? $settings['sender_id'] : get_bloginfo( 'name' ), 'type' => 'plain', 'message' => $message ) ),
+        'headers' => array(
+            'Authorization' => 'Bearer ' . trim( (string) $settings['api_token'] ),
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
+        ),
+        'body' => $payload,
     ) );
-    if ( is_wp_error( $response ) ) { return false; }
-    return 200 === (int) wp_remote_retrieve_response_code( $response );
+    if ( is_wp_error( $response ) ) {
+        error_log( 'StaffSwap ExciteSMS request failed: ' . sanitize_key( $response->get_error_code() ) );
+        return false;
+    }
+
+    $status_code = (int) wp_remote_retrieve_response_code( $response );
+    if ( $status_code < 200 || $status_code >= 300 ) {
+        error_log( 'StaffSwap ExciteSMS request failed with HTTP status ' . $status_code . '.' );
+        return false;
+    }
+    return true;
 }
 
 define( 'STAFFSWAP_DB_VERSION', '1.1.0' );
@@ -73,6 +143,14 @@ function staffswap_register_listing() {
     ) );
 }
 add_action( 'init', 'staffswap_register_listing' );
+function staffswap_maybe_refresh_listing_rewrites() {
+    $rewrite_version = '1.0.1';
+    if ( get_option( 'staffswap_rewrite_version' ) !== $rewrite_version ) {
+        flush_rewrite_rules( false );
+        update_option( 'staffswap_rewrite_version', $rewrite_version );
+    }
+}
+add_action( 'init', 'staffswap_maybe_refresh_listing_rewrites', 99 );
 function staffswap_create_pages() {
     $pages = array(
         'swaps' => array( 'title' => 'Find Swaps', 'content' => '[staffswap_listings]' ),
@@ -147,8 +225,20 @@ function staffswap_save_meta( $post_id ) {
 add_action( 'save_post_swap_listing', 'staffswap_save_meta' );
 
 function staffswap_normalize_match_value( $value ) {
-    $value = strtolower( remove_accents( sanitize_text_field( $value ) ) );
+    $value = strtolower( remove_accents( sanitize_text_field( (string) $value ) ) );
     return trim( preg_replace( '/[^a-z0-9]+/', ' ', $value ) );
+}
+
+function staffswap_match_tokens( $value ) {
+    if ( ! is_scalar( $value ) && ! is_array( $value ) ) {
+        return array();
+    }
+    $raw = is_array( $value ) ? implode( ' ', array_map( 'strval', $value ) ) : (string) $value;
+    $tokens = preg_split( '/[\s,;|&]+/', staffswap_normalize_match_value( $raw ) );
+    $tokens = array_filter( array_map( 'trim', (array) $tokens ), function( $token ) {
+        return '' !== $token;
+    } );
+    return array_values( array_unique( $tokens ) );
 }
 
 function staffswap_delete_listing_matches( $listing_id ) {
@@ -162,16 +252,47 @@ function staffswap_member_declined_matches( $user_id = 0 ) {
 }
 
 function staffswap_match_score( $listing_meta, $candidate_meta ) {
+    $listing_meta = is_array( $listing_meta ) ? $listing_meta : array();
+    $candidate_meta = is_array( $candidate_meta ) ? $candidate_meta : array();
+
+    $listing_profession = staffswap_normalize_match_value( $listing_meta['profession'] ?? '' );
+    $candidate_profession = staffswap_normalize_match_value( $candidate_meta['profession'] ?? '' );
+    $listing_current_location = staffswap_normalize_match_value( $listing_meta['current_location'] ?? '' );
+    $candidate_current_location = staffswap_normalize_match_value( $candidate_meta['current_location'] ?? '' );
+    $listing_desired_location = staffswap_normalize_match_value( $listing_meta['desired_location'] ?? '' );
+    $candidate_desired_location = staffswap_normalize_match_value( $candidate_meta['desired_location'] ?? '' );
+    $listing_current_employer = staffswap_normalize_match_value( $listing_meta['current_employer'] ?? '' );
+    $candidate_current_employer = staffswap_normalize_match_value( $candidate_meta['current_employer'] ?? '' );
+    $listing_desired_employer = staffswap_normalize_match_value( $listing_meta['desired_employer'] ?? '' );
+    $candidate_desired_employer = staffswap_normalize_match_value( $candidate_meta['desired_employer'] ?? '' );
+    $listing_experience = absint( $listing_meta['experience'] ?? 0 );
+    $candidate_experience = absint( $candidate_meta['experience'] ?? 0 );
+    $listing_housing = ! empty( $listing_meta['housing'] );
+    $candidate_housing = ! empty( $candidate_meta['housing'] );
+    $listing_nearby_towns = staffswap_match_tokens( $listing_meta['nearby_towns'] ?? '' );
+    $candidate_nearby_towns = staffswap_match_tokens( $candidate_meta['nearby_towns'] ?? '' );
+    $listing_relocation_support = ! empty( $listing_meta['relocation_support'] );
+    $candidate_relocation_support = ! empty( $candidate_meta['relocation_support'] );
+    $listing_urgent = ! empty( $listing_meta['urgent'] );
+    $candidate_urgent = ! empty( $candidate_meta['urgent'] );
+    $listing_verified = ! empty( $listing_meta['verified'] );
+    $candidate_verified = ! empty( $candidate_meta['verified'] );
+
     $score = 0;
-    if ( $listing_meta['profession'] && $listing_meta['profession'] === $candidate_meta['profession'] ) { $score += 35; }
-    if ( $listing_meta['current_location'] && $listing_meta['current_location'] === $candidate_meta['desired_location'] ) { $score += 20; }
-    if ( $listing_meta['desired_location'] && $listing_meta['desired_location'] === $candidate_meta['current_location'] ) { $score += 20; }
-    if ( $listing_meta['current_employer'] && $listing_meta['current_employer'] === $candidate_meta['desired_employer'] && $listing_meta['desired_employer'] === $candidate_meta['current_employer'] ) { $score += 10; }
-    if ( absint( $listing_meta['experience'] ) && abs( absint( $listing_meta['experience'] ) - absint( $candidate_meta['experience'] ) ) <= 3 ) { $score += 5; }
-    if ( $listing_meta['housing'] && $candidate_meta['housing'] ) { $score += 3; }
-    if ( $listing_meta['nearby_towns'] || $candidate_meta['nearby_towns'] ) { $score += 3; }
-    if ( $listing_meta['verified'] && $candidate_meta['verified'] ) { $score += 4; }
-    return $score;
+    if ( $listing_profession && $listing_profession === $candidate_profession ) { $score += 30; }
+    if ( $listing_current_location && $listing_current_location === $candidate_desired_location ) { $score += 20; }
+    if ( $listing_desired_location && $listing_desired_location === $candidate_current_location ) { $score += 20; }
+    $employer_matches = 0;
+    if ( $listing_current_employer && $listing_current_employer === $candidate_desired_employer ) { ++$employer_matches; }
+    if ( $listing_desired_employer && $listing_desired_employer === $candidate_current_employer ) { ++$employer_matches; }
+    $score += 5 * $employer_matches;
+    if ( $listing_experience && $candidate_experience && abs( $listing_experience - $candidate_experience ) <= 3 ) { $score += 5; }
+    if ( $listing_housing && $candidate_housing ) { $score += 3; }
+    if ( $listing_nearby_towns && $candidate_nearby_towns ) { $score += 3; }
+    if ( $listing_relocation_support && $candidate_relocation_support ) { $score += 3; }
+    if ( $listing_urgent || $candidate_urgent ) { $score += 3; }
+    if ( $listing_verified && $candidate_verified ) { $score += 3; }
+    return min( 100, (int) $score );
 }
 
 function staffswap_refresh_listing_matches( $listing_id ) {
@@ -181,7 +302,7 @@ function staffswap_refresh_listing_matches( $listing_id ) {
         return;
     }
     $listing_meta = array();
-    foreach ( array( 'profession', 'current_location', 'desired_location', 'current_employer', 'desired_employer', 'experience', 'housing', 'nearby_towns', 'verified' ) as $field ) {
+    foreach ( array( 'profession', 'current_location', 'desired_location', 'current_employer', 'desired_employer', 'experience', 'housing', 'nearby_towns', 'relocation_support', 'urgent', 'verified' ) as $field ) {
         $listing_meta[ $field ] = staffswap_normalize_match_value( get_post_meta( $listing_id, '_staffswap_' . $field, true ) );
     }
     if ( ! $listing_meta['current_location'] || ! $listing_meta['desired_location'] || ! $listing_meta['profession'] ) {
@@ -198,7 +319,7 @@ function staffswap_refresh_listing_matches( $listing_id ) {
             continue;
         }
         $candidate_meta = array();
-        foreach ( array( 'profession', 'current_location', 'desired_location', 'current_employer', 'desired_employer', 'experience', 'housing', 'nearby_towns', 'verified' ) as $field ) {
+        foreach ( array( 'profession', 'current_location', 'desired_location', 'current_employer', 'desired_employer', 'experience', 'housing', 'nearby_towns', 'relocation_support', 'urgent', 'verified' ) as $field ) {
             $candidate_meta[ $field ] = staffswap_normalize_match_value( get_post_meta( $candidate_id, '_staffswap_' . $field, true ) );
         }
         $score = staffswap_match_score( $listing_meta, $candidate_meta );
@@ -212,8 +333,8 @@ function staffswap_refresh_listing_matches( $listing_id ) {
             $wpdb->replace( staffswap_db_table( 'matches' ), array( 'listing_id' => $pair[0], 'candidate_listing_id' => $pair[1], 'score' => $score, 'status' => 'suggested', 'created_at' => $now, 'updated_at' => $now ), array( '%d', '%d', '%f', '%s', '%s', '%s' ) );
         }
         if ( ! in_array( $candidate_id, $existing_candidate_ids, true ) && function_exists( 'staffswap_notify_user' ) ) {
-            staffswap_notify_user( get_post_field( 'post_author', $listing_id ), 'New match found for ' . get_the_title( $listing_id ), 'A new potential swap match ("' . get_the_title( $candidate_id ) . '") was found for your listing "' . get_the_title( $listing_id ) . '" with a ' . $score . '% match score.' . "\n\n" . 'View your matches here: ' . home_url( '/my-profile/' ) );
-            staffswap_notify_user( get_post_field( 'post_author', $candidate_id ), 'New match found for ' . get_the_title( $candidate_id ), 'A new potential swap match ("' . get_the_title( $listing_id ) . '") was found for your listing "' . get_the_title( $candidate_id ) . '" with a ' . $score . '% match score.' . "\n\n" . 'View your matches here: ' . home_url( '/my-profile/' ) );
+            staffswap_notify_user( get_post_field( 'post_author', $listing_id ), 'New match found for ' . get_the_title( $listing_id ), 'A new potential swap match ("' . get_the_title( $candidate_id ) . '") was found for your listing "' . get_the_title( $listing_id ) . '" with a ' . $score . '% match score.' . "\n\n" . 'View your matches here: ' . home_url( '/my-profile/' ), 'match' );
+            staffswap_notify_user( get_post_field( 'post_author', $candidate_id ), 'New match found for ' . get_the_title( $candidate_id ), 'A new potential swap match ("' . get_the_title( $listing_id ) . '") was found for your listing "' . get_the_title( $candidate_id ) . '" with a ' . $score . '% match score.' . "\n\n" . 'View your matches here: ' . home_url( '/my-profile/' ), 'match' );
         }
     }
 }
@@ -249,18 +370,46 @@ function staffswap_listing_moderation_action() {
     update_post_meta( $listing_id, '_staffswap_reviewed_by', get_current_user_id() );
     if ( 'approved' === $action ) { wp_update_post( array( 'ID' => $listing_id, 'post_status' => 'publish' ) ); }
     staffswap_record_event( 'listing_' . $action, $listing_id, array( 'reason' => $reason, 'reviewer_id' => get_current_user_id() ), get_current_user_id() );
-    if ( function_exists( 'staffswap_notify_user' ) ) {
-        $decision_messages = array(
-            'approved' => 'Your listing "' . get_the_title( $listing_id ) . '" was approved and is now live on the marketplace.',
-            'rejected' => 'Your listing "' . get_the_title( $listing_id ) . '" was not approved.' . ( $reason ? ' Reason: ' . $reason : '' ),
-            'changes_requested' => 'An administrator requested changes to your listing "' . get_the_title( $listing_id ) . '" before it can be published.' . ( $reason ? ' Details: ' . $reason : '' ),
-        );
-        staffswap_notify_user( (int) get_post_field( 'post_author', $listing_id ), 'Listing review update', $decision_messages[ $action ] . "\n\n" . 'View your listing here: ' . get_permalink( $listing_id ) );
-    }
+    $decision_messages = array(
+        'approved' => 'Your listing "' . get_the_title( $listing_id ) . '" was approved and is now live on the marketplace.',
+        'rejected' => 'Your listing "' . get_the_title( $listing_id ) . '" was not approved.' . ( $reason ? ' Reason: ' . $reason : '' ),
+        'changes_requested' => 'An administrator requested changes to your listing "' . get_the_title( $listing_id ) . '" before it can be published.' . ( $reason ? ' Details: ' . $reason : '' ),
+    );
+    staffswap_notify_listing_author( (int) get_post_field( 'post_author', $listing_id ), 'Listing review update', $decision_messages[ $action ] . "\n\n" . 'View your listing here: ' . ( 'approved' === $action ? get_permalink( $listing_id ) : home_url( '/my-profile/' ) ) );
     wp_safe_redirect( add_query_arg( array( 'post_type' => 'swap_listing', 'page' => 'staffswap-listing-moderation', 'updated' => '1' ), admin_url( 'edit.php' ) ) );
     exit;
 }
 add_action( 'admin_init', 'staffswap_listing_moderation_action' );
+
+function staffswap_notify_listing_author( $user_id, $subject, $message ) {
+    $user_id = absint( $user_id );
+    $user = get_userdata( $user_id );
+    if ( ! $user || ! is_email( $user->user_email ) || '1' === get_user_meta( $user_id, 'staffswap_notifications_disabled', true ) ) { return; }
+    if ( function_exists( 'staffswap_notify_user' ) ) {
+        staffswap_notify_user( $user_id, $subject, $message, 'listing' );
+        return;
+    }
+    if ( ! wp_mail( $user->user_email, '[' . get_bloginfo( 'name' ) . '] ' . $subject, $message ) ) {
+        error_log( 'StaffSwap listing email failed for user ' . $user_id . '.' );
+    }
+}
+
+function staffswap_notify_listing_admin( $listing_id ) {
+    $admin_email = get_option( 'admin_email' );
+    if ( ! is_email( $admin_email ) ) {
+        error_log( 'StaffSwap listing admin notification skipped: the site admin email is invalid.' );
+        return;
+    }
+    $subject = 'New swap post awaiting review';
+    $message = 'A new swap post was submitted and is ' . ( 'publish' === get_post_status( $listing_id ) ? 'published.' : 'awaiting approval.' ) . "\n\n"
+        . 'Member: ' . get_the_author_meta( 'display_name', get_post_field( 'post_author', $listing_id ) ) . "\n"
+        . 'Profession: ' . get_post_meta( $listing_id, '_staffswap_profession', true ) . "\n"
+        . 'Route: ' . get_post_meta( $listing_id, '_staffswap_current_location', true ) . ' to ' . get_post_meta( $listing_id, '_staffswap_desired_location', true ) . "\n\n"
+        . 'Review the listing: ' . get_edit_post_link( $listing_id, 'raw' );
+    if ( ! wp_mail( $admin_email, '[' . get_bloginfo( 'name' ) . '] ' . $subject, $message ) ) {
+        error_log( 'StaffSwap admin listing notification failed for listing ' . absint( $listing_id ) . '.' );
+    }
+}
 
 function staffswap_listing_moderation_screen() {
     if ( ! current_user_can( 'manage_options' ) ) { return; }
@@ -320,14 +469,20 @@ function staffswap_handle_match_decline() {
 add_action( 'init', 'staffswap_handle_match_decline' );
 
 function staffswap_match_explanation( $source_id, $candidate_id ) {
-    $fields = array( 'profession', 'current_location', 'desired_location', 'current_employer', 'desired_employer' );
+    $fields = array( 'profession', 'current_location', 'desired_location', 'current_employer', 'desired_employer', 'experience', 'housing', 'nearby_towns', 'relocation_support', 'urgent', 'verified' );
     $source = array(); $candidate = array();
     foreach ( $fields as $field ) { $source[ $field ] = staffswap_normalize_match_value( get_post_meta( $source_id, '_staffswap_' . $field, true ) ); $candidate[ $field ] = staffswap_normalize_match_value( get_post_meta( $candidate_id, '_staffswap_' . $field, true ) ); }
     $reasons = array();
     if ( $source['profession'] && $source['profession'] === $candidate['profession'] ) { $reasons[] = 'Same profession'; }
     if ( $source['current_location'] && $source['current_location'] === $candidate['desired_location'] ) { $reasons[] = 'Your destination matches their current location'; }
     if ( $source['desired_location'] && $source['desired_location'] === $candidate['current_location'] ) { $reasons[] = 'Their destination matches your current location'; }
-    if ( $source['current_employer'] && $source['current_employer'] === $candidate['desired_employer'] && $source['desired_employer'] === $candidate['current_employer'] ) { $reasons[] = 'Employers align in both directions'; }
+    if ( ( $source['current_employer'] && $source['current_employer'] === $candidate['desired_employer'] ) || ( $source['desired_employer'] && $source['desired_employer'] === $candidate['current_employer'] ) ) { $reasons[] = 'Employers align in a reciprocal route'; }
+    if ( absint( $source['experience'] ) && absint( $candidate['experience'] ) && abs( absint( $source['experience'] ) - absint( $candidate['experience'] ) ) <= 3 ) { $reasons[] = 'Similar years of experience'; }
+    if ( '1' === $source['housing'] && '1' === $candidate['housing'] ) { $reasons[] = 'Housing is available on both listings'; }
+    if ( '1' === $source['nearby_towns'] && '1' === $candidate['nearby_towns'] ) { $reasons[] = 'Both members are open to nearby towns'; }
+    if ( '1' === $source['relocation_support'] && '1' === $candidate['relocation_support'] ) { $reasons[] = 'Both members can assist with relocation'; }
+    if ( '1' === $source['urgent'] || '1' === $candidate['urgent'] ) { $reasons[] = 'At least one listing is marked urgent'; }
+    if ( '1' === $source['verified'] && '1' === $candidate['verified'] ) { $reasons[] = 'Both members are verified'; }
     if ( ! $reasons ) { $reasons[] = 'Compatible reciprocal route'; }
     return '<div class="match-explanation" aria-label="Why this listing matches"><span class="match-explanation__title">Why it matches</span><ul><li>' . implode( '</li><li>', array_map( 'esc_html', $reasons ) ) . '</li></ul></div>';
 }
@@ -339,6 +494,10 @@ function staffswap_listing_card( $post_id ) {
     ob_start(); ?>
     <article class="listing-card"><div class="listing-main"><div class="person"><div class="avatar"><?php echo esc_html( strtoupper( substr( $name, 0, 1 ) ) ); ?></div><div><h3><?php echo esc_html( $name ); ?><?php if ( $meta['verified'] ) : ?> <span class="verified">&#10003; Verified</span><?php endif; ?></h3><p style="color:#005f2e;font-weight:600"><?php echo esc_html( $profession ); ?></p><p class="muted"><?php echo esc_html( $meta['experience'] ?: '-' ); ?> years experience</p></div></div><div class="swap-route"><div class="route"><small>Current</small><strong><?php echo esc_html( $meta['current_employer'] ?: 'Not specified' ); ?></strong><span><?php echo esc_html( $meta['current_location'] ?: 'Location pending' ); ?></span></div><div class="swap-icon">&#8596;</div><div class="route route--desired"><small>Desired</small><strong><?php echo esc_html( $meta['desired_employer'] ?: 'Not specified' ); ?></strong><span><?php echo esc_html( $meta['desired_location'] ?: 'Location pending' ); ?></span></div></div><?php if ( '' !== $score ) : ?><div class="match"><strong><?php echo esc_html( $score ); ?>%</strong><small><?php echo (int) $score >= 94 ? 'Excellent' : 'Good'; ?> Match</small></div><?php endif; ?></div><?php if ( $meta['swap_reason'] ) : ?><p class="muted" style="margin-top:8px"><strong>Why they want to swap:</strong> <?php echo esc_html( staffswap_swap_reasons()[ $meta['swap_reason'] ] ?? $meta['swap_reason'] ); ?></p><?php endif; ?><div class="listing-meta"><div class="tags"><?php if ( $meta['verified'] ) : ?><span class="tag tag--success">Verified</span><?php endif; ?><?php if ( $meta['housing'] ) : ?><span class="tag tag--housing">Housing available</span><?php else : ?><span class="tag tag--housing">Housing not included</span><?php endif; ?><?php if ( $meta['nearby_towns'] ) : ?><span class="tag tag--nearby">Nearby towns OK</span><?php endif; ?><?php if ( $meta['relocation_support'] ) : ?><span class="tag tag--relocation">Relocation support</span><?php endif; ?><?php if ( $meta['urgent'] ) : ?><span class="tag tag--urgent">Urgent</span><?php endif; ?></div><div class="listing-actions"><a href="<?php echo esc_url( get_permalink( $post_id ) ); ?>">View profile</a></div></div></article>
     <?php return ob_get_clean();
+}
+
+function staffswap_listing_management_url( $listing_id ) {
+    return 'pending' === get_post_status( $listing_id ) ? get_preview_post_link( $listing_id ) : get_permalink( $listing_id );
 }
 
 function staffswap_listings_shortcode( $atts ) {
@@ -458,24 +617,300 @@ function staffswap_register_wizard_v2_shortcode() {
 remove_shortcode( 'staffswap_register' );
 add_shortcode( 'staffswap_register', 'staffswap_register_wizard_v2_shortcode' );
 
+// v3: the password is only collected on the final step and is never written to the transient.
+function staffswap_register_wizard_v3_shortcode() {
+    if ( is_user_logged_in() ) {
+        return '<div class="panel content-form"><h2>Welcome to StaffExchangeHub</h2><p>Your swap profile is ready. <a href="' . esc_url( home_url( '/my-profile/' ) ) . '">Go to your dashboard</a></p></div>';
+    }
+
+    $step = min( 3, max( 1, absint( $_GET['step'] ?? 1 ) ) );
+    $token = sanitize_key( wp_unslash( $_REQUEST['staffswap_registration'] ?? '' ) );
+    $form_data = $token ? get_transient( 'staffswap_registration_' . $token ) : array();
+    $form_data = is_array( $form_data ) ? $form_data : array();
+    $errors = array();
+    $text = function ( $key ) use ( $form_data ) { return sanitize_text_field( wp_unslash( $_POST[ $key ] ?? $form_data[ $key ] ?? '' ) ); };
+
+    if ( $step > 1 && ( empty( $form_data['email'] ) || ( $step > 2 && empty( $form_data['profession'] ) ) ) ) {
+        wp_safe_redirect( home_url( '/register/' ) );
+        exit;
+    }
+
+    if ( isset( $_POST['staffswap_register_step'] ) && check_admin_referer( 'staffswap_register_step_' . $step, 'staffswap_register_nonce' ) ) {
+        if ( 1 === $step ) {
+            $form_data['full_name'] = $text( 'full_name' );
+            $form_data['email'] = sanitize_email( wp_unslash( $_POST['email'] ?? '' ) );
+            $form_data['phone'] = preg_replace( '/[^0-9+]/', '', $text( 'phone' ) );
+            if ( ! $form_data['full_name'] ) { $errors[] = 'Please enter your full name.'; }
+            if ( ! is_email( $form_data['email'] ) ) { $errors[] = 'Please enter a valid email address.'; }
+            elseif ( email_exists( $form_data['email'] ) ) { $errors[] = 'That email is already registered. <a href="' . esc_url( home_url( '/sign-in/' ) ) . '">Sign in instead</a>.'; }
+        } elseif ( 2 === $step ) {
+            $form_data['profession'] = $text( 'profession' );
+            $form_data['employer'] = $text( 'employer' );
+            $form_data['years_service'] = absint( $_POST['years_service'] ?? 0 );
+            if ( ! $form_data['profession'] || ! $form_data['employer'] ) { $errors[] = 'Please complete your profession and employer.'; }
+        } else {
+            $form_data['current_location'] = $text( 'current_location' );
+            $form_data['desired_location'] = $text( 'desired_location' );
+            $form_data['staff_housing'] = isset( $_POST['staff_housing'] ) ? 1 : 0;
+            $password = (string) wp_unslash( $_POST['password'] ?? '' );
+            if ( ! $form_data['current_location'] || ! $form_data['desired_location'] ) { $errors[] = 'Please choose your current and desired location.'; }
+            if ( strlen( $password ) < 8 ) { $errors[] = 'Password must be at least 8 characters.'; }
+            elseif ( $password !== (string) wp_unslash( $_POST['password_confirm'] ?? '' ) ) { $errors[] = 'Passwords do not match.'; }
+            if ( empty( $_POST['accept_terms'] ) ) { $errors[] = 'Please accept the Terms of Service to continue.'; }
+            if ( email_exists( $form_data['email'] ) ) { $errors[] = 'That email is already registered.'; }
+        }
+
+        if ( ! $errors && $step < 3 ) {
+            $token = $token ?: wp_generate_password( 24, false, false );
+            set_transient( 'staffswap_registration_' . $token, $form_data, HOUR_IN_SECONDS );
+            wp_safe_redirect( add_query_arg( array( 'step' => $step + 1, 'staffswap_registration' => $token ), home_url( '/register/' ) ) );
+            exit;
+        }
+
+        if ( ! $errors && 3 === $step ) {
+            $username = sanitize_user( explode( '@', $form_data['email'] )[0] . '_' . wp_rand( 100, 9999 ), true );
+            $user_id = wp_create_user( $username, $password, $form_data['email'] );
+            if ( ! is_wp_error( $user_id ) ) {
+                wp_update_user( array( 'ID' => $user_id, 'display_name' => $form_data['full_name'], 'first_name' => strtok( $form_data['full_name'], ' ' ) ) );
+                $meta = array( 'profession' => $form_data['profession'], 'employer' => $form_data['employer'], 'years_service' => $form_data['years_service'], 'location' => $form_data['current_location'], 'desired_location' => $form_data['desired_location'], 'staff_housing' => $form_data['staff_housing'], 'phone' => $form_data['phone'] ?? '', 'verified_status' => 'unverified' );
+                foreach ( $meta as $key => $value ) { update_user_meta( $user_id, 'staffswap_' . $key, $value ); }
+                update_user_meta( $user_id, 'staffswap_onboarding_started', time() );
+                staffswap_record_event( 'user_registered', $user_id, array( 'profession' => $form_data['profession'] ), $user_id );
+                delete_transient( 'staffswap_registration_' . $token );
+                wp_mail( $form_data['email'], 'Welcome to ' . get_bloginfo( 'name' ), "Hi {$form_data['full_name']},\n\nYour account is ready. Finish these steps to start matching:\n1. Complete your profile\n2. Verify your account\n3. Publish your first swap listing\n\nOpen your dashboard: " . home_url( '/my-profile/' ) );
+                wp_set_current_user( $user_id );
+                wp_set_auth_cookie( $user_id );
+                wp_safe_redirect( add_query_arg( 'welcome', '1', home_url( '/my-profile/' ) ) );
+                exit;
+            }
+            $errors[] = 'Account creation failed. Please try again.';
+        }
+    }
+
+    $route_args = array_filter( array( 'staffswap_registration' => $token ) );
+    $back_url = 1 === $step ? home_url( '/' ) : add_query_arg( array_merge( $route_args, array( 'step' => $step - 1 ) ), home_url( '/register/' ) );
+    $titles = array( 1 => 'Account Identity', 2 => 'Professional Status', 3 => 'Relocation Goals' );
+    $hints = array( 1 => 'Start with the basics. It takes about two minutes.', 2 => 'Tell us about your current role so we can match like for like.', 3 => 'Where are you now, and where do you want to be? Then secure your account.' );
+    $val = function ( $key ) use ( $form_data ) { return esc_attr( $form_data[ $key ] ?? '' ); };
+    ob_start(); ?>
+    <div class="account-page"><div class="account-intro"><p class="eyebrow">STEP <?php echo esc_html( $step ); ?> OF 3</p><h1><?php echo esc_html( $titles[ $step ] ); ?></h1><p><?php echo esc_html( $hints[ $step ] ); ?></p>
+    <ol class="wizard-steps" aria-label="Registration progress"><?php foreach ( $titles as $n => $label ) : ?><li class="<?php echo $n < $step ? 'is-done' : ( $n === $step ? 'is-current' : '' ); ?>"<?php echo $n === $step ? ' aria-current="step"' : ''; ?>><span><?php echo $n < $step ? '&#10003;' : esc_html( $n ); ?></span><?php echo esc_html( $label ); ?></li><?php endforeach; ?></ol></div>
+    <form method="post" class="staffswap-register-form panel" novalidate="novalidate">
+    <?php foreach ( $errors as $error ) : ?><div class="notice notice--error" role="alert"><p><?php echo wp_kses( $error, array( 'a' => array( 'href' => array() ) ) ); ?></p></div><?php endforeach; ?>
+    <input type="hidden" name="staffswap_registration" value="<?php echo esc_attr( $token ); ?>">
+    <?php if ( 1 === $step ) : ?>
+        <div class="field"><label for="full_name">Official full name</label><input id="full_name" name="full_name" autocomplete="name" value="<?php echo $val( 'full_name' ); ?>" required></div>
+        <div class="field"><label for="email">Email address</label><input id="email" name="email" type="email" inputmode="email" autocomplete="email" value="<?php echo $val( 'email' ); ?>" required></div>
+        <div class="field"><label for="phone">Mobile number <span class="muted">(optional, for SMS alerts)</span></label><input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="26097XXXXXXX" value="<?php echo $val( 'phone' ); ?>"></div>
+    <?php elseif ( 2 === $step ) : ?>
+        <div class="field"><label for="profession">Profession / cadre</label><input id="profession" name="profession" list="staffswap-professions" placeholder="e.g. Registered Nurse" value="<?php echo $val( 'profession' ); ?>" required><datalist id="staffswap-professions"><?php foreach ( array( 'Registered Nurse', 'Clinical Officer', 'Teacher', 'Doctor', 'Pharmacist', 'Accountant', 'Police Officer', 'Engineer', 'Agricultural Officer', 'Administrator' ) as $p ) { echo '<option value="' . esc_attr( $p ) . '">'; } ?></datalist></div>
+        <div class="field"><label for="employer">Employer / institution</label><input id="employer" name="employer" placeholder="e.g. Ministry of Health" value="<?php echo $val( 'employer' ); ?>" required></div>
+        <div class="field"><label for="years_service">Years of service</label><input id="years_service" name="years_service" type="number" inputmode="numeric" min="0" max="50" value="<?php echo $val( 'years_service' ); ?>" required></div>
+    <?php else : ?>
+        <div class="field"><label for="current_location">Current province &amp; town</label><?php echo staffswap_render_location_select( 'current_location', 'current_location', $form_data['current_location'] ?? '' ); ?></div>
+        <div class="field"><label for="desired_location">Desired province &amp; town</label><?php echo staffswap_render_location_select( 'desired_location', 'desired_location', $form_data['desired_location'] ?? '' ); ?></div>
+        <label class="check"><input type="checkbox" name="staff_housing" value="1" <?php checked( ! empty( $form_data['staff_housing'] ) ); ?>> I have staff accommodation available to hand over</label>
+        <div class="field"><label for="password">Create a password</label><div class="password-field"><input id="password" name="password" type="password" minlength="8" autocomplete="new-password" required><button type="button" class="password-field__toggle" data-password-toggle="password" aria-pressed="false">Show</button></div><small class="muted">At least 8 characters.</small></div>
+        <div class="field"><label for="password_confirm">Confirm password</label><input id="password_confirm" name="password_confirm" type="password" minlength="8" autocomplete="new-password" required></div>
+        <label class="check"><input type="checkbox" name="accept_terms" value="1" required> I agree to the <a href="<?php echo esc_url( home_url( '/terms/' ) ); ?>" target="_blank" rel="noopener">Terms</a> and <a href="<?php echo esc_url( home_url( '/privacy-policy/' ) ); ?>" target="_blank" rel="noopener">Privacy Policy</a></label>
+    <?php endif; ?>
+    <input type="hidden" name="staffswap_register_step" value="1"><?php wp_nonce_field( 'staffswap_register_step_' . $step, 'staffswap_register_nonce' ); ?>
+    <div class="form-actions"><input type="submit" value="<?php echo esc_attr( 3 === $step ? 'Create account & get matched' : 'Continue' ); ?>"><a class="button button--outline" href="<?php echo esc_url( $back_url ); ?>"><?php echo esc_html( $step > 1 ? 'Back' : 'Cancel' ); ?></a></div>
+    <?php if ( 1 === $step ) : ?><p class="muted form-footnote">Already a member? <a href="<?php echo esc_url( home_url( '/sign-in/' ) ); ?>">Sign in</a></p><?php endif; ?>
+    </form></div>
+    <?php return ob_get_clean();
+}
+remove_shortcode( 'staffswap_register' );
+add_shortcode( 'staffswap_register', 'staffswap_register_wizard_v3_shortcode' );
+
+function staffswap_onboarding_tasks( $user_id ) {
+    $has = function ( $key ) use ( $user_id ) { return (bool) get_user_meta( $user_id, 'staffswap_' . $key, true ); };
+    $listing = get_posts( array( 'post_type' => 'swap_listing', 'author' => $user_id, 'post_status' => array( 'publish', 'pending', 'draft' ), 'posts_per_page' => 1, 'fields' => 'ids' ) );
+    $status = get_user_meta( $user_id, 'staffswap_verified_status', true ) ?: 'unverified';
+    return array(
+        array( 'label' => 'Create your account', 'done' => true, 'url' => '', 'cta' => '' ),
+        array( 'label' => 'Complete your profile (man number, license, mobile)', 'done' => $has( 'man_number' ) && $has( 'phone' ) && $has( 'profession' ) && $has( 'employer' ), 'url' => home_url( '/profile-settings/' ), 'cta' => 'Complete profile' ),
+        array( 'label' => 'Submit documents for verification', 'done' => in_array( $status, array( 'pending', 'verified' ), true ), 'url' => home_url( '/verification/' ), 'cta' => 'Get verified' ),
+        array( 'label' => 'Publish your first swap listing', 'done' => ! empty( $listing ), 'url' => home_url( '/create-swap/' ), 'cta' => 'Create listing' ),
+        array( 'label' => 'Browse reciprocal matches', 'done' => (bool) get_user_meta( $user_id, 'staffswap_browsed_swaps', true ), 'url' => home_url( '/swaps/' ), 'cta' => 'Browse swaps' ),
+    );
+}
+
+function staffswap_onboarding_checklist_shortcode() {
+    if ( ! is_user_logged_in() ) { return ''; }
+    $user_id = get_current_user_id();
+    if ( isset( $_POST['staffswap_dismiss_onboarding'] ) && check_admin_referer( 'staffswap_dismiss_onboarding', 'staffswap_onboarding_nonce' ) ) {
+        update_user_meta( $user_id, 'staffswap_onboarding_dismissed', 1 );
+    }
+    if ( get_user_meta( $user_id, 'staffswap_onboarding_dismissed', true ) ) { return ''; }
+    $tasks = staffswap_onboarding_tasks( $user_id );
+    $done = count( array_filter( wp_list_pluck( $tasks, 'done' ) ) );
+    if ( $done === count( $tasks ) ) { return ''; }
+    $percent = (int) round( $done / count( $tasks ) * 100 );
+    $welcome = isset( $_GET['welcome'] );
+    ob_start(); ?>
+    <section class="panel onboarding" aria-labelledby="onboarding-title">
+        <div class="onboarding__head"><div><p class="eyebrow"><?php echo $welcome ? 'WELCOME ABOARD' : 'GET STARTED'; ?></p><h2 id="onboarding-title"><?php echo $welcome ? 'Your account is ready. Let&rsquo;s get you matched.' : 'Finish setting up'; ?></h2></div><strong class="onboarding__percent"><?php echo esc_html( $percent ); ?>%</strong></div>
+        <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?php echo esc_attr( $percent ); ?>"><span style="width:<?php echo esc_attr( $percent ); ?>%"></span></div>
+        <ul class="onboarding__list"><?php foreach ( $tasks as $task ) : ?><li class="<?php echo $task['done'] ? 'is-done' : ''; ?>"><span class="onboarding__tick" aria-hidden="true"><?php echo $task['done'] ? '&#10003;' : ''; ?></span><span class="onboarding__label"><?php echo esc_html( $task['label'] ); ?></span><?php if ( ! $task['done'] && $task['url'] ) : ?><a class="button button--outline" href="<?php echo esc_url( $task['url'] ); ?>"><?php echo esc_html( $task['cta'] ); ?></a><?php endif; ?></li><?php endforeach; ?></ul>
+        <form method="post" class="onboarding__dismiss"><?php wp_nonce_field( 'staffswap_dismiss_onboarding', 'staffswap_onboarding_nonce' ); ?><button type="submit" name="staffswap_dismiss_onboarding" value="1" class="text-link">Hide this checklist</button></form>
+    </section>
+    <?php return ob_get_clean();
+}
+add_shortcode( 'staffswap_onboarding_checklist', 'staffswap_onboarding_checklist_shortcode' );
+
+// Visiting the swaps directory ticks the "browse matches" onboarding step.
+function staffswap_mark_swaps_browsed() {
+    if ( is_user_logged_in() && ( is_page( 'swaps' ) || is_post_type_archive( 'swap_listing' ) ) ) { update_user_meta( get_current_user_id(), 'staffswap_browsed_swaps', 1 ); }
+}
+add_action( 'template_redirect', 'staffswap_mark_swaps_browsed' );
+
 function staffswap_dashboard_shortcode() { if ( ! is_user_logged_in() ) { return '<div class="panel content-form"><h2>Sign in to view your profile</h2><a class="button button--primary" href="' . esc_url( home_url( '/sign-in/' ) ) . '">Sign in</a></div>'; } $user = wp_get_current_user(); $query = new WP_Query( array( 'post_type' => 'swap_listing', 'author' => get_current_user_id(), 'post_status' => array( 'publish', 'pending' ), 'posts_per_page' => 10 ) ); ob_start(); ?><div class="content-form"><div class="page-heading"><div><p class="eyebrow">MEMBER AREA</p><h1><?php echo esc_html( $user->display_name ); ?></h1><p class="muted">Manage your profile and swap requests.</p></div><a class="button button--primary" href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>">Create listing</a></div><div class="panel"><h2>Your swap requests</h2><?php if ( $query->have_posts() ) : while ( $query->have_posts() ) : $query->the_post(); ?><p><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a> <span class="muted">(<?php echo esc_html( get_post_status_object( get_post_status() )->label ); ?>)</span></p><?php endwhile; wp_reset_postdata(); else : ?><p class="muted">You have not created a swap request yet.</p><?php endif; ?></div><?php echo do_shortcode( '[staffswap_matches]' ); ?></div><?php return ob_get_clean(); }
 add_shortcode( 'staffswap_dashboard', 'staffswap_dashboard_shortcode' );
 
 function staffswap_search_shortcode() { ob_start(); ?><div class="content-form"><div class="page-heading"><div><p class="eyebrow">SEARCH THE NETWORK</p><h1>Find your next workplace</h1><p class="muted">Search by profession, current location, or desired location.</p></div></div><?php echo do_shortcode( '[staffswap_listings]' ); ?><?php echo do_shortcode( '[staffswap_save_search]' ); ?><?php echo do_shortcode( '[staffswap_saved_searches]' ); ?></div><?php return ob_get_clean(); }
 add_shortcode( 'staffswap_search', 'staffswap_search_shortcode' );
 
+function staffswap_create_listing_form_defaults( $user_id ) {
+    return array(
+        'name' => get_the_author_meta( 'display_name', $user_id ),
+        'profession' => get_user_meta( $user_id, 'staffswap_profession', true ),
+        'current_employer' => get_user_meta( $user_id, 'staffswap_employer', true ),
+        'current_location' => get_user_meta( $user_id, 'staffswap_location', true ),
+        'experience' => get_user_meta( $user_id, 'staffswap_years_service', true ),
+        'housing' => get_user_meta( $user_id, 'staffswap_staff_housing', true ),
+        'desired_employer' => '',
+        'desired_location' => '',
+        'swap_reason' => '',
+        'nearby_towns' => '',
+        'relocation_support' => '',
+        'urgent' => '',
+        'notes' => '',
+    );
+}
+
+function staffswap_handle_create_listing_submission() {
+    if ( ! isset( $_POST['staffswap_create_listing'] ) || ! is_user_logged_in() ) { return; }
+    if ( function_exists( 'staffswap_has_active_membership' ) && ! staffswap_has_active_membership() ) { return; }
+    check_admin_referer( 'staffswap_create_listing', 'staffswap_create_nonce' );
+
+    $current_user_id = get_current_user_id();
+    $form_data = staffswap_create_listing_form_defaults( $current_user_id );
+    $errors = array();
+    foreach ( array( 'name', 'profession', 'current_employer', 'current_location', 'desired_employer', 'desired_location', 'experience', 'housing', 'swap_reason', 'nearby_towns', 'relocation_support', 'urgent' ) as $key ) {
+        $raw_value = $_POST[ $key ] ?? '';
+        $form_data[ $key ] = is_scalar( $raw_value ) ? sanitize_text_field( wp_unslash( (string) $raw_value ) ) : '';
+    }
+    $raw_notes = $_POST['notes'] ?? '';
+    $form_data['notes'] = is_scalar( $raw_notes ) ? sanitize_textarea_field( wp_unslash( (string) $raw_notes ) ) : '';
+
+    foreach ( array(
+        'name' => 'Enter your name.',
+        'profession' => 'Enter your profession.',
+        'current_employer' => 'Enter your current employer.',
+        'desired_employer' => 'Enter the employer you would like to move to.',
+    ) as $key => $message ) {
+        if ( '' === trim( $form_data[ $key ] ) ) { $errors[] = $message; }
+    }
+    $valid_locations = array();
+    foreach ( staffswap_zambia_locations() as $province => $towns ) {
+        foreach ( $towns as $town ) { $valid_locations[] = $town . ', ' . $province; }
+    }
+    foreach ( array( 'current_location' => 'Choose your current province and town.', 'desired_location' => 'Choose your desired province and town.' ) as $key => $message ) {
+        if ( ! in_array( $form_data[ $key ], $valid_locations, true ) ) { $errors[] = $message; }
+    }
+    if ( ! preg_match( '/^\d+$/', $form_data['experience'] ) ) { $errors[] = 'Enter your years of experience as a whole number of zero or more.'; }
+    if ( ! array_key_exists( $form_data['swap_reason'], staffswap_swap_reasons() ) ) { $errors[] = 'Choose a valid reason for your swap request.'; }
+    if ( ! in_array( $form_data['housing'], array( '', '1' ), true ) ) { $form_data['housing'] = ''; }
+    $form_data['nearby_towns'] = isset( $_POST['nearby_towns'] ) ? '1' : '';
+    $form_data['relocation_support'] = isset( $_POST['relocation_support'] ) ? '1' : '';
+    $form_data['urgent'] = isset( $_POST['urgent'] ) ? '1' : '';
+
+    if ( ! $errors ) {
+        $is_verified = 'verified' === get_user_meta( $current_user_id, 'staffswap_verified_status', true );
+        $post_id = wp_insert_post( array(
+            'post_type' => 'swap_listing',
+            'post_title' => $form_data['name'],
+            'post_content' => $form_data['notes'],
+            'post_status' => $is_verified ? 'publish' : 'pending',
+            'post_author' => $current_user_id,
+        ), true );
+        if ( is_wp_error( $post_id ) ) {
+            error_log( 'StaffSwap listing creation failed: ' . $post_id->get_error_message() );
+            $errors[] = 'We could not save your swap post. Please try again.';
+        } else {
+            $meta_keys = array( 'profession', 'current_employer', 'current_location', 'desired_employer', 'desired_location', 'experience', 'housing', 'swap_reason', 'nearby_towns', 'relocation_support', 'urgent' );
+            foreach ( $meta_keys as $key ) { update_post_meta( $post_id, '_staffswap_' . $key, $form_data[ $key ] ); }
+            update_post_meta( $post_id, '_staffswap_verified', $is_verified ? '1' : '' );
+            if ( $is_verified ) { staffswap_refresh_listing_matches( $post_id ); }
+            $submission_message = 'Your swap post "' . get_the_title( $post_id ) . '" was received and is ' . ( $is_verified ? 'now live on the marketplace.' : 'awaiting admin approval before it appears on the public swap and search pages.' ) . "\n\n"
+                . 'View your listings here: ' . home_url( '/my-profile/' );
+            staffswap_notify_listing_author( $current_user_id, 'Swap post submitted', $submission_message );
+            staffswap_notify_listing_admin( $post_id );
+
+            $create_page = get_page_by_path( 'create-swap' );
+            $return_url = $create_page ? get_permalink( $create_page ) : home_url( '/create-swap/' );
+            $redirect_url = add_query_arg( 'listing_submitted', $post_id, $return_url );
+            if ( ! wp_safe_redirect( $redirect_url ) ) {
+                wp_die( esc_html__( 'Your swap post was saved, but the confirmation page could not be opened. Please visit your dashboard to view its status.', 'staffswap-core' ), esc_html__( 'Swap post saved', 'staffswap-core' ), array( 'response' => 500 ) );
+            }
+            exit;
+        }
+    }
+    $GLOBALS['staffswap_create_listing_form_state'] = array( 'form_data' => $form_data, 'errors' => $errors );
+}
+add_action( 'template_redirect', 'staffswap_handle_create_listing_submission', 0 );
+
 function staffswap_create_form_shortcode() {
     if ( ! is_user_logged_in() ) { return '<div class="panel content-form"><h2>Join the exchange network</h2><p>You need an account to publish a swap listing.</p><a class="button button--primary" href="' . esc_url( wp_registration_url() ) . '">Create an account</a></div>'; }
     if ( function_exists( 'staffswap_has_active_membership' ) && ! staffswap_has_active_membership() ) { return function_exists( 'staffswap_membership_required_notice' ) ? staffswap_membership_required_notice( 'publish a swap listing' ) : '<div class="panel"><h2>Membership required</h2><p>Activate your membership to publish a swap listing.</p></div>'; }
-    if ( isset( $_POST['staffswap_create_listing'] ) && check_admin_referer( 'staffswap_create_listing', 'staffswap_create_nonce' ) ) {
-        $is_verified = 'verified' === get_user_meta( get_current_user_id(), 'staffswap_verified_status', true );
-        $post_id = wp_insert_post( array( 'post_type' => 'swap_listing', 'post_title' => sanitize_text_field( wp_unslash( $_POST['name'] ) ), 'post_content' => sanitize_textarea_field( wp_unslash( $_POST['notes'] ?? '' ) ), 'post_status' => $is_verified ? 'publish' : 'pending', 'post_author' => get_current_user_id() ), true );
-            if ( ! is_wp_error( $post_id ) ) { foreach ( staffswap_listing_fields() as $key => $label ) { if ( isset( $_POST[ $key ] ) ) { $value = sanitize_text_field( wp_unslash( $_POST[ $key ] ) ); if ( 'swap_reason' === $key && ! array_key_exists( $value, staffswap_swap_reasons() ) ) { $value = ''; } update_post_meta( $post_id, '_staffswap_' . $key, $value ); } } update_post_meta( $post_id, '_staffswap_verified', $is_verified ? '1' : '' ); if ( $is_verified ) { staffswap_refresh_listing_matches( $post_id ); return '<div class="panel content-form"><h2>Listing published</h2><p>Your verified listing is live and the matchmaker is scanning for reciprocal routes.</p></div>'; } return '<div class="panel content-form"><h2>Listing submitted for review</h2><p>Submit verification to publish your listing and activate reciprocal matching.</p><a class="button button--primary" href="' . esc_url( home_url( '/verification/' ) ) . '">Open verification</a></div>'; }
+    $current_user_id = get_current_user_id();
+    $submitted_listing_id = absint( $_GET['listing_submitted'] ?? 0 );
+    $submitted_listing_status = $submitted_listing_id ? get_post_status( $submitted_listing_id ) : false;
+    if ( $submitted_listing_id && 'swap_listing' === get_post_type( $submitted_listing_id ) && (int) get_post_field( 'post_author', $submitted_listing_id ) === $current_user_id && in_array( $submitted_listing_status, array( 'publish', 'pending' ), true ) ) {
+        $is_published = 'publish' === $submitted_listing_status;
+        ob_start(); ?>
+        <section class="panel content-form listing-submission-result" role="status">
+            <p class="eyebrow"><?php echo $is_published ? 'LISTING PUBLISHED' : 'LISTING RECEIVED'; ?></p>
+            <h1><?php echo $is_published ? 'Your swap post is live' : 'Your swap post is under review'; ?></h1>
+            <p class="muted"><?php echo $is_published ? 'Your listing is visible to other members. We are checking for reciprocal routes.' : 'Your post is saved privately and awaiting admin approval. It will appear on the public swap and search pages after approval.'; ?></p>
+            <div class="form-actions">
+                <?php if ( $is_published ) : ?><a class="button button--primary" href="<?php echo esc_url( get_permalink( $submitted_listing_id ) ); ?>">View your listing</a><?php else : ?><a class="button button--primary" href="<?php echo esc_url( get_preview_post_link( $submitted_listing_id ) ); ?>">Preview your post</a><a class="button button--outline" href="<?php echo esc_url( home_url( '/my-profile/' ) ); ?>">Go to your dashboard</a><?php endif; ?>
+                <a class="button button--outline" href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>">Create another post</a>
+            </div>
+        </section>
+        <?php return ob_get_clean();
     }
-    $user = wp_get_current_user();
-    $profile = array( 'name' => $user->display_name, 'profession' => get_user_meta( $user->ID, 'staffswap_profession', true ), 'current_employer' => get_user_meta( $user->ID, 'staffswap_employer', true ), 'current_location' => get_user_meta( $user->ID, 'staffswap_location', true ), 'experience' => get_user_meta( $user->ID, 'staffswap_years_service', true ), 'housing' => get_user_meta( $user->ID, 'staffswap_staff_housing', true ) );
+
+    $form_state = $GLOBALS['staffswap_create_listing_form_state'] ?? array();
+    $form_data = $form_state['form_data'] ?? staffswap_create_listing_form_defaults( $current_user_id );
+    $errors = $form_state['errors'] ?? array();
+    $val = function( $key ) use ( $form_data ) { return esc_attr( $form_data[ $key ] ?? '' ); };
     ob_start(); ?>
-    <div class="panel content-form"><h1>Create a swap post</h1><p class="muted">Tell other professionals where you are and where you hope to go.</p><form method="post"><div class="form-grid"><div class="field"><label for="name">Your name</label><input id="name" name="name" value="<?php echo esc_attr( $profile['name'] ); ?>" required></div><div class="field"><label for="profession">Profession</label><input id="profession" name="profession" value="<?php echo esc_attr( $profile['profession'] ); ?>" required></div><div class="field"><label for="current_employer">Current employer</label><input id="current_employer" name="current_employer" value="<?php echo esc_attr( $profile['current_employer'] ); ?>" required></div><div class="field"><label for="current_location">Current location</label><?php echo staffswap_render_location_select( 'current_location', 'current_location', $profile['current_location'] ); ?></div><div class="field"><label for="desired_employer">Desired employer</label><input id="desired_employer" name="desired_employer" required></div><div class="field"><label for="desired_location">Desired location</label><?php echo staffswap_render_location_select( 'desired_location', 'desired_location', '' ); ?></div><div class="field"><label for="experience">Years of experience</label><input id="experience" name="experience" type="number" min="0" value="<?php echo esc_attr( $profile['experience'] ); ?>" required></div><div class="field"><label for="housing">Housing</label><select id="housing" name="housing"><option value="">Not included</option><option value="1" <?php selected( $profile['housing'], '1' ); ?>>Available</option></select></div><div class="field"><label for="swap_reason">Reason for swap request</label><select id="swap_reason" name="swap_reason" required><option value="">Select a reason</option><?php foreach ( staffswap_swap_reasons() as $key => $label ) : ?><option value="<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $label ); ?></option><?php endforeach; ?></select></div><div class="field full"><span class="field-label">Listing badges</span><label class="check"><input type="checkbox" name="nearby_towns" value="1">Open to nearby towns</label><label class="check"><input type="checkbox" name="relocation_support" value="1">Can assist with relocation</label></div><div class="field full"><label for="notes">Additional details</label><textarea id="notes" name="notes" rows="5"></textarea></div></div><?php wp_nonce_field( 'staffswap_create_listing', 'staffswap_create_nonce' ); ?><input type="submit" name="staffswap_create_listing" value="Submit listing"></form></div>
+    <div class="panel content-form listing-create"><p class="eyebrow">YOUR SWAP REQUEST</p><h1>Create a swap post</h1><p class="muted">Complete the three sections below. Your post helps other professionals quickly see whether your route fits.</p>
+    <ol class="listing-create__steps" aria-label="Swap post sections"><li><span>1</span>Your role</li><li><span>2</span>Your route</li><li><span>3</span>Move details</li></ol>
+    <form method="post">
+        <?php foreach ( $errors as $error ) : ?><div class="notice notice--error" role="alert"><p><?php echo esc_html( $error ); ?></p></div><?php endforeach; ?>
+        <section class="listing-create__section" aria-labelledby="listing-role-heading"><h2 id="listing-role-heading">1. Your role</h2><p class="muted">Use the details shown on your staff profile.</p><div class="form-grid">
+            <div class="field"><label for="name">Your name</label><input id="name" name="name" autocomplete="name" value="<?php echo $val( 'name' ); ?>" required></div>
+            <div class="field"><label for="profession">Profession</label><input id="profession" name="profession" value="<?php echo $val( 'profession' ); ?>" required></div>
+            <div class="field"><label for="current_employer">Current employer</label><input id="current_employer" name="current_employer" value="<?php echo $val( 'current_employer' ); ?>" required></div>
+            <div class="field"><label for="experience">Years of experience</label><input id="experience" name="experience" type="number" min="0" step="1" inputmode="numeric" value="<?php echo $val( 'experience' ); ?>" required></div>
+        </div></section>
+        <section class="listing-create__section" aria-labelledby="listing-route-heading"><h2 id="listing-route-heading">2. Your route</h2><p class="muted">Choose the location you work in now and the location you hope to move to.</p><div class="form-grid">
+            <div class="field"><label for="current_location">Current province and town</label><?php echo staffswap_render_location_select( 'current_location', 'current_location', $form_data['current_location'] ); ?></div>
+            <div class="field"><label for="desired_location">Desired province and town</label><?php echo staffswap_render_location_select( 'desired_location', 'desired_location', $form_data['desired_location'] ); ?></div>
+            <div class="field"><label for="desired_employer">Desired employer</label><input id="desired_employer" name="desired_employer" value="<?php echo $val( 'desired_employer' ); ?>" required></div>
+        </div></section>
+        <section class="listing-create__section" aria-labelledby="listing-details-heading"><h2 id="listing-details-heading">3. Move details</h2><p class="muted">Add the information that could help make your move work.</p><div class="form-grid">
+            <div class="field"><label for="swap_reason">Reason for swap request</label><select id="swap_reason" name="swap_reason" required><option value="">Select a reason</option><?php foreach ( staffswap_swap_reasons() as $key => $label ) : ?><option value="<?php echo esc_attr( $key ); ?>" <?php selected( $form_data['swap_reason'], $key ); ?>><?php echo esc_html( $label ); ?></option><?php endforeach; ?></select></div>
+            <div class="field"><label for="housing">Staff housing</label><select id="housing" name="housing"><option value="" <?php selected( $form_data['housing'], '' ); ?>>Not available</option><option value="1" <?php selected( $form_data['housing'], '1' ); ?>>Available</option></select></div>
+            <div class="field full"><span class="field-label">Move details</span><label class="check"><input type="checkbox" name="nearby_towns" value="1" <?php checked( $form_data['nearby_towns'], '1' ); ?>>I am open to nearby towns</label><label class="check"><input type="checkbox" name="relocation_support" value="1" <?php checked( $form_data['relocation_support'], '1' ); ?>>I can assist with relocation</label><label class="check"><input type="checkbox" name="urgent" value="1" <?php checked( $form_data['urgent'], '1' ); ?>>Mark this swap request as urgent</label></div>
+            <div class="field full"><label for="notes">Additional details <span class="muted">(optional)</span></label><textarea id="notes" name="notes" rows="5" maxlength="3000"><?php echo esc_textarea( $form_data['notes'] ); ?></textarea></div>
+        </div></section>
+        <?php wp_nonce_field( 'staffswap_create_listing', 'staffswap_create_nonce' ); ?>
+        <div class="form-actions"><button type="submit" class="button--primary" name="staffswap_create_listing" value="1">Submit swap post</button><p class="form-footnote muted">Your listing is <?php echo 'verified' === get_user_meta( $current_user_id, 'staffswap_verified_status', true ) ? 'published as soon as you submit.' : 'saved for review until your account is verified.'; ?></p></div>
+    </form></div>
     <?php return ob_get_clean();
 }
 add_shortcode( 'staffswap_create_form', 'staffswap_create_form_shortcode' );
@@ -731,10 +1166,31 @@ function staffswap_profile_workspace_shortcode() {
         $verification = get_user_meta( get_current_user_id(), 'staffswap_verified_status', true ) ?: 'unverified';
         $is_vip = function_exists( 'staffswap_has_active_membership' ) && staffswap_has_active_membership();
         $vip_expires_at = get_user_meta( get_current_user_id(), 'staffswap_vip_expires_at', true );
-        ob_start(); ?><section class="member-metrics"><article><span>Active listings</span><strong><?php echo esc_html( $query->found_posts ); ?></strong><small>Published or in review</small></article><article><span>Reciprocal matches</span><strong><?php echo esc_html( $match_count ); ?></strong><small>Routes ready to compare</small></article><article><span>Incoming offers</span><strong><?php echo esc_html( $offer_count ); ?></strong><small>Awaiting your response</small></article><article><span>Verification</span><strong><?php echo esc_html( ucfirst( $verification ) ); ?></strong><small>Profile trust status</small></article><article><span>Membership</span><strong><?php echo esc_html( $is_vip ? 'VIP Gold' : 'Free' ); ?></strong><small><?php echo $is_vip ? esc_html( $vip_expires_at ? 'Renews ' . date_i18n( 'j M Y', strtotime( $vip_expires_at ) ) : 'Lifetime access' ) : 'Upgrade for messaging & offers'; ?></small></article></section><section class="panel"><div class="section-heading"><div><p class="eyebrow">YOUR LISTINGS</p><h2>Active swap requests</h2></div><a class="text-link" href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>">Create listing</a></div><?php if ( $query->have_posts() ) : ?><div class="member-listings"><?php while ( $query->have_posts() ) : $query->the_post(); ?><article><div><strong><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></strong><span><?php echo esc_html( get_post_status_object( get_post_status() )->label ); ?></span></div><a href="<?php the_permalink(); ?>">Manage</a></article><?php endwhile; wp_reset_postdata(); ?></div><?php else : ?><p class="muted">No active listings yet. Publish your route to activate the matchmaker.</p><?php endif; ?></section><?php $content = ob_get_clean();
+        ob_start(); ?>
+        <section class="member-metrics">
+            <article><span>Active listings</span><strong><?php echo esc_html( $query->found_posts ); ?></strong><small>Published or in review</small></article>
+            <article><span>Reciprocal matches</span><strong><?php echo esc_html( $match_count ); ?></strong><small>Routes ready to compare</small></article>
+            <article><span>Incoming offers</span><strong><?php echo esc_html( $offer_count ); ?></strong><small>Awaiting your response</small></article>
+            <article><span>Verification</span><strong><?php echo esc_html( ucfirst( $verification ) ); ?></strong><small>Profile trust status</small></article>
+            <article><span>Membership</span><strong><?php echo esc_html( $is_vip ? 'VIP Gold' : 'Free' ); ?></strong><small><?php echo $is_vip ? esc_html( $vip_expires_at ? 'Renews ' . date_i18n( 'j M Y', strtotime( $vip_expires_at ) ) : 'Lifetime access' ) : 'Upgrade for messaging & offers'; ?></small></article>
+        </section>
+        <section class="panel">
+            <div class="section-heading"><div><p class="eyebrow">YOUR LISTINGS</p><h2>Active swap requests</h2></div><a class="text-link" href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>">Create listing</a></div>
+            <?php if ( $query->have_posts() ) : ?>
+                <div class="member-listings">
+                    <?php while ( $query->have_posts() ) : $query->the_post(); ?>
+                        <?php $listing_url = staffswap_listing_management_url( get_the_ID() ); ?>
+                        <article><div><strong><a href="<?php echo esc_url( $listing_url ); ?>"><?php the_title(); ?></a></strong><span><?php echo esc_html( get_post_status_object( get_post_status() )->label ); ?></span></div><a href="<?php echo esc_url( $listing_url ); ?>"><?php echo 'pending' === get_post_status() ? 'Preview' : 'Manage'; ?></a></article>
+                    <?php endwhile; wp_reset_postdata(); ?>
+                </div>
+            <?php else : ?>
+                <p class="muted">No active listings yet. Publish your route to activate the matchmaker.</p>
+            <?php endif; ?>
+        </section>
+        <?php $content = ob_get_clean();
     }
     $labels = array( 'dashboard' => 'Dashboard', 'search' => 'Search Swaps', 'messages' => 'Messages', 'offers' => 'Offers', 'verification' => 'Verification', 'planner' => 'Planner', 'documents' => 'Documents' );
-    ob_start(); ?><div class="member-workspace member-workspace--tabs"><header class="member-workspace__header"><div><p class="eyebrow">MEMBER WORKSPACE</p><h1><?php echo esc_html( $user->display_name ); ?></h1><p class="muted"><?php echo esc_html( get_user_meta( $user->ID, 'staffswap_profession', true ) ?: 'Complete your professional profile' ); ?> · <?php echo esc_html( get_user_meta( $user->ID, 'staffswap_location', true ) ?: 'Location pending' ); ?></p></div><a class="button button--primary" href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>">Publish Direct Swap Listing</a></header><nav class="member-workspace__nav" aria-label="Member workspace"><?php foreach ( $labels as $key => $label ) : ?><a href="<?php echo esc_url( add_query_arg( 'profile_tab', $key, home_url( '/my-profile/' ) ) ); ?>" class="<?php echo $tab === $key ? 'is-active' : ''; ?>" aria-current="<?php echo $tab === $key ? 'page' : 'false'; ?>"><?php echo esc_html( $label ); ?></a><?php endforeach; ?></nav><div class="member-workspace__pane"><?php if ( 'dashboard' === $tab && shortcode_exists( 'staffswap_profile_completion' ) ) { echo do_shortcode( '[staffswap_profile_completion]' ); } ?><?php echo $content; ?></div></div><?php return ob_get_clean();
+    ob_start(); ?><div class="member-workspace member-workspace--tabs"><header class="member-workspace__header"><div><p class="eyebrow">MEMBER WORKSPACE</p><h1><?php echo esc_html( $user->display_name ); ?></h1><p class="muted"><?php echo esc_html( get_user_meta( $user->ID, 'staffswap_profession', true ) ?: 'Complete your professional profile' ); ?> · <?php echo esc_html( get_user_meta( $user->ID, 'staffswap_location', true ) ?: 'Location pending' ); ?></p></div><a class="button button--primary" href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>">Publish Direct Swap Listing</a></header><nav class="member-workspace__nav" aria-label="Member workspace"><?php foreach ( $labels as $key => $label ) : ?><a href="<?php echo esc_url( add_query_arg( 'profile_tab', $key, home_url( '/my-profile/' ) ) ); ?>" class="<?php echo $tab === $key ? 'is-active' : ''; ?>" aria-current="<?php echo $tab === $key ? 'page' : 'false'; ?>"><?php echo esc_html( $label ); ?></a><?php endforeach; ?></nav><div class="member-workspace__pane"><?php if ( 'dashboard' === $tab ) { $onboarding = do_shortcode( '[staffswap_onboarding_checklist]' ); if ( $onboarding ) { echo $onboarding; } elseif ( shortcode_exists( 'staffswap_profile_completion' ) ) { echo do_shortcode( '[staffswap_profile_completion]' ); } } ?><?php echo $content; ?></div></div><?php return ob_get_clean();
 }
 remove_shortcode( 'staffswap_dashboard' );
 add_shortcode( 'staffswap_dashboard', 'staffswap_profile_workspace_shortcode' );

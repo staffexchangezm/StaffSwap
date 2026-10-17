@@ -103,6 +103,17 @@ function staffswap_wc_sync_pricing_content( $content ) {
 	return $content;
 }
 add_filter( 'the_content', 'staffswap_wc_sync_pricing_content', 99 );
+function staffswap_wc_is_membership_order( $order ) {
+	if ( ! $order || ! method_exists( $order, 'get_items' ) ) { return false; }
+	$membership_product_ids = array_filter( array_map( 'absint', array_map( 'get_option', array_map( function( $plan ) { return 'staffswap_vip_product_' . $plan; }, array_keys( staffswap_wc_plans() ) ) ) ) );
+	$items = $order->get_items();
+	if ( ! $items || ! $membership_product_ids ) { return false; }
+	foreach ( $items as $item ) {
+		if ( ! in_array( (int) $item->get_product_id(), $membership_product_ids, true ) ) { return false; }
+	}
+	return true;
+}
+
 function staffswap_wc_payment_complete( $order_id ) {
 	$order = wc_get_order( $order_id );
 	if ( ! $order ) { return; }
@@ -110,6 +121,9 @@ function staffswap_wc_payment_complete( $order_id ) {
 	$plan_durations = array( 'month' => '+1 month', 'quarter' => '+3 months', 'lifetime' => '' );
 	if ( $user_id && $order->get_items() ) { foreach ( $order->get_items() as $item ) { foreach ( array_keys( staffswap_wc_plans() ) as $plan ) { if ( (int) $item->get_product_id() === (int) get_option( 'staffswap_vip_product_' . $plan ) ) { update_user_meta( $user_id, 'staffswap_plus_active', '1' ); update_user_meta( $user_id, 'staffswap_vip_plan', $plan ); $duration = $plan_durations[ $plan ] ?? ''; update_user_meta( $user_id, 'staffswap_vip_expires_at', $duration ? gmdate( 'Y-m-d H:i:s', strtotime( $duration, current_time( 'timestamp', true ) ) ) : '' ); delete_user_meta( $user_id, 'staffswap_vip_renewal_notified' ); } } } }
 	if ( $user_id && $order->get_items() ) { foreach ( $order->get_items() as $item ) { foreach ( array_keys( staffswap_wc_plans() ) as $plan ) { if ( (int) $item->get_product_id() === (int) get_option( 'staffswap_vip_product_' . $plan ) ) { update_user_meta( $user_id, 'staffswap_plus_active', '1' ); update_user_meta( $user_id, 'staffswap_vip_plan', $plan ); delete_transient( 'staffswap_plus_fallback_' . $user_id ); } } } }
+	if ( method_exists( $order, 'is_paid' ) && $order->is_paid() && 'processing' === $order->get_status() && staffswap_wc_is_membership_order( $order ) ) {
+		$order->update_status( 'completed', 'StaffSwap virtual membership order completed after successful payment.' );
+	}
 }
 add_action( 'woocommerce_payment_complete', 'staffswap_wc_payment_complete' );
 // Some gateways (bank transfer, manual admin completion, COD) never call $order->payment_complete(),
@@ -131,7 +145,7 @@ function staffswap_wc_membership_daily_check() {
 	$soon = $wpdb->get_col( $wpdb->prepare( "SELECT user_id FROM {$wpdb->usermeta} WHERE meta_key = 'staffswap_vip_expires_at' AND meta_value <> '' AND meta_value BETWEEN %s AND %s", gmdate( 'Y-m-d H:i:s' ), gmdate( 'Y-m-d H:i:s', strtotime( '+3 days' ) ) ) );
 	foreach ( $soon as $user_id ) {
 		if ( '1' !== get_user_meta( $user_id, 'staffswap_plus_active', true ) || get_user_meta( $user_id, 'staffswap_vip_renewal_notified', true ) ) { continue; }
-		staffswap_notify_user( $user_id, 'Your VIP Gold membership is expiring soon', 'Your StaffSwap VIP Gold membership expires on ' . get_user_meta( $user_id, 'staffswap_vip_expires_at', true ) . ' UTC. Renew now to keep uninterrupted access to messaging and formal swap offers.' . "\n\n" . 'Renew here: ' . home_url( '/pricing/' ) );
+		staffswap_notify_user( $user_id, 'Your VIP Gold membership is expiring soon', 'Your StaffSwap VIP Gold membership expires on ' . get_user_meta( $user_id, 'staffswap_vip_expires_at', true ) . ' UTC. Renew now to keep uninterrupted access to messaging and formal swap offers.' . "\n\n" . 'Renew here: ' . home_url( '/pricing/' ), 'membership' );
 		update_user_meta( $user_id, 'staffswap_vip_renewal_notified', '1' );
 	}
 	$active = $wpdb->get_col( "SELECT user_id FROM {$wpdb->usermeta} WHERE meta_key = 'staffswap_plus_active' AND meta_value = '1'" );
@@ -140,7 +154,7 @@ function staffswap_wc_membership_daily_check() {
 		if ( $expires_at && strtotime( $expires_at . ' UTC' ) < time() ) {
 			update_user_meta( $user_id, 'staffswap_plus_active', '' );
 			delete_user_meta( $user_id, 'staffswap_vip_renewal_notified' );
-			staffswap_notify_user( $user_id, 'Your VIP Gold membership has expired', 'Your StaffSwap VIP Gold membership has expired. Renew to regain access to messaging and formal swap offers.' . "\n\n" . 'Renew here: ' . home_url( '/pricing/' ) );
+			staffswap_notify_user( $user_id, 'Your VIP Gold membership has expired', 'Your StaffSwap VIP Gold membership has expired. Renew to regain access to messaging and formal swap offers.' . "\n\n" . 'Renew here: ' . home_url( '/pricing/' ), 'membership' );
 		}
 	}
 }
