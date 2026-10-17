@@ -6,34 +6,112 @@
     {
       "id": "hero01",
       "elType": "section",
-      "settings": { "background_background": "classic", "background_color": "#f8fbff", "padding": { "unit": "px", "top": "72", "right": "24", "bottom": "72", "left": "24", "isLinked": false } },
+      "settings": {
+        "background_background": "classic",
+        "background_color": "#f8fbff",
+        "padding": {
+          "unit": "px",
+          "top": "72",
+          "right": "24",
+          "bottom": "72",
+          "left": "24",
+          "isLinked": false
+        }
+      },
       "elements": [
-        { "id": "hero-col", "elType": "column", "settings": { "_column_size": 100 }, "elements": [
-          { "id": "hero-html", "elType": "widget", "widgetType": "html", "settings": { "html": "<div class=\"landing-hero\" style=\"margin:0;width:100%;padding:0;background:none\"><div class=\"landing-hero__copy\"><p class=\"eyebrow\">WORKPLACE MOBILITY, MADE CLEAR</p><h1>Swap Your Workplace. Change Your Life.</h1><p>Connect with verified professionals across Zambia who want to swap their workplace just like you. Secure, efficient, and professional workplace mobility.</p><div class=\"hero-actions\"><a class=\"button button--primary\" href=\"/create-swap/\">Create Swap Post</a><a class=\"button button--outline\" href=\"/swaps/\">Browse Swaps</a></div><div class=\"trust-line\"><span class=\"trust-avatars\"><i>LM</i><i>BC</i><i>RT</i></span><span>Join 12,000+ professionals who have already found their perfect swap.</span></div></div><div class=\"swap-visual\"><div class=\"swap-node swap-node--from\"><div class=\"swap-avatar\">LM</div><strong>Lusaka</strong><small>General Hospital</small></div><div class=\"swap-connector\"><b>&harr;</b><small>95% MATCH</small></div><div class=\"swap-node swap-node--to\"><div class=\"swap-avatar swap-avatar--blue\">BM</div><strong>Ndola</strong><small>Regional Clinic</small></div></div></div>" }, "elements": [] }
-        ] }
+        {
+          "id": "hero-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100
+          },
+          "elements": [
+            {
+              "id": "hero-html",
+              "elType": "widget",
+              "widgetType": "html",
+              "settings": {
+                "html": "<div class=\"landing-hero\" style=\"margin:0;width:100%;padding:0;background:none\"><div class=\"landing-hero__copy\"><p class=\"eyebrow\">WORKPLACE MOBILITY, MADE SIMPLE</p><h1>Workplace mobility, made simple</h1><p>Connect with professionals across Zambia looking to exchange work locations. Search available opportunities, create your swap request and explore relocation possibilities.</p><div class=\"hero-actions\"><a class=\"button button--primary\" href=\"/register/\">Sign Up Free</a><a class=\"button button--outline\" href=\"/swaps/\">Find Swaps</a></div><div class=\"benefits-row\"><div class=\"benefit-item\"><span class=\"benefit-icon\">\u2713</span><strong>Search by profession</strong></div><div class=\"benefit-item\"><span class=\"benefit-icon\">\u2713</span><strong>Review potential matches</strong></div><div class=\"benefit-item\"><span class=\"benefit-icon\">\u2713</span><strong>Protect your privacy</strong></div></div></div><div class=\"swap-visual\"><div class=\"swap-node swap-node--from\"><div class=\"swap-avatar\">LM</div><strong>Lusaka</strong><small>Current workplace</small></div><div class=\"swap-connector\"><b>&harr;</b><small>Current \u2192 Desired</small></div><div class=\"swap-node swap-node--to\"><div class=\"swap-avatar swap-avatar--blue\">BM</div><strong>Ndola</strong><small>Preferred location</small></div></div></div>"
+              },
+              "elements": []
+            }
+          ]
+        }
       ]
     },
     {
       "id": "steps01",
       "elType": "section",
-      "settings": { "background_background": "classic", "background_color": "#eaf8ef", "padding": { "unit": "px", "top": "48", "right": "24", "bottom": "48", "left": "24", "isLinked": false } },
+      "settings": {
+        "background_background": "classic",
+        "background_color": "#eaf8ef",
+        "padding": {
+          "unit": "px",
+          "top": "48",
+          "right": "24",
+          "bottom": "48",
+          "left": "24",
+          "isLinked": false
+        }
+      },
       "elements": [
-        { "id": "steps-col", "elType": "column", "settings": { "_column_size": 100 }, "elements": [
-          { "id": "steps-html", "elType": "widget", "widgetType": "html", "settings": { "html": "<div class=\"section-heading section-heading--center\"><p class=\"eyebrow\">A CLEARER WAY FORWARD</p><h2>How StaffExchangeHub Works</h2></div><div class=\"steps\"><div class=\"step\"><span>01</span><h3>Create Profile</h3><p>Tell us about yourself, your current job and location.</p></div><div class=\"step\"><span>02</span><h3>Post Swap Request</h3><p>Add details of where you want to go and why.</p></div><div class=\"step\"><span>03</span><h3>Find Matches</h3><p>We find compatible professionals who want to swap.</p></div><div class=\"step\"><span>04</span><h3>Connect &amp; Chat</h3><p>Agree on details and communicate securely.</p></div><div class=\"step\"><span>05</span><h3>Swap &amp; Succeed</h3><p>Enjoy your new work location and start fresh.</p></div></div>" }, "elements": [] }
-        ] }
+        {
+          "id": "steps-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100
+          },
+          "elements": [
+            {
+              "id": "steps-html",
+              "elType": "widget",
+              "widgetType": "html",
+              "settings": {
+                "html": "<div class=\"section-heading section-heading--center\"><p class=\"eyebrow\">A CLEARER WAY FORWARD</p><h2>How StaffExchangeHub Works</h2></div><div class=\"steps\"><div class=\"step\"><span>01</span><h3>Create Your Free Profile</h3><p>Register and add your profession, current workplace and location.</p></div><div class=\"step\"><span>02</span><h3>Post Your Swap Request</h3><p>Share where you are, where you want to move and what flexibility you have.</p></div><div class=\"step\"><span>03</span><h3>Discover Potential Matches</h3><p>Compare compatible listings and identify reciprocal exchange opportunities.</p></div><div class=\"step\"><span>04</span><h3>Connect and Discuss</h3><p>Express interest, chat securely and confirm whether both parties are interested.</p></div><div class=\"step\"><span>05</span><h3>Arrange Your Exchange</h3><p>Follow employer or institution approval procedures before finalising any move.</p></div></div><div class=\"cta-strip\"><p>Transfers still require approval from the relevant employer or institution.</p><a class=\"button button--primary\" href=\"/register/\">Create Free Account</a></div>"
+              },
+              "elements": []
+            }
+          ]
+        }
       ]
     },
     {
       "id": "cta01",
       "elType": "section",
-      "settings": { "padding": { "unit": "px", "top": "48", "right": "24", "bottom": "48", "left": "24", "isLinked": false } },
+      "settings": {
+        "padding": {
+          "unit": "px",
+          "top": "48",
+          "right": "24",
+          "bottom": "48",
+          "left": "24",
+          "isLinked": false
+        }
+      },
       "elements": [
-        { "id": "cta-col", "elType": "column", "settings": { "_column_size": 100 }, "elements": [
-          { "id": "cta-html", "elType": "widget", "widgetType": "html", "settings": { "html": "<div class=\"split-callout\" style=\"margin:0\"><div><p class=\"eyebrow\" style=\"color:#9aebb0\">READY TO MOVE?</p><h2>Your next professional opportunity may already be looking for you.</h2></div><a class=\"button button--primary\" href=\"/create-swap/\">Create a swap post</a></div>" }, "elements": [] }
-        ] }
+        {
+          "id": "cta-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100
+          },
+          "elements": [
+            {
+              "id": "cta-html",
+              "elType": "widget",
+              "widgetType": "html",
+              "settings": {
+                "html": "<div class=\"split-callout\" style=\"margin:0\"><div><p class=\"eyebrow\" style=\"color:#9aebb0\">READY TO MOVE?</p><h2>Create your free account and start exploring potential workplace matches.</h2></div><div class=\"split-callout__actions\"><a class=\"button button--primary\" href=\"/register/\">Sign Up Free</a><a class=\"button button--outline\" href=\"/swaps/\">Find Swaps</a></div></div>"
+              },
+              "elements": []
+            }
+          ]
+        }
       ]
     }
   ],
   "page_settings": [],
-  "metadata": { "template_type": "page" }
+  "metadata": {
+    "template_type": "page"
+  }
 }
