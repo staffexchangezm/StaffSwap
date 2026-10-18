@@ -6,6 +6,7 @@ if ( ! empty( $staffswap_pricing_elementor_data ) || isset( $_GET['elementor-pre
 	get_footer();
 	return;
 endif;
+$pricing_page_image = get_the_post_thumbnail_url( get_queried_object_id(), 'large' );
 ?>
 <section class="pricing-page">
     <div class="pricing-page__hero">
@@ -20,7 +21,8 @@ endif;
                 <span><span class="dashicons dashicons-info" aria-hidden="true"></span>No swap guarantees</span>
             </div>
         </div>
-        <div class="pricing-page__photo" aria-hidden="true">
+        <div class="pricing-page__photo<?php echo $pricing_page_image ? ' has-photo' : ''; ?>"<?php if ( $pricing_page_image ) : ?> style="--pricing-photo:url('<?php echo esc_url( $pricing_page_image ); ?>')"<?php endif; ?> aria-hidden="true">
+            <?php if ( ! $pricing_page_image ) : ?>
             <div class="pricing-graphic">
                 <div class="pricing-graphic__orbit pricing-graphic__orbit--outer"></div>
                 <div class="pricing-graphic__orbit pricing-graphic__orbit--inner"></div>
@@ -35,6 +37,7 @@ endif;
                 </div>
                 <div class="pricing-graphic__caption"><span class="dashicons dashicons-awards" aria-hidden="true"></span>Choose the plan that suits your search</div>
             </div>
+            <?php endif; ?>
         </div>
     </div>
 

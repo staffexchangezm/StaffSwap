@@ -12,6 +12,7 @@ $opportunities_image_id = absint( get_theme_mod( 'staffswap_opportunities_image'
 $opportunities_image = $opportunities_image_id ? wp_get_attachment_image( $opportunities_image_id, 'medium', false, array( 'class' => 'homepage-section-image', 'loading' => 'lazy', 'decoding' => 'async' ) ) : '';
 $resources_image_id = absint( get_theme_mod( 'staffswap_resources_image', 0 ) );
 $resources_image = $resources_image_id ? wp_get_attachment_image( $resources_image_id, 'medium_large', false, array( 'class' => 'resource-promo__image', 'loading' => 'lazy', 'decoding' => 'async' ) ) : '';
+$profession_count = function_exists( 'staffswap_profession_options' ) ? count( staffswap_profession_options() ) : 10;
 $benefits = array(
     array( 'Search by profession', 'Browse listings by your role, location and preferred move.' ),
     array( 'Review potential matches', 'Compare current and desired provinces before you connect.' ),
@@ -73,12 +74,6 @@ $benefits = array(
             <button type="submit" class="quick-search__submit">Find Matching Swaps</button>
         </form>
 
-        <div class="hero-stats" aria-label="Platform highlights">
-            <div class="hero-stat"><strong>10</strong><span>Zambian provinces</span></div>
-            <div class="hero-stat"><strong>Potential</strong><span>Exchange matches</span></div>
-            <div class="hero-stat"><strong>Two-way</strong><span>Route comparison</span></div>
-            <div class="hero-stat"><strong>Free</strong><span>Registration</span></div>
-        </div>
     </div>
 </section>
 <section class="how-it-works">
@@ -139,21 +134,18 @@ $benefits = array(
         <h2 id="badge-explainer-title">What do these badges mean?</h2>
     </div>
     <div class="badge-explainer__items">
-        <div class="badge-explainer__item badge-explainer__item--verified"><span class="dashicons dashicons-shield" aria-hidden="true"></span><div><strong>Verified</strong><p>Identity and listing details have been checked.</p></div></div>
+        <div class="badge-explainer__item badge-explainer__item--verified"><span class="dashicons dashicons-shield" aria-hidden="true"></span><div><strong>Verified</strong><p>Member identity and listing details reviewed by StaffExchangeHub.</p></div></div>
         <div class="badge-explainer__item badge-explainer__item--housing"><span class="dashicons dashicons-admin-home" aria-hidden="true"></span><div><strong>Housing available / not included</strong><p>Shows whether staff housing is part of the move.</p></div></div>
         <div class="badge-explainer__item badge-explainer__item--nearby"><span class="dashicons dashicons-location" aria-hidden="true"></span><div><strong>Nearby towns OK</strong><p>Open to suitable nearby towns or districts.</p></div></div>
         <div class="badge-explainer__item badge-explainer__item--relocation"><span class="dashicons dashicons-car" aria-hidden="true"></span><div><strong>Relocation support</strong><p>Willing to assist with moving logistics.</p></div></div>
     </div>
 </section>
-<section class="home-benefits">
-    <div class="section-heading section-heading--center">
-        <p class="eyebrow"><?php echo esc_html__( 'A CLEARER WAY TO EXPLORE', 'staffswap' ); ?></p>
-        <h2><?php echo esc_html__( 'Workplace mobility, organised around your next move.', 'staffswap' ); ?></h2>
-    </div>
-    <div class="home-benefits__grid">
-        <article><span class="dashicons dashicons-location" aria-hidden="true"></span><strong><?php echo esc_html__( 'Explore across Zambia', 'staffswap' ); ?></strong><p><?php echo esc_html__( 'Review workplace requests by current and desired location.', 'staffswap' ); ?></p></article>
-        <article><span class="dashicons dashicons-search" aria-hidden="true"></span><strong><?php echo esc_html__( 'Compare potential matches', 'staffswap' ); ?></strong><p><?php echo esc_html__( 'Look for compatible professions and reciprocal location preferences.', 'staffswap' ); ?></p></article>
-        <article><span class="dashicons dashicons-lock" aria-hidden="true"></span><strong><?php echo esc_html__( 'Start with privacy', 'staffswap' ); ?></strong><p><?php echo esc_html__( 'Listing previews focus on profession and route, not personal contact details.', 'staffswap' ); ?></p></article>
+<section class="stats-band" aria-label="<?php echo esc_attr__( 'Platform highlights', 'staffswap' ); ?>">
+    <div class="stats-grid">
+        <div class="stats-item"><span class="dashicons dashicons-location" aria-hidden="true"></span><div><strong>10</strong><span><?php echo esc_html__( 'Zambian Provinces', 'staffswap' ); ?></span></div></div>
+        <div class="stats-item"><span class="dashicons dashicons-portfolio" aria-hidden="true"></span><div><strong><?php echo esc_html( number_format_i18n( $profession_count ) ); ?>+</strong><span><?php echo esc_html__( 'Career Categories', 'staffswap' ); ?></span></div></div>
+        <div class="stats-item"><span class="dashicons dashicons-randomize" aria-hidden="true"></span><div><strong><?php echo esc_html__( '2-Way', 'staffswap' ); ?></strong><span><?php echo esc_html__( 'Swap Connections', 'staffswap' ); ?></span></div></div>
+        <div class="stats-item"><span class="dashicons dashicons-groups" aria-hidden="true"></span><div><strong><?php echo esc_html__( 'Free', 'staffswap' ); ?></strong><span><?php echo esc_html__( 'Registration', 'staffswap' ); ?></span></div></div>
     </div>
 </section>
 <section class="landing-bottom">

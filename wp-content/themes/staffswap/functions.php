@@ -147,8 +147,16 @@ add_action( 'add_meta_boxes', 'staffswap_opportunity_meta_box' );
 
 function staffswap_opportunity_meta_box_render( $post ) {
 	wp_nonce_field( 'staffswap_save_opportunity_details', 'staffswap_opportunity_nonce' );
-	foreach ( array( 'organization' => 'Organization', 'location' => 'Location', 'closing_date' => 'Closing date (YYYY-MM-DD)', 'source_url' => 'Original source URL' ) as $key => $label ) {
+	foreach ( array( 'organization' => 'Organization', 'organization_type' => 'Organization type', 'profession' => 'Profession', 'location' => 'Location', 'closing_date' => 'Closing date (YYYY-MM-DD)', 'source_url' => 'Original source URL' ) as $key => $label ) {
 		$value = get_post_meta( $post->ID, '_staffswap_opportunity_' . $key, true );
+		if ( 'organization_type' === $key ) {
+			echo '<p><label><strong>' . esc_html( $label ) . '</strong><br><select class="widefat" name="staffswap_opportunity_organization_type"><option value="">Select type</option>';
+			foreach ( array( 'government' => 'Government', 'ngo' => 'NGO', 'private' => 'Private sector', 'education' => 'Education', 'healthcare' => 'Healthcare' ) as $type => $type_label ) {
+				echo '<option value="' . esc_attr( $type ) . '" ' . selected( $value, $type, false ) . '>' . esc_html( $type_label ) . '</option>';
+			}
+			echo '</select></label></p>';
+			continue;
+		}
 		echo '<p><label><strong>' . esc_html( $label ) . '</strong><br><input class="widefat" name="staffswap_opportunity_' . esc_attr( $key ) . '" value="' . esc_attr( $value ) . '" ' . ( 'source_url' === $key ? 'type="url"' : ( 'closing_date' === $key ? 'type="date"' : 'type="text"' ) ) . '></label></p>';
 	}
 }
@@ -156,11 +164,15 @@ function staffswap_opportunity_meta_box_render( $post ) {
 function staffswap_opportunity_meta_box_save( $post_id ) {
 	if ( ! isset( $_POST['staffswap_opportunity_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['staffswap_opportunity_nonce'] ) ), 'staffswap_save_opportunity_details' ) || ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) || ! current_user_can( 'edit_post', $post_id ) ) { return; }
 	$organization = sanitize_text_field( wp_unslash( $_POST['staffswap_opportunity_organization'] ?? '' ) );
+	$organization_type = sanitize_key( wp_unslash( $_POST['staffswap_opportunity_organization_type'] ?? '' ) );
+	$profession = sanitize_text_field( wp_unslash( $_POST['staffswap_opportunity_profession'] ?? '' ) );
 	$location = sanitize_text_field( wp_unslash( $_POST['staffswap_opportunity_location'] ?? '' ) );
 	$closing_date = sanitize_text_field( wp_unslash( $_POST['staffswap_opportunity_closing_date'] ?? '' ) );
 	if ( $closing_date && ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $closing_date ) ) { $closing_date = ''; }
 	$source_url = esc_url_raw( wp_unslash( $_POST['staffswap_opportunity_source_url'] ?? '' ), array( 'http', 'https' ) );
 	update_post_meta( $post_id, '_staffswap_opportunity_organization', $organization );
+	update_post_meta( $post_id, '_staffswap_opportunity_organization_type', $organization_type );
+	update_post_meta( $post_id, '_staffswap_opportunity_profession', $profession );
 	update_post_meta( $post_id, '_staffswap_opportunity_location', $location );
 	update_post_meta( $post_id, '_staffswap_opportunity_closing_date', $closing_date );
 	update_post_meta( $post_id, '_staffswap_opportunity_source_url', $source_url );
@@ -219,7 +231,7 @@ function staffswap_setup_pages() {
 			$created[ $key ] = wp_insert_post( array( 'post_title' => $page['title'], 'post_name' => $page['slug'], 'post_content' => $page['content'], 'post_status' => 'publish', 'post_type' => 'page' ) );
 		}
 	}
-	foreach ( array( 'Job Opportunities', 'Internships & Attachments', 'Transfer & Placement Updates' ) as $category_name ) {
+	foreach ( array( 'Job Opportunities', 'Internships & Attachments', 'Transfer & Placement Updates', 'Scholarships & Training', 'Events & Deadlines', 'Professional News' ) as $category_name ) {
 		if ( ! term_exists( $category_name, 'category' ) ) { wp_insert_term( $category_name, 'category' ); }
 	}
 	if ( ! empty( $created['home'] ) ) { update_option( 'show_on_front', 'page' ); update_option( 'page_on_front', $created['home'] ); }

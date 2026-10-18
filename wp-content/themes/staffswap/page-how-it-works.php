@@ -1,9 +1,26 @@
-<?php get_header(); if ( staffswap_has_builder_content() ) : while ( have_posts() ) : the_post(); the_content(); endwhile; get_footer(); return; endif; ?>
-<section class="page-hero">
-    <p class="eyebrow"><?php echo esc_html__( 'HOW STAFFEXCHANGEHUB WORKS', 'staffswap' ); ?></p>
-    <h1><?php echo esc_html__( 'How StaffExchangeHub Works', 'staffswap' ); ?></h1>
-    <p><?php echo esc_html__( 'StaffExchangeHub helps professionals find potential workplace exchanges by matching profession, current location and desired destination.', 'staffswap' ); ?></p>
-</section>
+<?php
+get_header();
+if ( staffswap_has_builder_content() ) : while ( have_posts() ) : the_post(); the_content(); endwhile; get_footer(); return; endif;
+$how_page_image = get_the_post_thumbnail_url( get_queried_object_id(), 'large' );
+?>
+<section class="how-page">
+	<header class="how-page__hero<?php echo $how_page_image ? ' has-photo' : ''; ?>"<?php if ( $how_page_image ) : ?> style="--how-page-photo:url('<?php echo esc_url( $how_page_image ); ?>')"<?php endif; ?>>
+		<div class="how-page__hero-copy">
+			<p class="eyebrow"><?php echo esc_html__( 'THE STAFFEXCHANGEHUB METHOD', 'staffswap' ); ?></p>
+			<h1><?php echo esc_html__( 'How StaffExchangeHub Works', 'staffswap' ); ?></h1>
+			<p><?php echo esc_html__( 'StaffExchangeHub helps professionals across Zambia find and connect with potential workplace exchange partners. Follow these simple steps to explore opportunities, make a match and work with your employer to complete the exchange.', 'staffswap' ); ?></p>
+			<div class="how-page__actions">
+				<?php if ( is_user_logged_in() ) : ?>
+					<a class="button button--primary" href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>"><span class="dashicons dashicons-plus-alt2"></span><?php echo esc_html__( 'Post Your Swap', 'staffswap' ); ?></a>
+				<?php else : ?>
+					<a class="button button--primary" href="<?php echo esc_url( home_url( '/register/' ) ); ?>"><span class="dashicons dashicons-admin-users"></span><?php echo esc_html__( 'Sign Up Free', 'staffswap' ); ?></a>
+				<?php endif; ?>
+				<a class="button button--outline" href="<?php echo esc_url( home_url( '/swaps/' ) ); ?>"><span class="dashicons dashicons-search"></span><?php echo esc_html__( 'Browse Available Swaps', 'staffswap' ); ?></a>
+			</div>
+		</div>
+		<?php if ( $how_page_image ) : ?><div class="how-page__visual" aria-hidden="true"></div><?php else : ?><div class="how-page__map" aria-hidden="true"><span class="how-page__map-shape"></span><span class="how-page__pin how-page__pin--one"><span class="dashicons dashicons-location"></span></span><span class="how-page__pin how-page__pin--two"><span class="dashicons dashicons-location"></span></span><span class="how-page__route how-page__route--green"></span><span class="how-page__route how-page__route--blue"></span></div><?php endif; ?>
+	</header>
+	<div class="how-page__steps-heading"><h2><?php echo esc_html__( 'The 5 Steps to a Successful Workplace Exchange', 'staffswap' ); ?></h2><p><?php echo esc_html__( 'From creating your profile to completing an exchange, here is how it works.', 'staffswap' ); ?></p></div>
 <section class="process-grid">
     <?php $steps = array(
         array( '01', 'Create Your Free Profile', 'Register and provide your profession, current workplace and location.', 'dashicons-admin-users' ),
@@ -20,14 +37,6 @@
         </article>
     <?php endforeach; ?>
 </section>
-<div class="how-steps-cta">
-    <?php if ( is_user_logged_in() ) : ?>
-        <a class="button button--primary" href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>"><?php echo esc_html__( 'Post Your Swap', 'staffswap' ); ?></a>
-    <?php else : ?>
-        <a class="button button--primary" href="<?php echo esc_url( home_url( '/register/' ) ); ?>"><?php echo esc_html__( 'Create Free Account', 'staffswap' ); ?></a>
-    <?php endif; ?>
-    <a class="button button--outline" href="<?php echo esc_url( home_url( '/swaps/' ) ); ?>"><?php echo esc_html__( 'Browse Available Swaps', 'staffswap' ); ?></a>
-</div>
 <section class="example-section">
     <div class="section-heading">
         <p class="eyebrow">REAL-WORLD EXAMPLE</p>
@@ -88,5 +97,6 @@
         <?php endif; ?>
         <a class="button button--outline" href="<?php echo esc_url( home_url( '/swaps/' ) ); ?>"><?php echo esc_html__( 'Browse Available Swaps', 'staffswap' ); ?></a>
     </div>
+</section>
 </section>
 <?php get_footer(); ?>
