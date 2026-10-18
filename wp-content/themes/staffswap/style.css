@@ -286,8 +286,12 @@ body{display:block;min-width:0;overflow-x:hidden}.site-header,.site-main,.site-f
 .staffswap-marketplace .listing-main{grid-template-columns:minmax(0,1fr);grid-template-areas:"profile" "route";gap:14px}
 .staffswap-marketplace .listing-main>.listing-profile{grid-area:profile}
 .staffswap-marketplace .listing-main>.swap-route{grid-area:route;grid-template-columns:minmax(0,1fr) 42px minmax(0,1fr);gap:10px}
-.staffswap-marketplace .listing-main .route span{overflow-wrap:break-word;word-break:normal}
+.staffswap-marketplace .listing-main>.swap-route{display:grid;width:100%;min-width:0}
+.staffswap-marketplace .listing-main .route{box-sizing:border-box;width:100%;min-width:0}
+.staffswap-marketplace .listing-main .route small{white-space:nowrap}
+.staffswap-marketplace .listing-main .route span{display:block;overflow-wrap:anywhere;word-break:normal;white-space:normal}
 @media(min-width:1400px){.staffswap-marketplace .listing-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tag--founder{background:#eaf1ff;color:#3269c8}
 @media(max-width:900px){.staffswap-marketplace{grid-template-columns:minmax(0,1fr)}}
 .home-benefits{width:min(var(--container),100%);margin:0 auto 44px;padding:36px 0 44px}
 .home-benefits .section-heading{max-width:760px;margin:0 auto 26px}
@@ -872,9 +876,10 @@ body.logged-in a[href$="/register/"]{display:none!important}
 	.quick-search .field select{width:100%;min-width:0;min-height:42px;border:0;background-color:#fff;font:inherit;color:#0f172a;padding:4px 24px 4px 0}
 	.quick-search__submit{grid-column:auto;width:calc(100% - 24px);min-height:48px;margin:12px}
 	.staffswap-marketplace .listing-card{padding:14px}
-	.staffswap-marketplace .listing-main>.swap-route{grid-template-columns:minmax(0,1fr) 26px minmax(0,1fr);gap:5px}
+	.staffswap-marketplace .listing-main>.swap-route{grid-template-columns:minmax(0,1fr);gap:7px}
 	.staffswap-marketplace .listing-main .route{padding:9px}
-	.staffswap-marketplace .listing-main .route span{padding-left:14px;font-size:12px}
+	.staffswap-marketplace .listing-main .route span{padding-left:14px;font-size:13px}
+	.staffswap-marketplace .listing-main>.swap-route .swap-icon{transform:rotate(90deg)}
 	.staffswap-marketplace>section>.page-heading{align-items:flex-start}
 	.staffswap-marketplace .filter-range{gap:8px}
 }

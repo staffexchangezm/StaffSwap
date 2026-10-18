@@ -238,6 +238,16 @@ function staffswap_setup_pages() {
 			}
 			$items = wp_get_nav_menu_items( $menu_id );
 		}
+		if ( ! empty( $created['blog'] ) ) {
+			foreach ( (array) $items as $item ) {
+				$is_blog_page = (int) $item->object_id === (int) $created['blog'];
+				$is_blog_link = 'custom' === $item->type && untrailingslashit( $item->url ) === untrailingslashit( home_url( '/blog/' ) );
+				if ( $is_blog_page || $is_blog_link ) {
+					wp_update_nav_menu_item( $menu_id, $item->ID, array( 'menu-item-title' => 'Updates & Opportunities', 'menu-item-object' => 'page', 'menu-item-object-id' => $created['blog'], 'menu-item-type' => 'post_type', 'menu-item-status' => 'publish' ) );
+				}
+			}
+			$items = wp_get_nav_menu_items( $menu_id );
+		}
 		$menu_keys = array( 'home', 'swaps', 'resources', 'how', 'blog', 'pricing', 'about' );
 		$existing_ids = array(); foreach ( (array) $items as $item ) { $existing_ids[] = (int) $item->object_id; }
 		foreach ( $menu_keys as $key ) { if ( ! empty( $created[ $key ] ) && ! in_array( (int) $created[ $key ], $existing_ids, true ) ) { wp_update_nav_menu_item( $menu_id, 0, array( 'menu-item-title' => $pages[ $key ]['title'], 'menu-item-object' => 'page', 'menu-item-object-id' => $created[ $key ], 'menu-item-type' => 'post_type', 'menu-item-status' => 'publish' ) ); } }

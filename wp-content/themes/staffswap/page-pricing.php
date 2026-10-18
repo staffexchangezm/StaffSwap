@@ -49,6 +49,8 @@ endif;
             <ul>
                 <li>Create your profile</li>
                 <li>Browse swap listings</li>
+                <li>Publish 1 active swap request</li>
+                <li>3 member contact requests per month</li>
                 <li>Access free resources</li>
                 <li>Review potential matches</li>
             </ul>
@@ -71,6 +73,8 @@ endif;
                 <li>All Basic benefits</li>
                 <li>Member messaging access</li>
                 <li>Formal swap offers</li>
+                <li>20 member contact requests per month</li>
+                <li>Priority listing visibility</li>
                 <li>30 days of VIP features</li>
             </ul>
             <?php echo shortcode_exists( 'staffswap_upgrade' ) ? do_shortcode( '[staffswap_upgrade plan="month"]' ) : ''; ?>
@@ -88,8 +92,11 @@ endif;
                 <li>Lifetime core VIP access</li>
                 <li>Member messaging access</li>
                 <li>Formal swap offers</li>
+                <li>20 member contact requests per month</li>
+                <li>Priority listing visibility</li>
                 <li>No recurring renewal</li>
             </ul>
+            <p class="muted">Limited to the first 150 founding members. Founding Members receive a badge on their swap listing.</p>
             <?php echo shortcode_exists( 'staffswap_upgrade' ) ? do_shortcode( '[staffswap_upgrade plan="lifetime"]' ) : ''; ?>
         </article>
     </div>
@@ -109,8 +116,11 @@ endif;
                 <tr><td>Membership duration</td><td>Unlimited</td><td>30 days</td><td>Lifetime</td></tr>
                 <tr><td>Create profile</td><td>✓</td><td>✓</td><td>✓</td></tr>
                 <tr><td>Browse swap listings</td><td>✓</td><td>✓</td><td>✓</td></tr>
-                <tr><td>Publish swap requests</td><td>Membership required</td><td>Available</td><td>Available</td></tr>
-                <tr><td>Member messaging and swap offers</td><td>—</td><td>Available</td><td>Available</td></tr>
+                <tr><td>Active swap listings</td><td>1</td><td>1</td><td>1</td></tr>
+                <tr><td>Monthly member contact requests</td><td>3</td><td>20</td><td>20</td></tr>
+                <tr><td>Member messaging and swap offers</td><td>Within monthly allowance</td><td>Within monthly allowance</td><td>Within monthly allowance</td></tr>
+                <tr><td>Priority listing visibility</td><td>—</td><td>✓</td><td>✓</td></tr>
+                <tr><td>Founding Member badge</td><td>—</td><td>—</td><td>✓ (first 150)</td></tr>
                 <tr><td>Access free resources</td><td>✓</td><td>✓</td><td>✓</td></tr>
                 <tr><td>Automatic renewal</td><td>No</td><td>No</td><td>No</td></tr>
             </tbody>
@@ -150,7 +160,7 @@ endif;
         <div class="faq-grid">
             <details open><summary>Is StaffExchangeHub free to join?</summary><p>Yes. Basic access is free and allows you to create a profile, browse listings and explore potential matches.</p></details>
             <details><summary>What happens when my VIP Gold membership expires?</summary><p>VIP Gold is a one-time 30-day purchase. Access to member messaging and swap offers ends when the membership expires; it does not renew automatically.</p></details>
-            <details><summary>What does lifetime membership mean?</summary><p>VIP Lifetime is a one-time purchase that provides access to the core VIP features for as long as StaffExchangeHub continues operating. Standalone services may be offered separately.</p></details>
+            <details><summary>What does lifetime membership mean?</summary><p>VIP Lifetime is a one-time purchase, limited to the first 150 founding members, that provides access to core VIP features for as long as StaffExchangeHub continues operating. Standalone services may be offered separately.</p></details>
             <details><summary>Does VIP membership guarantee a swap?</summary><p>No. Membership helps you discover and contact potential exchange partners and increases visibility, but any workplace transfer still depends on matching, consent and employer approval.</p></details>
             <details><summary>Can I get a refund?</summary><p>Refunds are handled according to the active membership policy and the platform’s purchase terms.</p></details>
         </div>

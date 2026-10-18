@@ -37,12 +37,39 @@ function staffswap_wc_sync_plan_products() {
 		}
 	}
 }
+function staffswap_wc_setup_founder_stock( $product_id ) {
+	if ( get_post_meta( $product_id, '_staffswap_founder_stock_initialized', true ) ) { return; }
+	$product = function_exists( 'wc_get_product' ) ? wc_get_product( $product_id ) : false;
+	if ( ! $product ) { error_log( 'StaffSwap could not initialize the lifetime membership stock limit for product ' . absint( $product_id ) . '.' ); return; }
+	$founders = get_users( array(
+		'fields' => 'ID',
+		'number' => 151,
+		'meta_query' => array(
+			'relation' => 'AND',
+			array( 'key' => 'staffswap_vip_plan', 'value' => 'lifetime' ),
+			array( 'key' => 'staffswap_plus_active', 'value' => '1' ),
+		),
+	) );
+	$remaining = max( 0, 150 - count( $founders ) );
+	$product->set_manage_stock( true );
+	$product->set_stock_quantity( $remaining );
+	$product->set_backorders( 'no' );
+	$product->save();
+	update_post_meta( $product_id, '_staffswap_founder_stock_initialized', '1' );
+	if ( function_exists( 'wc_delete_product_transients' ) ) { wc_delete_product_transients( $product_id ); }
+}
+function staffswap_wc_initialize_founder_limit() {
+	$product_id = (int) get_option( 'staffswap_vip_product_lifetime', 0 );
+	if ( $product_id && 'publish' === get_post_status( $product_id ) ) { staffswap_wc_setup_founder_stock( $product_id ); }
+}
+add_action( 'woocommerce_init', 'staffswap_wc_initialize_founder_limit' );
 function staffswap_wc_product( $plan = 'month' ) {
 	if ( ! class_exists( 'WooCommerce' ) ) { return 0; }
 	$plans = staffswap_wc_plans();
 	if ( empty( $plans[ $plan ] ) ) { return 0; }
 	$product_id = (int) get_option( 'staffswap_vip_product_' . $plan, 0 );
 	if ( $product_id && 'publish' === get_post_status( $product_id ) ) {
+		if ( 'lifetime' === $plan ) { staffswap_wc_setup_founder_stock( $product_id ); }
 		if ( (string) get_post_meta( $product_id, '_price', true ) !== (string) $plans[ $plan ]['price'] ) {
 			wp_update_post( array( 'ID' => $product_id, 'post_title' => $plans[ $plan ]['title'], 'post_content' => 'One-time StaffSwap membership providing access to member messaging and formal swap offers for ' . $plans[ $plan ]['duration'] . '.' ) );
 			update_post_meta( $product_id, '_regular_price', $plans[ $plan ]['price'] );
@@ -54,6 +81,7 @@ function staffswap_wc_product( $plan = 'month' ) {
 	$product_id = wp_insert_post( array( 'post_title' => $product['title'], 'post_content' => 'One-time StaffSwap membership providing access to member messaging and formal swap offers for ' . $product['duration'] . '.', 'post_status' => 'publish', 'post_type' => 'product' ) );
 	if ( is_wp_error( $product_id ) ) { return 0; }
 	update_post_meta( $product_id, '_regular_price', $product['price'] ); update_post_meta( $product_id, '_price', $product['price'] ); update_post_meta( $product_id, '_virtual', 'yes' ); update_post_meta( $product_id, '_sold_individually', 'yes' ); update_post_meta( $product_id, '_sku', $product['sku'] ); update_option( 'staffswap_vip_product_' . $plan, $product_id );
+	if ( 'lifetime' === $plan ) { staffswap_wc_setup_founder_stock( $product_id ); }
 	return $product_id;
 }
 function staffswap_wc_activate() { if ( class_exists( 'WooCommerce' ) ) { foreach ( array_keys( staffswap_wc_plans() ) as $plan ) { staffswap_wc_product( $plan ); } } }
@@ -63,6 +91,10 @@ function staffswap_wc_upgrade_shortcode( $atts ) {
 	if ( ! class_exists( 'WooCommerce' ) ) { return '<div class="panel"><h2>StaffSwap Plus</h2><p>Install WooCommerce to enable premium upgrades.</p></div>'; }
 	$plans = staffswap_wc_plans(); $plan = sanitize_key( $atts['plan'] ); $product_id = staffswap_wc_product( $plan );
 	if ( ! $product_id ) { return '<div class="panel"><p>Premium upgrades are temporarily unavailable.</p></div>'; }
+	if ( 'lifetime' === $plan && function_exists( 'wc_get_product' ) ) {
+		$product = wc_get_product( $product_id );
+		if ( $product && ! $product->is_in_stock() ) { return '<span class="button button--outline" aria-disabled="true">Founding memberships sold out</span>'; }
+	}
 	if ( ! is_user_logged_in() ) {
 		return '<a class="button button--outline" href="' . esc_url( wp_login_url( get_permalink() ) ) . '">Sign in to choose this plan</a>';
 	}
