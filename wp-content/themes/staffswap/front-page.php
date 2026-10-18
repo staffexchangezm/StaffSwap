@@ -143,7 +143,7 @@ $benefits = array(
 <section class="stats-band" aria-label="<?php echo esc_attr__( 'Platform highlights', 'staffswap' ); ?>">
     <div class="stats-grid">
         <div class="stats-item"><span class="dashicons dashicons-location" aria-hidden="true"></span><div><strong>10</strong><span><?php echo esc_html__( 'Zambian Provinces', 'staffswap' ); ?></span></div></div>
-        <div class="stats-item"><span class="dashicons dashicons-portfolio" aria-hidden="true"></span><div><strong><?php echo esc_html( number_format_i18n( $profession_count ) ); ?>+</strong><span><?php echo esc_html__( 'Career Categories', 'staffswap' ); ?></span></div></div>
+        <div class="stats-item"><span class="dashicons dashicons-portfolio" aria-hidden="true"></span><div><strong><?php echo esc_html( number_format_i18n( $profession_count ) ); ?></strong><span><?php echo esc_html__( 'Profession Options', 'staffswap' ); ?></span></div></div>
         <div class="stats-item"><span class="dashicons dashicons-randomize" aria-hidden="true"></span><div><strong><?php echo esc_html__( '2-Way', 'staffswap' ); ?></strong><span><?php echo esc_html__( 'Swap Connections', 'staffswap' ); ?></span></div></div>
         <div class="stats-item"><span class="dashicons dashicons-groups" aria-hidden="true"></span><div><strong><?php echo esc_html__( 'Free', 'staffswap' ); ?></strong><span><?php echo esc_html__( 'Registration', 'staffswap' ); ?></span></div></div>
     </div>
