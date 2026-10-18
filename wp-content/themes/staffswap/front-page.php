@@ -66,10 +66,10 @@ $benefits = array(
         </div>
 
         <form class="quick-search panel" method="get" action="<?php echo esc_url( home_url( '/search/' ) ); ?>">
-            <div class="field"><label for="hero-current">Current Location</label><input id="hero-current" name="current_location" placeholder="Select province"></div>
-            <div class="field"><label for="hero-desired">Desired Location</label><input id="hero-desired" name="desired_location" placeholder="Select province"></div>
-            <div class="field"><label for="hero-profession">Profession</label><input id="hero-profession" name="profession" placeholder="Select profession"></div>
-            <div class="field"><label for="hero-employer">Employer Type</label><input id="hero-employer" name="current_employer" placeholder="All types"></div>
+            <div class="field"><label for="hero-current"><?php echo esc_html__( 'Current Location', 'staffswap' ); ?></label><?php echo function_exists( 'staffswap_render_location_select' ) ? staffswap_render_location_select( 'hero-current', 'current_location', '', false ) : '<select id="hero-current" name="current_location"><option value="">' . esc_html__( 'Any location', 'staffswap' ) . '</option></select>'; ?></div>
+            <div class="field"><label for="hero-desired"><?php echo esc_html__( 'Desired Location', 'staffswap' ); ?></label><?php echo function_exists( 'staffswap_render_location_select' ) ? staffswap_render_location_select( 'hero-desired', 'desired_location', '', false ) : '<select id="hero-desired" name="desired_location"><option value="">' . esc_html__( 'Any location', 'staffswap' ) . '</option></select>'; ?></div>
+            <div class="field"><label for="hero-profession"><?php echo esc_html__( 'Profession', 'staffswap' ); ?></label><select id="hero-profession" name="profession"><option value=""><?php echo esc_html__( 'All professions', 'staffswap' ); ?></option><?php if ( function_exists( 'staffswap_profession_options' ) ) : foreach ( staffswap_profession_options() as $profession_option ) : ?><option value="<?php echo esc_attr( $profession_option ); ?>"><?php echo esc_html( $profession_option ); ?></option><?php endforeach; endif; ?></select></div>
+            <div class="field"><label for="hero-employer"><?php echo esc_html__( 'Employer Type', 'staffswap' ); ?></label><select id="hero-employer" name="employer_type"><option value=""><?php echo esc_html__( 'All types', 'staffswap' ); ?></option><?php if ( function_exists( 'staffswap_employer_types' ) ) : foreach ( staffswap_employer_types() as $type => $label ) : ?><option value="<?php echo esc_attr( $type ); ?>"><?php echo esc_html( $label ); ?></option><?php endforeach; endif; ?></select></div>
             <button type="submit" class="quick-search__submit">Find Matching Swaps</button>
         </form>
 
