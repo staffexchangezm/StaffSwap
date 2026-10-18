@@ -6,6 +6,12 @@ $hero_title = staffswap_home_setting( 'hero_title', 'Workplace mobility, made si
 $hero_text = staffswap_home_setting( 'hero_text', 'Connect with professionals across Zambia looking to exchange work locations. Search available opportunities, create your swap request and explore relocation possibilities.' );
 $hero_image_id = absint( get_theme_mod( 'staffswap_hero_image', 0 ) );
 $hero_image = $hero_image_id ? wp_get_attachment_image( $hero_image_id, 'large', false, array( 'class' => 'swap-hero-image', 'loading' => 'eager', 'decoding' => 'async' ) ) : '';
+$how_it_works_image_id = absint( get_theme_mod( 'staffswap_how_it_works_image', 0 ) );
+$how_it_works_image = $how_it_works_image_id ? wp_get_attachment_image( $how_it_works_image_id, 'medium_large', false, array( 'class' => 'homepage-section-image', 'loading' => 'lazy', 'decoding' => 'async' ) ) : '';
+$opportunities_image_id = absint( get_theme_mod( 'staffswap_opportunities_image', 0 ) );
+$opportunities_image = $opportunities_image_id ? wp_get_attachment_image( $opportunities_image_id, 'medium', false, array( 'class' => 'homepage-section-image', 'loading' => 'lazy', 'decoding' => 'async' ) ) : '';
+$resources_image_id = absint( get_theme_mod( 'staffswap_resources_image', 0 ) );
+$resources_image = $resources_image_id ? wp_get_attachment_image( $resources_image_id, 'medium_large', false, array( 'class' => 'resource-promo__image', 'loading' => 'lazy', 'decoding' => 'async' ) ) : '';
 $benefits = array(
     array( 'Search by profession', 'Browse listings by your role, location and preferred move.' ),
     array( 'Review potential matches', 'Compare current and desired provinces before you connect.' ),
@@ -30,36 +36,35 @@ $benefits = array(
                         <a class="button button--ghost button--ghost-inline" href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>"><?php echo esc_html__( 'Post a Swap', 'staffswap' ); ?></a>
                     <?php endif; ?>
                 </div>
-                <div class="benefits-row">
-                    <?php foreach ( $benefits as $benefit ) : ?>
-                        <div class="benefit-item"><span class="benefit-icon">✓</span><strong><?php echo esc_html( $benefit[0] ); ?></strong></div>
-                    <?php endforeach; ?>
-                </div>
             </div>
 
-            <?php if ( $hero_image ) : ?>
-                <div class="swap-visual swap-visual--image">
+            <div class="swap-visual<?php echo $hero_image ? ' swap-visual--image' : ''; ?>" <?php echo $hero_image ? '' : 'aria-label="Swap illustration"'; ?>>
+                <?php if ( $hero_image ) : ?>
                     <?php echo $hero_image; // WordPress generates the escaped responsive image markup. ?>
-                </div>
-            <?php else : ?>
-            <div class="swap-visual" aria-label="Swap illustration">
-                <div class="swap-node swap-node--from">
-                    <div class="swap-avatar">LM</div>
-                    <div class="swap-node__meta">
-                        <strong>Lusaka</strong>
-                        <small>Current workplace</small>
+                <?php else : ?>
+                    <div class="swap-node swap-node--from">
+                        <div class="swap-avatar">LM</div>
+                        <div class="swap-node__meta">
+                            <strong>Lusaka</strong>
+                            <small>Current workplace</small>
+                        </div>
                     </div>
-                </div>
-                <div class="swap-connector"><b>&harr;</b><small>Current → Desired</small></div>
-                <div class="swap-node swap-node--to">
-                    <div class="swap-avatar swap-avatar--blue">BM</div>
-                    <div class="swap-node__meta">
-                        <strong>Ndola</strong>
-                        <small>Preferred location</small>
+                    <div class="swap-connector"><b>&harr;</b><small>Current → Desired</small></div>
+                    <div class="swap-node swap-node--to">
+                        <div class="swap-avatar swap-avatar--blue">BM</div>
+                        <div class="swap-node__meta">
+                            <strong>Ndola</strong>
+                            <small>Preferred location</small>
+                        </div>
                     </div>
-                </div>
                 <?php endif; ?>
             </div>
+        </div>
+
+        <div class="benefits-row">
+            <?php foreach ( $benefits as $benefit ) : ?>
+                <div class="benefit-item"><span class="benefit-icon">✓</span><strong><?php echo esc_html( $benefit[0] ); ?></strong></div>
+            <?php endforeach; ?>
         </div>
 
         <form class="quick-search panel" method="get" action="<?php echo esc_url( home_url( '/search/' ) ); ?>">
@@ -79,9 +84,15 @@ $benefits = array(
     </div>
 </section>
 <section class="how-it-works">
-    <div class="section-heading section-heading--center">
-        <p class="eyebrow">A CLEARER WAY FORWARD</p>
-        <h2>How StaffExchangeHub Works</h2>
+    <div class="how-it-works__intro<?php echo $how_it_works_image ? ' has-section-image' : ''; ?>">
+        <div class="section-heading section-heading--center">
+            <p class="eyebrow">A CLEARER WAY FORWARD</p>
+            <h2>How StaffExchangeHub Works</h2>
+            <p class="muted">A clear path from creating your profile to arranging a potential exchange.</p>
+        </div>
+        <?php if ( $how_it_works_image ) : ?>
+            <div class="how-it-works__image"><?php echo $how_it_works_image; // WordPress generates the escaped responsive image markup. ?></div>
+        <?php endif; ?>
     </div>
     <div class="steps">
         <?php $steps = array(
@@ -108,12 +119,15 @@ $benefits = array(
     </div>
 </section>
 <section class="featured-section">
-    <div class="section-heading section-heading--center">
+    <div class="section-heading section-heading--center featured-section__heading<?php echo $opportunities_image ? ' has-section-image' : ''; ?>">
         <div>
             <p class="eyebrow"><?php echo esc_html__( 'Latest opportunities', 'staffswap' ); ?></p>
             <h2><?php echo esc_html__( 'Latest Workplace Swap Opportunities', 'staffswap' ); ?></h2>
             <p class="muted"><?php echo esc_html__( 'Explore recent swap requests from professionals looking to relocate across Zambia.', 'staffswap' ); ?></p>
         </div>
+        <?php if ( $opportunities_image ) : ?>
+            <div class="featured-section__image"><?php echo $opportunities_image; // WordPress generates the escaped responsive image markup. ?></div>
+        <?php endif; ?>
         <a class="text-link" href="<?php echo esc_url( home_url( '/swaps/' ) ); ?>"><?php echo esc_html__( 'View all listings', 'staffswap' ); ?> &rarr;</a>
     </div>
     <div class="featured-grid">
@@ -134,10 +148,17 @@ $benefits = array(
 </section>
 <section class="landing-bottom">
     <article class="panel resource-promo">
-        <p class="eyebrow">LEARN AND GROW</p>
-        <h2>Explore Our Resources Centre</h2>
-        <p>Access career guides, CV templates, internship resources and professional development materials.</p>
-        <a class="button button--outline" href="<?php echo esc_url( home_url( '/resources/' ) ); ?>">Explore Resources</a>
+        <div class="resource-promo__content">
+            <p class="eyebrow">LEARN AND GROW</p>
+            <h2>Explore Our Resources Centre</h2>
+            <p>Access career guides, CV templates, internship resources and professional development materials.</p>
+            <a class="button button--outline" href="<?php echo esc_url( home_url( '/resources/' ) ); ?>">Explore Resources</a>
+        </div>
+        <?php if ( $resources_image ) : ?>
+            <div class="resource-promo__visual"><?php echo $resources_image; // WordPress generates the escaped responsive image markup. ?></div>
+        <?php else : ?>
+            <div class="resource-promo__visual resource-promo__visual--fallback" aria-hidden="true"><span class="dashicons dashicons-book-alt"></span><span class="resource-promo__spark resource-promo__spark--one"></span><span class="resource-promo__spark resource-promo__spark--two"></span></div>
+        <?php endif; ?>
     </article>
     <div class="panel alert-panel">
         <p class="eyebrow">NEVER MISS A POTENTIAL SWAP</p>

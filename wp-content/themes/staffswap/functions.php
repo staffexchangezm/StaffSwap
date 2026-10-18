@@ -52,6 +52,32 @@ function staffswap_customize_register( $wp_customize ) {
 		'section' => 'staffswap_home',
 		'mime_type' => 'image',
 	) ) );
+	$homepage_images = array(
+		'staffswap_how_it_works_image' => array(
+			'label' => __( 'How It Works image', 'staffswap' ),
+			'description' => __( 'Optional image displayed beside the How It Works heading.', 'staffswap' ),
+		),
+		'staffswap_opportunities_image' => array(
+			'label' => __( 'Latest Opportunities image', 'staffswap' ),
+			'description' => __( 'Optional image displayed with the latest swap opportunities heading.', 'staffswap' ),
+		),
+		'staffswap_resources_image' => array(
+			'label' => __( 'Resources Centre image', 'staffswap' ),
+			'description' => __( 'Optional image displayed in the Resources Centre feature card.', 'staffswap' ),
+		),
+	);
+	foreach ( $homepage_images as $setting_id => $image ) {
+		$wp_customize->add_setting( $setting_id, array(
+			'default' => 0,
+			'sanitize_callback' => 'absint',
+		) );
+		$wp_customize->add_control( new WP_Customize_Media_Control( $wp_customize, $setting_id, array(
+			'label' => $image['label'],
+			'description' => $image['description'],
+			'section' => 'staffswap_home',
+			'mime_type' => 'image',
+		) ) );
+	}
 	$wp_customize->add_setting( 'staffswap_primary_color', array( 'default' => '#005f2e', 'sanitize_callback' => 'sanitize_hex_color' ) );
 	$wp_customize->add_control( new WP_Customize_Color_Control( $wp_customize, 'staffswap_primary_color', array( 'label' => 'Primary action color', 'section' => 'staffswap_home' ) ) );
 	$wp_customize->add_control( new WP_Customize_Cropped_Image_Control( $wp_customize, 'custom_logo', array( 'label' => __( 'Header logo', 'staffswap' ), 'section' => 'title_tagline', 'priority' => 8 ) ) );

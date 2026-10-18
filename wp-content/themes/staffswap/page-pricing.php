@@ -14,19 +14,26 @@ endif;
             <h1><?php echo esc_html__( 'Find Your Swap. Choose Your Plan.', 'staffswap' ); ?></h1>
             <p><?php echo esc_html__( 'Start for free and explore workplace exchange opportunities across Zambia. Upgrade for enhanced visibility, additional contact requests and membership benefits.', 'staffswap' ); ?></p>
             <div class="pricing-page__badges">
-                <span>Safe &amp; Secure</span>
-                <span>Connect with verified professionals</span>
-                <span>Access real opportunities</span>
-                <span>Affordable memberships</span>
+                <span><span class="dashicons dashicons-lock" aria-hidden="true"></span>Private profiles</span>
+                <span><span class="dashicons dashicons-location" aria-hidden="true"></span>Across Zambia</span>
+                <span><span class="dashicons dashicons-update" aria-hidden="true"></span>Flexible plans</span>
+                <span><span class="dashicons dashicons-info" aria-hidden="true"></span>No swap guarantees</span>
             </div>
         </div>
         <div class="pricing-page__photo" aria-hidden="true">
-            <div class="pricing-page__person">
-                <div class="pricing-page__avatar">S</div>
-                <div>
-                    <strong>Ndola</strong>
-                    <small>Teacher</small>
+            <div class="pricing-graphic">
+                <div class="pricing-graphic__orbit pricing-graphic__orbit--outer"></div>
+                <div class="pricing-graphic__orbit pricing-graphic__orbit--inner"></div>
+                <div class="pricing-graphic__route pricing-graphic__route--from">
+                    <span class="pricing-graphic__pin"><span class="dashicons dashicons-location" aria-hidden="true"></span></span>
+                    <span><strong>Lusaka</strong><small>Current location</small></span>
                 </div>
+                <div class="pricing-graphic__exchange"><span class="dashicons dashicons-randomize" aria-hidden="true"></span></div>
+                <div class="pricing-graphic__route pricing-graphic__route--to">
+                    <span class="pricing-graphic__pin"><span class="dashicons dashicons-location" aria-hidden="true"></span></span>
+                    <span><strong>Ndola</strong><small>Preferred location</small></span>
+                </div>
+                <div class="pricing-graphic__caption"><span class="dashicons dashicons-awards" aria-hidden="true"></span>Choose the plan that suits your search</div>
             </div>
         </div>
     </div>
@@ -34,7 +41,7 @@ endif;
     <div class="pricing-grid">
         <article class="pricing-card pricing-card--basic">
             <div class="pricing-card__top">
-                <div class="pricing-card__icon">◔</div>
+                <div class="pricing-card__icon pricing-card__icon--basic"><span class="dashicons dashicons-admin-users" aria-hidden="true"></span></div>
                 <p class="eyebrow">Basic</p>
             </div>
             <h2>Free Forever</h2>
@@ -55,7 +62,7 @@ endif;
 
         <article class="pricing-card pricing-card--featured">
             <div class="pricing-card__top">
-                <div class="pricing-card__icon">★</div>
+                <div class="pricing-card__icon pricing-card__icon--gold"><span class="dashicons dashicons-star-filled" aria-hidden="true"></span></div>
                 <p class="eyebrow">VIP Gold</p>
             </div>
             <div class="pricing-card__badge">BEST VALUE</div>
@@ -73,7 +80,7 @@ endif;
 
         <article class="pricing-card pricing-card--lifetime">
             <div class="pricing-card__top">
-                <div class="pricing-card__icon">✓</div>
+                <div class="pricing-card__icon pricing-card__icon--lifetime"><span class="dashicons dashicons-awards" aria-hidden="true"></span></div>
                 <p class="eyebrow">Founding VIP Lifetime</p>
             </div>
             <h2>Lifetime Access</h2>
@@ -118,23 +125,23 @@ endif;
 
     <div class="trust-row">
         <div class="trust-item">
-            <span class="trust-item__icon">✓</span>
-            <h3>Secure and Reliable</h3>
-            <p>Your information is kept safe and used only with your permission.</p>
+            <span class="trust-item__icon"><span class="dashicons dashicons-info" aria-hidden="true"></span></span>
+            <h3>Clear plan benefits</h3>
+            <p>Compare membership features before choosing a plan.</p>
         </div>
         <div class="trust-item">
-            <span class="trust-item__icon">✓</span>
-            <h3>Verified Professionals</h3>
-            <p>Connect with genuine professionals across Zambia.</p>
+            <span class="trust-item__icon"><span class="dashicons dashicons-groups" aria-hidden="true"></span></span>
+            <h3>Professional community</h3>
+            <p>Explore workplace exchange opportunities with professionals across Zambia.</p>
         </div>
         <div class="trust-item">
-            <span class="trust-item__icon">✓</span>
-            <h3>More Opportunities</h3>
-            <p>Increase your visibility and reach with VIP membership.</p>
+            <span class="trust-item__icon"><span class="dashicons dashicons-megaphone" aria-hidden="true"></span></span>
+            <h3>More visibility</h3>
+            <p>VIP plans include priority listing visibility and additional contact requests.</p>
         </div>
         <div class="trust-item">
-            <span class="trust-item__icon">✓</span>
-            <h3>Helpful Resources</h3>
+            <span class="trust-item__icon"><span class="dashicons dashicons-book-alt" aria-hidden="true"></span></span>
+            <h3>Helpful resources</h3>
             <p>Access templates, guides and career support.</p>
         </div>
     </div>

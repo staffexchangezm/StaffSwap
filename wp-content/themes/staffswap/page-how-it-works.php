@@ -33,13 +33,13 @@
         </div>
         <div class="swap-example__arrow">↔</div>
         <div class="swap-example__card swap-example__card--alt">
-            <span class="swap-example__label">Current</span>
+            <span class="swap-example__label">Desired destination</span>
             <strong>Registered Nurse</strong>
             <p>Ndola Central Hospital</p>
             <small>Ndola, Copperbelt Province</small>
         </div>
     </div>
-    <p class="muted">If their professional requirements are compatible, they can discuss the exchange and seek approval from their respective institutions before arranging any move.</p>
+    <p class="example-section__note">If their professional requirements are compatible, they can discuss the exchange and seek approval from their respective institutions before arranging any move.</p>
 </section>
 <section class="faq-section">
     <div class="section-heading section-heading--center"><p class="eyebrow">COMMON QUESTIONS</p><h2>Frequently Asked Questions</h2></div>
