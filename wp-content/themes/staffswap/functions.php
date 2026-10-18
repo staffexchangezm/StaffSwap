@@ -42,6 +42,16 @@ function staffswap_customize_register( $wp_customize ) {
 		$wp_customize->add_setting( $id, array( 'default' => $setting['default'], 'sanitize_callback' => 'sanitize_textarea_field' ) );
 		$wp_customize->add_control( $id, array( 'label' => $setting['label'], 'section' => 'staffswap_home', 'type' => 'textarea' ) );
 	}
+	$wp_customize->add_setting( 'staffswap_hero_image', array(
+		'default' => 0,
+		'sanitize_callback' => 'absint',
+	) );
+	$wp_customize->add_control( new WP_Customize_Media_Control( $wp_customize, 'staffswap_hero_image', array(
+		'label' => __( 'Hero image', 'staffswap' ),
+		'description' => __( 'Upload an image for the right side of the homepage hero. Leave empty to show the swap illustration.', 'staffswap' ),
+		'section' => 'staffswap_home',
+		'mime_type' => 'image',
+	) ) );
 	$wp_customize->add_setting( 'staffswap_primary_color', array( 'default' => '#005f2e', 'sanitize_callback' => 'sanitize_hex_color' ) );
 	$wp_customize->add_control( new WP_Customize_Color_Control( $wp_customize, 'staffswap_primary_color', array( 'label' => 'Primary action color', 'section' => 'staffswap_home' ) ) );
 	$wp_customize->add_control( new WP_Customize_Cropped_Image_Control( $wp_customize, 'custom_logo', array( 'label' => __( 'Header logo', 'staffswap' ), 'section' => 'title_tagline', 'priority' => 8 ) ) );

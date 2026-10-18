@@ -4,6 +4,8 @@ $elementor_content = get_post_meta( get_the_ID(), '_elementor_data', true );
 $elementor_preview = isset( $_GET['elementor-preview'] ) || ( class_exists( '\Elementor\Plugin' ) && isset( \Elementor\Plugin::$instance->editor ) && \Elementor\Plugin::$instance->editor->is_edit_mode() );
 $hero_title = staffswap_home_setting( 'hero_title', 'Workplace mobility, made simple' );
 $hero_text = staffswap_home_setting( 'hero_text', 'Connect with professionals across Zambia looking to exchange work locations. Search available opportunities, create your swap request and explore relocation possibilities.' );
+$hero_image_id = absint( get_theme_mod( 'staffswap_hero_image', 0 ) );
+$hero_image = $hero_image_id ? wp_get_attachment_image( $hero_image_id, 'large', false, array( 'class' => 'swap-hero-image', 'loading' => 'eager', 'decoding' => 'async' ) ) : '';
 $benefits = array(
     array( 'Search by profession', 'Browse listings by your role, location and preferred move.' ),
     array( 'Review potential matches', 'Compare current and desired provinces before you connect.' ),
@@ -13,34 +15,20 @@ $benefits = array(
 <?php if ( ! empty( $elementor_content ) || $elementor_preview ) : ?><div id="content" class="staffswap-elementor-content"><?php while ( have_posts() ) : the_post(); the_content(); endwhile; ?></div><?php get_footer(); return; endif; ?>
 <section class="landing-hero">
     <div class="landing-hero__frame">
-        <div class="landing-hero__nav">
-            <div class="landing-brand">
-                <span class="landing-brand__mark">S</span>
-                <span>StaffExchangeHub</span>
-            </div>
-            <nav class="landing-hero__links" aria-label="Primary navigation">
-                <a href="<?php echo esc_url( home_url( '/' ) ); ?>">Home</a>
-                <a href="<?php echo esc_url( home_url( '/swaps/' ) ); ?>">Find Swaps</a>
-                <a href="<?php echo esc_url( home_url( '/resources/' ) ); ?>">Resources</a>
-                <a href="<?php echo esc_url( home_url( '/how-it-works/' ) ); ?>">How It Works</a>
-                <a href="<?php echo esc_url( home_url( '/pricing/' ) ); ?>">Pricing</a>
-                <a href="<?php echo esc_url( home_url( '/blog/' ) ); ?>">Updates &amp; Opportunities</a>
-            </nav>
-            <div class="landing-hero__nav-actions">
-                <a class="button button--ghost" href="<?php echo esc_url( home_url( '/sign-in/' ) ); ?>">Sign In</a>
-                <a class="button button--primary" href="<?php echo esc_url( home_url( '/register/' ) ); ?>"><?php echo esc_html( get_theme_mod( 'staffswap_hero_primary_label', 'Sign Up Free' ) ); ?></a>
-            </div>
-        </div>
-
         <div class="landing-hero__inner">
             <div class="landing-hero__copy">
                 <p class="eyebrow">WORKPLACE MOBILITY, MADE SIMPLE</p>
                 <h1>Swap Your Workplace. Change Your Life.</h1>
                 <p><?php echo esc_html( $hero_text ); ?></p>
                 <div class="hero-actions">
-                    <a class="button button--primary" href="<?php echo esc_url( home_url( '/register/' ) ); ?>"><?php echo esc_html( get_theme_mod( 'staffswap_hero_primary_label', 'Sign Up Free' ) ); ?></a>
-                    <a class="button button--outline" href="<?php echo esc_url( home_url( '/swaps/' ) ); ?>"><?php echo esc_html( get_theme_mod( 'staffswap_hero_secondary_label', 'Find Swaps' ) ); ?></a>
-                    <a class="button button--ghost button--ghost-inline" href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>">Post a Swap</a>
+                    <?php if ( is_user_logged_in() ) : ?>
+                        <a class="button button--primary" href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>"><?php echo esc_html__( 'Post a Swap', 'staffswap' ); ?></a>
+                        <a class="button button--outline" href="<?php echo esc_url( home_url( '/swaps/' ) ); ?>"><?php echo esc_html__( 'Find Swaps', 'staffswap' ); ?></a>
+                    <?php else : ?>
+                        <a class="button button--primary" href="<?php echo esc_url( home_url( '/register/' ) ); ?>"><?php echo esc_html( get_theme_mod( 'staffswap_hero_primary_label', 'Sign Up Free' ) ); ?></a>
+                        <a class="button button--outline" href="<?php echo esc_url( home_url( '/swaps/' ) ); ?>"><?php echo esc_html( get_theme_mod( 'staffswap_hero_secondary_label', 'Find Swaps' ) ); ?></a>
+                        <a class="button button--ghost button--ghost-inline" href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>"><?php echo esc_html__( 'Post a Swap', 'staffswap' ); ?></a>
+                    <?php endif; ?>
                 </div>
                 <div class="benefits-row">
                     <?php foreach ( $benefits as $benefit ) : ?>
@@ -49,6 +37,11 @@ $benefits = array(
                 </div>
             </div>
 
+            <?php if ( $hero_image ) : ?>
+                <div class="swap-visual swap-visual--image">
+                    <?php echo $hero_image; // WordPress generates the escaped responsive image markup. ?>
+                </div>
+            <?php else : ?>
             <div class="swap-visual" aria-label="Swap illustration">
                 <div class="swap-node swap-node--from">
                     <div class="swap-avatar">LM</div>
@@ -65,6 +58,7 @@ $benefits = array(
                         <small>Preferred location</small>
                     </div>
                 </div>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -77,10 +71,10 @@ $benefits = array(
         </form>
 
         <div class="hero-stats" aria-label="Platform highlights">
-            <div class="hero-stat"><strong>100+</strong><span>Growing community of professionals</span></div>
-            <div class="hero-stat"><strong>10</strong><span>Provinces</span></div>
-            <div class="hero-stat"><strong>20+</strong><span>Professional categories</span></div>
-            <div class="hero-stat"><strong>Real Opportunities</strong><span>Find people to swap with nearby</span></div>
+            <div class="hero-stat"><strong>10</strong><span>Zambian provinces</span></div>
+            <div class="hero-stat"><strong>20</strong><span>Career categories</span></div>
+            <div class="hero-stat"><strong>2-Way</strong><span>Swap connections</span></div>
+            <div class="hero-stat"><strong>Free</strong><span>Registration</span></div>
         </div>
     </div>
 </section>
@@ -106,7 +100,11 @@ $benefits = array(
     </div>
     <div class="cta-strip">
         <p>Transfers still require approval from the relevant employer or institution.</p>
-        <a class="button button--primary" href="<?php echo esc_url( home_url( '/register/' ) ); ?>">Create Free Account</a>
+        <?php if ( is_user_logged_in() ) : ?>
+            <a class="button button--primary" href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>"><?php echo esc_html__( 'Post a Swap', 'staffswap' ); ?></a>
+        <?php else : ?>
+            <a class="button button--primary" href="<?php echo esc_url( home_url( '/register/' ) ); ?>"><?php echo esc_html__( 'Create Free Account', 'staffswap' ); ?></a>
+        <?php endif; ?>
     </div>
 </section>
 <section class="featured-section">
@@ -151,8 +149,12 @@ $benefits = array(
 <section class="final-cta">
     <div>
         <p class="eyebrow">READY TO FIND YOUR WORKPLACE SWAP?</p>
-        <h2>Create your free account, post your preferred location and start exploring potential matches.</h2>
+        <h2><?php echo is_user_logged_in() ? esc_html__( 'Post your preferred location and start exploring potential matches.', 'staffswap' ) : esc_html__( 'Create your free account, post your preferred location and start exploring potential matches.', 'staffswap' ); ?></h2>
     </div>
-    <a class="button button--primary" href="<?php echo esc_url( home_url( '/register/' ) ); ?>">Create Free Account</a>
+    <?php if ( is_user_logged_in() ) : ?>
+        <a class="button button--primary" href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>"><?php echo esc_html__( 'Post a Swap', 'staffswap' ); ?></a>
+    <?php else : ?>
+        <a class="button button--primary" href="<?php echo esc_url( home_url( '/register/' ) ); ?>"><?php echo esc_html__( 'Create Free Account', 'staffswap' ); ?></a>
+    <?php endif; ?>
 </section>
 <?php get_footer(); ?>

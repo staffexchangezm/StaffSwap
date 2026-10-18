@@ -53,10 +53,14 @@
 <section class="split-callout">
     <div>
         <p class="eyebrow">READY TO MOVE?</p>
-        <h2><?php echo esc_html__( 'Create your free account and start exploring potential workplace matches.', 'staffswap' ); ?></h2>
+        <h2><?php echo is_user_logged_in() ? esc_html__( 'Post your request and start exploring potential workplace matches.', 'staffswap' ) : esc_html__( 'Create your free account and start exploring potential workplace matches.', 'staffswap' ); ?></h2>
     </div>
     <div class="split-callout__actions">
-        <a class="button button--primary" href="<?php echo esc_url( home_url( '/register/' ) ); ?>"><?php echo esc_html__( 'Sign Up Free', 'staffswap' ); ?></a>
+        <?php if ( is_user_logged_in() ) : ?>
+            <a class="button button--primary" href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>"><?php echo esc_html__( 'Post a Swap', 'staffswap' ); ?></a>
+        <?php else : ?>
+            <a class="button button--primary" href="<?php echo esc_url( home_url( '/register/' ) ); ?>"><?php echo esc_html__( 'Sign Up Free', 'staffswap' ); ?></a>
+        <?php endif; ?>
         <a class="button button--outline" href="<?php echo esc_url( home_url( '/swaps/' ) ); ?>"><?php echo esc_html__( 'Browse Available Swaps', 'staffswap' ); ?></a>
     </div>
 </section>

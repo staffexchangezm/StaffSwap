@@ -46,7 +46,11 @@ endif;
                 <li>3 interest requests monthly</li>
                 <li>Access free resources</li>
             </ul>
-            <a class="button button--outline" href="<?php echo esc_url( home_url( '/register/' ) ); ?>">Sign Up Free</a>
+            <?php if ( is_user_logged_in() ) : ?>
+                <a class="button button--outline" href="<?php echo esc_url( home_url( '/swaps/' ) ); ?>"><?php echo esc_html__( 'Browse Swap Listings', 'staffswap' ); ?></a>
+            <?php else : ?>
+                <a class="button button--outline" href="<?php echo esc_url( home_url( '/register/' ) ); ?>"><?php echo esc_html__( 'Sign Up Free', 'staffswap' ); ?></a>
+            <?php endif; ?>
         </article>
 
         <article class="pricing-card pricing-card--featured">
@@ -157,8 +161,13 @@ endif;
             <h2>Join StaffExchangeHub today and connect with professionals across Zambia.</h2>
         </div>
         <div class="final-cta__actions">
-            <a class="button button--primary" href="<?php echo esc_url( home_url( '/register/' ) ); ?>">Sign Up Free</a>
-            <a class="button button--outline button--outline-light" href="<?php echo esc_url( home_url( '/swaps/' ) ); ?>">View Pricing Plans</a>
+            <?php if ( is_user_logged_in() ) : ?>
+                <a class="button button--primary" href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>"><?php echo esc_html__( 'Post a Swap', 'staffswap' ); ?></a>
+                <a class="button button--outline button--outline-light" href="<?php echo esc_url( home_url( '/swaps/' ) ); ?>"><?php echo esc_html__( 'Find Swaps', 'staffswap' ); ?></a>
+            <?php else : ?>
+                <a class="button button--primary" href="<?php echo esc_url( home_url( '/register/' ) ); ?>"><?php echo esc_html__( 'Sign Up Free', 'staffswap' ); ?></a>
+                <a class="button button--outline button--outline-light" href="<?php echo esc_url( home_url( '/swaps/' ) ); ?>"><?php echo esc_html__( 'View Pricing Plans', 'staffswap' ); ?></a>
+            <?php endif; ?>
         </div>
     </div>
 </section>
