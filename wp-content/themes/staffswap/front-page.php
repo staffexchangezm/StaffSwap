@@ -33,8 +33,12 @@ $benefits = array(
                     <?php else : ?>
                         <a class="button button--primary" href="<?php echo esc_url( home_url( '/register/' ) ); ?>"><?php echo esc_html( get_theme_mod( 'staffswap_hero_primary_label', 'Sign Up Free' ) ); ?></a>
                         <a class="button button--outline" href="<?php echo esc_url( home_url( '/swaps/' ) ); ?>"><?php echo esc_html( get_theme_mod( 'staffswap_hero_secondary_label', 'Find Swaps' ) ); ?></a>
-                        <a class="button button--ghost button--ghost-inline" href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>"><?php echo esc_html__( 'Post a Swap', 'staffswap' ); ?></a>
                     <?php endif; ?>
+                </div>
+                <div class="benefits-row">
+                    <?php foreach ( $benefits as $benefit ) : ?>
+                        <div class="benefit-item"><span class="benefit-icon">✓</span><strong><?php echo esc_html( $benefit[0] ); ?></strong></div>
+                    <?php endforeach; ?>
                 </div>
             </div>
 
@@ -61,12 +65,6 @@ $benefits = array(
             </div>
         </div>
 
-        <div class="benefits-row">
-            <?php foreach ( $benefits as $benefit ) : ?>
-                <div class="benefit-item"><span class="benefit-icon">✓</span><strong><?php echo esc_html( $benefit[0] ); ?></strong></div>
-            <?php endforeach; ?>
-        </div>
-
         <form class="quick-search panel" method="get" action="<?php echo esc_url( home_url( '/search/' ) ); ?>">
             <div class="field"><label for="hero-current">Current Location</label><input id="hero-current" name="current_location" placeholder="Select province"></div>
             <div class="field"><label for="hero-desired">Desired Location</label><input id="hero-desired" name="desired_location" placeholder="Select province"></div>
@@ -77,8 +75,8 @@ $benefits = array(
 
         <div class="hero-stats" aria-label="Platform highlights">
             <div class="hero-stat"><strong>10</strong><span>Zambian provinces</span></div>
-            <div class="hero-stat"><strong>20</strong><span>Career categories</span></div>
-            <div class="hero-stat"><strong>2-Way</strong><span>Swap connections</span></div>
+            <div class="hero-stat"><strong>Potential</strong><span>Exchange matches</span></div>
+            <div class="hero-stat"><strong>Two-way</strong><span>Route comparison</span></div>
             <div class="hero-stat"><strong>Free</strong><span>Registration</span></div>
         </div>
     </div>
@@ -96,14 +94,15 @@ $benefits = array(
     </div>
     <div class="steps">
         <?php $steps = array(
-            array( '01', 'Create Your Free Profile', 'Register and add your profession, current workplace and location.' ),
-            array( '02', 'Post Your Swap Request', 'Share where you are, where you want to move and what flexibility you have.' ),
-            array( '03', 'Discover Potential Matches', 'Compare compatible listings and identify reciprocal exchange opportunities.' ),
-            array( '04', 'Connect and Discuss', 'Express interest, chat securely and confirm whether both parties are interested.' ),
-            array( '05', 'Arrange Your Exchange', 'Follow employer or institution approval procedures before finalising any move.' )
+            array( '01', 'Create Your Free Profile', 'Register and add your profession, current workplace and location.', 'dashicons-admin-users' ),
+            array( '02', 'Post Your Swap Request', 'Share where you are, where you want to move and what flexibility you have.', 'dashicons-edit' ),
+            array( '03', 'Discover Potential Matches', 'Compare compatible listings and identify reciprocal exchange opportunities.', 'dashicons-search' ),
+            array( '04', 'Connect and Discuss', 'Express interest, chat securely and confirm whether both parties are interested.', 'dashicons-format-chat' ),
+            array( '05', 'Arrange Your Exchange', 'Follow employer or institution approval procedures before finalising any move.', 'dashicons-yes-alt' )
         ); foreach ( $steps as $step ) : ?>
             <div class="step">
-                <span><?php echo esc_html( $step[0] ); ?></span>
+                <span class="step__number"><?php echo esc_html( $step[0] ); ?></span>
+                <span class="dashicons <?php echo esc_attr( $step[3] ); ?>" aria-hidden="true"></span>
                 <h3><?php echo esc_html( $step[1] ); ?></h3>
                 <p><?php echo esc_html( $step[2] ); ?></p>
             </div>
@@ -146,6 +145,17 @@ $benefits = array(
         <div class="badge-explainer__item badge-explainer__item--relocation"><span class="dashicons dashicons-car" aria-hidden="true"></span><div><strong>Relocation support</strong><p>Willing to assist with moving logistics.</p></div></div>
     </div>
 </section>
+<section class="home-benefits">
+    <div class="section-heading section-heading--center">
+        <p class="eyebrow"><?php echo esc_html__( 'A CLEARER WAY TO EXPLORE', 'staffswap' ); ?></p>
+        <h2><?php echo esc_html__( 'Workplace mobility, organised around your next move.', 'staffswap' ); ?></h2>
+    </div>
+    <div class="home-benefits__grid">
+        <article><span class="dashicons dashicons-location" aria-hidden="true"></span><strong><?php echo esc_html__( 'Explore across Zambia', 'staffswap' ); ?></strong><p><?php echo esc_html__( 'Review workplace requests by current and desired location.', 'staffswap' ); ?></p></article>
+        <article><span class="dashicons dashicons-search" aria-hidden="true"></span><strong><?php echo esc_html__( 'Compare potential matches', 'staffswap' ); ?></strong><p><?php echo esc_html__( 'Look for compatible professions and reciprocal location preferences.', 'staffswap' ); ?></p></article>
+        <article><span class="dashicons dashicons-lock" aria-hidden="true"></span><strong><?php echo esc_html__( 'Start with privacy', 'staffswap' ); ?></strong><p><?php echo esc_html__( 'Listing previews focus on profession and route, not personal contact details.', 'staffswap' ); ?></p></article>
+    </div>
+</section>
 <section class="landing-bottom">
     <article class="panel resource-promo">
         <div class="resource-promo__content">
@@ -162,9 +172,20 @@ $benefits = array(
     </article>
     <div class="panel alert-panel">
         <p class="eyebrow">NEVER MISS A POTENTIAL SWAP</p>
-        <h2>Get Swap Alerts</h2>
+        <h2>Never Miss a Potential Swap</h2>
         <p>Tell us your profession and preferred province to receive relevant updates.</p>
         <?php echo do_shortcode( '[staffswap_alert_signup]' ); ?>
+    </div>
+</section>
+<section class="home-pricing">
+    <div class="section-heading">
+        <div><p class="eyebrow"><?php echo esc_html__( 'MEMBERSHIP & PRICING', 'staffswap' ); ?></p><h2><?php echo esc_html__( 'Start free. Upgrade when you need member features.', 'staffswap' ); ?></h2><p class="muted"><?php echo esc_html__( 'Compare the current access and choose what suits your search.', 'staffswap' ); ?></p></div>
+        <a class="text-link" href="<?php echo esc_url( home_url( '/pricing/' ) ); ?>"><?php echo esc_html__( 'Compare all plans', 'staffswap' ); ?> &rarr;</a>
+    </div>
+    <div class="home-pricing__grid">
+        <article><span class="dashicons dashicons-admin-users" aria-hidden="true"></span><p class="eyebrow">Basic</p><h3>K0 <small>/ free</small></h3><p><?php echo esc_html__( 'Create a profile, browse listings and access free resources.', 'staffswap' ); ?></p></article>
+        <article class="home-pricing__featured"><span class="dashicons dashicons-star-filled" aria-hidden="true"></span><p class="eyebrow">VIP Gold</p><h3><?php echo shortcode_exists( 'staffswap_plan_price' ) ? wp_kses_post( do_shortcode( '[staffswap_plan_price plan="month"]' ) ) : 'K99'; ?> <small>/ 30 days</small></h3><p><?php echo esc_html__( 'One-time access to member messaging and formal swap offers.', 'staffswap' ); ?></p></article>
+        <article><span class="dashicons dashicons-awards" aria-hidden="true"></span><p class="eyebrow">VIP Lifetime</p><h3><?php echo shortcode_exists( 'staffswap_plan_price' ) ? wp_kses_post( do_shortcode( '[staffswap_plan_price plan="lifetime"]' ) ) : 'K199'; ?> <small>/ once</small></h3><p><?php echo esc_html__( 'One-time access to core VIP features while the platform operates.', 'staffswap' ); ?></p></article>
     </div>
 </section>
 <section class="final-cta">

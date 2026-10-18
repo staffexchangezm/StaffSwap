@@ -6,19 +6,28 @@
 </section>
 <section class="process-grid">
     <?php $steps = array(
-        array( '01', 'Create Your Free Profile', 'Register and provide your profession, current workplace and location.' ),
-        array( '02', 'Post Your Swap Request', 'Tell the network where you work now, where you want to move and any flexible destinations.' ),
-        array( '03', 'Discover Potential Matches', 'Search listings and identify professionals with compatible exchange preferences.' ),
-        array( '04', 'Connect and Discuss', 'Express interest, communicate securely and confirm whether both parties are interested.' ),
-        array( '05', 'Seek Approval and Arrange Your Move', 'Follow the required employer or institutional procedures before finalising any transfer.' )
+        array( '01', 'Create Your Free Profile', 'Register and provide your profession, current workplace and location.', 'dashicons-admin-users' ),
+        array( '02', 'Post Your Swap Request', 'Tell the network where you work now, where you want to move and any flexible destinations.', 'dashicons-edit' ),
+        array( '03', 'Discover Potential Matches', 'Search listings and identify professionals with compatible exchange preferences.', 'dashicons-search' ),
+        array( '04', 'Connect and Discuss', 'Express interest, communicate securely and confirm whether both parties are interested.', 'dashicons-format-chat' ),
+        array( '05', 'Seek Approval and Arrange Your Move', 'Follow the required employer or institutional procedures before finalising any transfer.', 'dashicons-yes-alt' )
     ); foreach ( $steps as $step ) : ?>
         <article class="process-card">
-            <span><?php echo esc_html( $step[0] ); ?></span>
+            <span class="process-card__number"><?php echo esc_html( $step[0] ); ?></span>
+            <span class="dashicons <?php echo esc_attr( $step[3] ); ?>" aria-hidden="true"></span>
             <h2><?php echo esc_html( $step[1] ); ?></h2>
             <p><?php echo esc_html( $step[2] ); ?></p>
         </article>
     <?php endforeach; ?>
 </section>
+<div class="how-steps-cta">
+    <?php if ( is_user_logged_in() ) : ?>
+        <a class="button button--primary" href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>"><?php echo esc_html__( 'Post Your Swap', 'staffswap' ); ?></a>
+    <?php else : ?>
+        <a class="button button--primary" href="<?php echo esc_url( home_url( '/register/' ) ); ?>"><?php echo esc_html__( 'Create Free Account', 'staffswap' ); ?></a>
+    <?php endif; ?>
+    <a class="button button--outline" href="<?php echo esc_url( home_url( '/swaps/' ) ); ?>"><?php echo esc_html__( 'Browse Available Swaps', 'staffswap' ); ?></a>
+</div>
 <section class="example-section">
     <div class="section-heading">
         <p class="eyebrow">REAL-WORLD EXAMPLE</p>
@@ -26,20 +35,36 @@
     </div>
     <div class="swap-example">
         <div class="swap-example__card">
-            <span class="swap-example__label">Current</span>
+            <span class="swap-example__label">Nurse A</span>
             <strong>Registered Nurse</strong>
-            <p>Lusaka General Hospital</p>
-            <small>Lusaka, Lusaka Province</small>
+            <div class="swap-example__route"><span><small>Current location</small><b>Lusaka</b></span><span class="swap-example__direction" aria-hidden="true">&rarr;</span><span><small>Wants to move</small><b>Ndola</b></span></div>
         </div>
-        <div class="swap-example__arrow">↔</div>
+        <div class="swap-example__reciprocal"><span aria-hidden="true">&harr;</span><strong>Potential reciprocal match</strong></div>
         <div class="swap-example__card swap-example__card--alt">
-            <span class="swap-example__label">Desired destination</span>
+            <span class="swap-example__label">Nurse B</span>
             <strong>Registered Nurse</strong>
-            <p>Ndola Central Hospital</p>
-            <small>Ndola, Copperbelt Province</small>
+            <div class="swap-example__route"><span><small>Current location</small><b>Ndola</b></span><span class="swap-example__direction" aria-hidden="true">&rarr;</span><span><small>Wants to move</small><b>Lusaka</b></span></div>
         </div>
     </div>
-    <p class="example-section__note">If their professional requirements are compatible, they can discuss the exchange and seek approval from their respective institutions before arranging any move.</p>
+    <p class="example-section__note">Both professionals must agree before they approach their respective employers or institutions. StaffExchangeHub facilitates connections but cannot approve transfers.</p>
+</section>
+<section class="how-guidance">
+    <article class="how-guidance__card how-guidance__card--important">
+        <h2><span class="dashicons dashicons-shield" aria-hidden="true"></span>Important to know</h2>
+        <ul>
+            <li>StaffExchangeHub helps professionals connect; employers and institutions decide whether transfers are approved.</li>
+            <li>Keep personal contact information private until you choose to share it. Use platform messaging to start conversations.</li>
+            <li>A Verified badge means the member's account was reviewed by the platform. It is not employer approval.</li>
+        </ul>
+    </article>
+    <article class="how-guidance__card how-guidance__card--tips">
+        <h2><span class="dashicons dashicons-lightbulb" aria-hidden="true"></span>Tips for a successful exchange</h2>
+        <ul>
+            <li>Keep your profession, current location and preferred destination accurate.</li>
+            <li>Discuss role requirements and timing before seeking formal approval.</li>
+            <li>Confirm the official procedures with both institutions before making arrangements.</li>
+        </ul>
+    </article>
 </section>
 <section class="faq-section">
     <div class="section-heading section-heading--center"><p class="eyebrow">COMMON QUESTIONS</p><h2>Frequently Asked Questions</h2></div>

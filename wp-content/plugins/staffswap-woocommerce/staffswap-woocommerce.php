@@ -17,7 +17,7 @@ function staffswap_has_active_membership( $user_id = 0 ) {
 }
 function staffswap_membership_required_notice( $action = 'use this feature' ) { return '<div class="panel membership-required"><p class="eyebrow">STAFFSWAP PLUS</p><h2>Membership required</h2><p>You need an active membership to ' . esc_html( $action ) . '.</p><a class="button button--primary" href="' . esc_url( home_url( '/pricing/' ) ) . '">View membership plans</a></div>'; }
 function staffswap_wc_plans() {
-	$plans = array( 'month' => array( 'title' => 'StaffSwap VIP Gold - 1 Month', 'price' => '99', 'sku' => 'STAFFSWAP-VIP-1M', 'duration' => '1 month' ), 'quarter' => array( 'title' => 'StaffSwap VIP Gold - 3 Months', 'price' => '249', 'sku' => 'STAFFSWAP-VIP-3M', 'duration' => '3 months' ), 'lifetime' => array( 'title' => 'StaffSwap VIP Gold - Lifetime', 'price' => '799', 'sku' => 'STAFFSWAP-VIP-LIFE', 'duration' => 'lifetime' ) );
+	$plans = array( 'month' => array( 'title' => 'StaffSwap VIP Gold - 1 Month', 'price' => '99', 'sku' => 'STAFFSWAP-VIP-1M', 'duration' => '1 month' ), 'quarter' => array( 'title' => 'StaffSwap VIP Gold - 3 Months', 'price' => '249', 'sku' => 'STAFFSWAP-VIP-3M', 'duration' => '3 months' ), 'lifetime' => array( 'title' => 'StaffSwap VIP Gold - Lifetime', 'price' => '199', 'sku' => 'STAFFSWAP-VIP-LIFE', 'duration' => 'lifetime' ) );
 	$overrides = get_option( 'staffswap_plan_settings', array() );
 	foreach ( $plans as $plan => $data ) {
 		if ( ! empty( $overrides[ $plan ]['title'] ) ) { $plans[ $plan ]['title'] = $overrides[ $plan ]['title']; }
@@ -42,9 +42,16 @@ function staffswap_wc_product( $plan = 'month' ) {
 	$plans = staffswap_wc_plans();
 	if ( empty( $plans[ $plan ] ) ) { return 0; }
 	$product_id = (int) get_option( 'staffswap_vip_product_' . $plan, 0 );
-	if ( $product_id && 'publish' === get_post_status( $product_id ) ) { return $product_id; }
+	if ( $product_id && 'publish' === get_post_status( $product_id ) ) {
+		if ( (string) get_post_meta( $product_id, '_price', true ) !== (string) $plans[ $plan ]['price'] ) {
+			wp_update_post( array( 'ID' => $product_id, 'post_title' => $plans[ $plan ]['title'], 'post_content' => 'One-time StaffSwap membership providing access to member messaging and formal swap offers for ' . $plans[ $plan ]['duration'] . '.' ) );
+			update_post_meta( $product_id, '_regular_price', $plans[ $plan ]['price'] );
+			update_post_meta( $product_id, '_price', $plans[ $plan ]['price'] );
+		}
+		return $product_id;
+	}
 	$product = $plans[ $plan ];
-	$product_id = wp_insert_post( array( 'post_title' => $product['title'], 'post_content' => 'VIP Gold membership with priority visibility, direct contact access, and official transfer letters for ' . $product['duration'] . '.', 'post_status' => 'publish', 'post_type' => 'product' ) );
+	$product_id = wp_insert_post( array( 'post_title' => $product['title'], 'post_content' => 'One-time StaffSwap membership providing access to member messaging and formal swap offers for ' . $product['duration'] . '.', 'post_status' => 'publish', 'post_type' => 'product' ) );
 	if ( is_wp_error( $product_id ) ) { return 0; }
 	update_post_meta( $product_id, '_regular_price', $product['price'] ); update_post_meta( $product_id, '_price', $product['price'] ); update_post_meta( $product_id, '_virtual', 'yes' ); update_post_meta( $product_id, '_sold_individually', 'yes' ); update_post_meta( $product_id, '_sku', $product['sku'] ); update_option( 'staffswap_vip_product_' . $plan, $product_id );
 	return $product_id;

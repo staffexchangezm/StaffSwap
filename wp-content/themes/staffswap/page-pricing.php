@@ -12,7 +12,7 @@ endif;
         <div class="pricing-page__copy">
             <p class="eyebrow"><?php echo esc_html__( 'SIMPLE, TRANSPARENT PRICING', 'staffswap' ); ?></p>
             <h1><?php echo esc_html__( 'Find Your Swap. Choose Your Plan.', 'staffswap' ); ?></h1>
-            <p><?php echo esc_html__( 'Start for free and explore workplace exchange opportunities across Zambia. Upgrade for enhanced visibility, additional contact requests and membership benefits.', 'staffswap' ); ?></p>
+            <p><?php echo esc_html__( 'Start for free and explore workplace exchange opportunities across Zambia. Upgrade for access to member messaging and formal swap offers.', 'staffswap' ); ?></p>
             <div class="pricing-page__badges">
                 <span><span class="dashicons dashicons-lock" aria-hidden="true"></span>Private profiles</span>
                 <span><span class="dashicons dashicons-location" aria-hidden="true"></span>Across Zambia</span>
@@ -49,9 +49,8 @@ endif;
             <ul>
                 <li>Create your profile</li>
                 <li>Browse swap listings</li>
-                <li>Post 1 active swap request</li>
-                <li>3 interest requests monthly</li>
                 <li>Access free resources</li>
+                <li>Review potential matches</li>
             </ul>
             <?php if ( is_user_logged_in() ) : ?>
                 <a class="button button--outline" href="<?php echo esc_url( home_url( '/swaps/' ) ); ?>"><?php echo esc_html__( 'Browse Swap Listings', 'staffswap' ); ?></a>
@@ -67,13 +66,12 @@ endif;
             </div>
             <div class="pricing-card__badge">BEST VALUE</div>
             <h2>30 Days</h2>
-            <p class="pricing-price">K99 <small>/ one-time</small></p>
+            <p class="pricing-price"><?php echo shortcode_exists( 'staffswap_plan_price' ) ? wp_kses_post( do_shortcode( '[staffswap_plan_price plan="month"]' ) ) : 'K99'; ?> <small>/ one-time</small></p>
             <ul>
                 <li>All Basic benefits</li>
-                <li>Up to 20 interest requests</li>
-                <li>Priority listing visibility</li>
-                <li>Direct contact requests</li>
-                <li>Match notifications</li>
+                <li>Member messaging access</li>
+                <li>Formal swap offers</li>
+                <li>30 days of VIP features</li>
             </ul>
             <?php echo shortcode_exists( 'staffswap_upgrade' ) ? do_shortcode( '[staffswap_upgrade plan="month"]' ) : ''; ?>
         </article>
@@ -84,13 +82,13 @@ endif;
                 <p class="eyebrow">Founding VIP Lifetime</p>
             </div>
             <h2>Lifetime Access</h2>
-            <p class="pricing-price">K199 <small>/ once</small></p>
+            <p class="pricing-price"><?php echo shortcode_exists( 'staffswap_plan_price' ) ? wp_kses_post( do_shortcode( '[staffswap_plan_price plan="lifetime"]' ) ) : 'K199'; ?> <small>/ once</small></p>
             <ul>
                 <li>All VIP Gold benefits</li>
                 <li>Lifetime core VIP access</li>
-                <li>Founding member badge</li>
-                <li>Priority listing visibility</li>
-                <li>Match notifications</li>
+                <li>Member messaging access</li>
+                <li>Formal swap offers</li>
+                <li>No recurring renewal</li>
             </ul>
             <?php echo shortcode_exists( 'staffswap_upgrade' ) ? do_shortcode( '[staffswap_upgrade plan="lifetime"]' ) : ''; ?>
         </article>
@@ -103,22 +101,18 @@ endif;
                 <tr>
                     <th>Feature</th>
                     <th>Basic (Free)</th>
-                    <th>VIP Gold (K99)</th>
-                    <th>Founding Lifetime (K199)</th>
+                    <th>VIP Gold (<?php echo esc_html( shortcode_exists( 'staffswap_plan_price' ) ? wp_strip_all_tags( do_shortcode( '[staffswap_plan_price plan="month"]' ) ) : 'K99' ); ?>)</th>
+                    <th>VIP Lifetime (<?php echo esc_html( shortcode_exists( 'staffswap_plan_price' ) ? wp_strip_all_tags( do_shortcode( '[staffswap_plan_price plan="lifetime"]' ) ) : 'K199' ); ?>)</th>
                 </tr>
             </thead>
             <tbody>
                 <tr><td>Membership duration</td><td>Unlimited</td><td>30 days</td><td>Lifetime</td></tr>
                 <tr><td>Create profile</td><td>✓</td><td>✓</td><td>✓</td></tr>
                 <tr><td>Browse swap listings</td><td>✓</td><td>✓</td><td>✓</td></tr>
-                <tr><td>Post active swap request</td><td>1</td><td>1</td><td>1</td></tr>
-                <tr><td>Interest requests</td><td>3</td><td>20</td><td>20</td></tr>
-                <tr><td>Priority listing visibility</td><td>—</td><td>✓</td><td>✓</td></tr>
-                <tr><td>Direct contact requests</td><td>Limited</td><td>Expanded</td><td>Expanded</td></tr>
-                <tr><td>Match notifications</td><td>—</td><td>✓</td><td>✓</td></tr>
+                <tr><td>Publish swap requests</td><td>Membership required</td><td>Available</td><td>Available</td></tr>
+                <tr><td>Member messaging and swap offers</td><td>—</td><td>Available</td><td>Available</td></tr>
                 <tr><td>Access free resources</td><td>✓</td><td>✓</td><td>✓</td></tr>
-                <tr><td>Premium transfer templates</td><td>—</td><td>✓</td><td>✓</td></tr>
-                <tr><td>Founding member badge</td><td>—</td><td>—</td><td>✓</td></tr>
+                <tr><td>Automatic renewal</td><td>No</td><td>No</td><td>No</td></tr>
             </tbody>
         </table>
     </div>
@@ -136,8 +130,8 @@ endif;
         </div>
         <div class="trust-item">
             <span class="trust-item__icon"><span class="dashicons dashicons-megaphone" aria-hidden="true"></span></span>
-            <h3>More visibility</h3>
-            <p>VIP plans include priority listing visibility and additional contact requests.</p>
+            <h3>Member messaging</h3>
+            <p>Active VIP memberships unlock member messaging and formal swap offers.</p>
         </div>
         <div class="trust-item">
             <span class="trust-item__icon"><span class="dashicons dashicons-book-alt" aria-hidden="true"></span></span>
@@ -155,8 +149,8 @@ endif;
         </div>
         <div class="faq-grid">
             <details open><summary>Is StaffExchangeHub free to join?</summary><p>Yes. Basic access is free and allows you to create a profile, browse listings and explore potential matches.</p></details>
-            <details><summary>What happens when my K99 membership expires?</summary><p>VIP Gold is a one-time 30-day access option for enhanced visibility and stronger engagement tools. Renewals are managed according to the active plan settings.</p></details>
-            <details><summary>What does lifetime membership mean?</summary><p>Founding VIP Lifetime gives you continued access to the core VIP features for as long as StaffExchangeHub continues operating under the published product terms.</p></details>
+            <details><summary>What happens when my VIP Gold membership expires?</summary><p>VIP Gold is a one-time 30-day purchase. Access to member messaging and swap offers ends when the membership expires; it does not renew automatically.</p></details>
+            <details><summary>What does lifetime membership mean?</summary><p>VIP Lifetime is a one-time purchase that provides access to the core VIP features for as long as StaffExchangeHub continues operating. Standalone services may be offered separately.</p></details>
             <details><summary>Does VIP membership guarantee a swap?</summary><p>No. Membership helps you discover and contact potential exchange partners and increases visibility, but any workplace transfer still depends on matching, consent and employer approval.</p></details>
             <details><summary>Can I get a refund?</summary><p>Refunds are handled according to the active membership policy and the platform’s purchase terms.</p></details>
         </div>
