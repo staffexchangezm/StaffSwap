@@ -1226,3 +1226,17 @@ body.logged-in a[href$="/register/"]{display:none!important}
 	.single-article__related .article-grid{grid-template-columns:minmax(0,1fr)}
 	.article-card__image{height:165px}
 }
+
+.listing-view-controls{display:flex;flex:0 0 auto;gap:4px;padding:4px;border:1px solid #dce7ed;border-radius:10px;background:#fff}
+.listing-view-controls[hidden]{display:none}
+.listing-view-controls button{display:inline-flex;align-items:center;gap:6px;padding:8px 11px;border:0;border-radius:7px;background:transparent;color:#526b7d;font-size:12px}
+.listing-view-controls button[aria-pressed="true"]{background:#e8f8ef;color:#087c54}
+.listing-view-controls button:focus-visible{outline:2px solid #0ea86f;outline-offset:2px}
+.staffswap-marketplace .listing-list--list{grid-template-columns:minmax(0,1fr)}
+.staffswap-marketplace .listing-list--grid{grid-template-columns:minmax(0,1fr)}
+@media(min-width:1200px){
+	.staffswap-marketplace .listing-list--grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:520px){
+	.listing-view-controls button{padding:8px}
+}

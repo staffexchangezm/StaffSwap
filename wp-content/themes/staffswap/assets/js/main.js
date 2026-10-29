@@ -46,4 +46,29 @@
       button.textContent = input.type === 'text' ? 'Hide' : 'Show';
     });
   });
+  document.querySelectorAll('[data-listing-view-controls]').forEach(function (controls) {
+    var marketplace = controls.closest('.staffswap-marketplace');
+    var listingList = marketplace && marketplace.querySelector('.listing-list');
+    var viewInput = marketplace && marketplace.querySelector('input[name="listing_view"]');
+    var buttons = controls.querySelectorAll('[data-listing-view]');
+    if (!listingList || !viewInput || !buttons.length) return;
+
+    buttons.forEach(function (button) {
+      button.addEventListener('click', function () {
+        var view = button.getAttribute('data-listing-view');
+        if (view !== 'grid' && view !== 'list') return;
+        listingList.classList.toggle('listing-list--grid', view === 'grid');
+        listingList.classList.toggle('listing-list--list', view === 'list');
+        viewInput.value = view;
+        buttons.forEach(function (viewButton) {
+          viewButton.setAttribute('aria-pressed', viewButton === button ? 'true' : 'false');
+        });
+        var url = new URL(window.location.href);
+        url.searchParams.set('listing_view', view);
+        window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+      });
+    });
+
+    controls.hidden = false;
+  });
 }());
