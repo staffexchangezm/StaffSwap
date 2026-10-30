@@ -1,4 +1,22 @@
-<?php get_header(); if ( staffswap_builder_location( 'archive' ) ) { get_footer(); return; } ?>
+<?php
+get_header();
+if ( staffswap_builder_location( 'archive' ) ) {
+	get_footer();
+	return;
+}
+
+$staffswap_posts_page_id = (int) get_option( 'page_for_posts' );
+$staffswap_posts_page_elementor_data = $staffswap_posts_page_id ? get_post_meta( $staffswap_posts_page_id, '_elementor_data', true ) : '';
+if (
+	$staffswap_posts_page_elementor_data &&
+	class_exists( '\Elementor\Plugin' ) &&
+	isset( \Elementor\Plugin::$instance->frontend )
+) {
+	echo \Elementor\Plugin::$instance->frontend->get_builder_content_for_display( $staffswap_posts_page_id );
+	get_footer();
+	return;
+}
+?>
 <section class="opportunities-page">
     <div class="opportunities-hero">
         <div class="opportunities-hero__copy">

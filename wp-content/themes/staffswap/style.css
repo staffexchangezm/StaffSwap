@@ -724,6 +724,8 @@ body.logged-in a[href$="/register/"]{display:none!important}
 .how-it-works__intro .section-heading{margin:0}
 .how-it-works__intro .section-heading h2{font-size:clamp(24px,3vw,34px)}
 .how-it-works__intro .section-heading p:not(.eyebrow){max-width:540px;margin:8px auto 0;color:#526074}
+.how-it-works .step h3{font-size:16px;line-height:1.35}
+.how-it-works .step p{max-width:190px;font-size:14px;line-height:1.5}
 .how-it-works__intro.has-section-image{justify-content:space-between;text-align:left}
 .how-it-works__intro.has-section-image .section-heading{text-align:left;flex:1}
 .how-it-works__intro.has-section-image .section-heading p:not(.eyebrow){margin-left:0}
