@@ -1232,6 +1232,9 @@ body.logged-in a[href$="/register/"]{display:none!important}
 .listing-view-controls button{display:inline-flex;align-items:center;gap:6px;padding:8px 11px;border:0;border-radius:7px;background:transparent;color:#526b7d;font-size:12px}
 .listing-view-controls button[aria-pressed="true"]{background:#e8f8ef;color:#087c54}
 .listing-view-controls button:focus-visible{outline:2px solid #0ea86f;outline-offset:2px}
+.staffswap-marketplace .listing-main{grid-template-columns:minmax(0,1fr);grid-template-areas:"profile" "route";align-items:stretch}
+.staffswap-marketplace .listing-main>.listing-profile{grid-area:profile;width:100%;min-width:0}
+.staffswap-marketplace .listing-main>.swap-route{grid-area:route}
 .staffswap-marketplace .listing-list--list{grid-template-columns:minmax(0,1fr)}
 .staffswap-marketplace .listing-list--grid{grid-template-columns:minmax(0,1fr)}
 .staffswap-marketplace .listing-list--grid .listing-card{min-width:0}
