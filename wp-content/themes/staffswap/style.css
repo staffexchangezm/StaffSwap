@@ -122,7 +122,7 @@ Requires PHP: 7.4
 Text Domain: staffswap
 */
 :root{--primary:#005f2e;--primary-bright:#007a3d;--navy:#061f3d;--blue:#3a5f94;--ink:#1a1c1e;--muted:#526052;--line:#becabc;--canvas:#f7f8fa;--surface:#fff;--soft:#eef2f0;--mint:#d9eedf;--sky:#e7effb;--danger:#ba1a1a;--radius:8px;--container:1200px}
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--canvas);color:var(--ink);font-family:Inter,sans-serif;font-size:15px;line-height:1.55}a{color:inherit}img{max-width:100%;height:auto}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--canvas);color:var(--ink);font-family:"DM Sans",sans-serif;font-size:16px;line-height:1.55}h1,h2,h3,h4,h5,h6{font-family:var(--font-heading,"Space Grotesk",sans-serif)}a{color:inherit}img{max-width:100%;height:auto}
 .site-header{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.96);border-bottom:1px solid var(--line)}.site-header__inner,.site-main,.site-footer__inner{width:min(var(--container),calc(100% - 48px));margin-inline:auto}.site-header__inner{min-height:68px;display:flex;align-items:center;justify-content:space-between;gap:24px}.brand{color:var(--primary);font:800 20px/1 Manrope,sans-serif;text-decoration:none}.primary-nav ul{display:flex;gap:32px;list-style:none;padding:0;margin:0}.primary-nav a{color:var(--muted);text-decoration:none}.primary-nav a:hover,.primary-nav .current-menu-item a{color:var(--primary)}.header-actions{display:flex;align-items:center;gap:10px}.menu-toggle{display:none;background:transparent;color:var(--primary);padding:8px 10px}
 .site-header--brand{background:#0a2e6d;border-bottom-color:rgba(255,255,255,.14)}.brand--light,.site-header--brand .primary-nav a{color:#fff}.site-header--brand .primary-nav a{opacity:.82}.site-header--brand .primary-nav a:hover,.site-header--brand .primary-nav .current-menu-item a{color:#fff;opacity:1}.site-header--brand .menu-toggle{color:#fff;border-color:rgba(255,255,255,.5)}.header-icon{position:relative;color:#fff;text-decoration:none;font-size:20px;line-height:1;padding:8px}.header-icon b{position:absolute;right:0;top:0;background:#ba1a1a;color:#fff;border-radius:50%;font-size:9px;min-width:15px;height:15px;text-align:center;padding-top:2px}.profile-cluster{display:flex;align-items:center;gap:9px;color:#fff;text-decoration:none;border-left:1px solid rgba(255,255,255,.2);padding-left:15px}.profile-cluster strong,.profile-cluster small{display:block}.profile-cluster strong{font-size:12px}.profile-cluster small{color:rgba(255,255,255,.65);font-size:10px}.profile-avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:#d9eedf;color:#005f2e;border:2px solid #16a34a;font-size:12px;font-weight:700}.button--light{border-color:#a8c8ff;color:#fff}
 .site-header--brand .primary-nav.is-open{background:#0a2e6d;border-bottom-color:rgba(255,255,255,.2)}
@@ -1234,9 +1234,50 @@ body.logged-in a[href$="/register/"]{display:none!important}
 .listing-view-controls button:focus-visible{outline:2px solid #0ea86f;outline-offset:2px}
 .staffswap-marketplace .listing-list--list{grid-template-columns:minmax(0,1fr)}
 .staffswap-marketplace .listing-list--grid{grid-template-columns:minmax(0,1fr)}
+.staffswap-marketplace .listing-list--grid .listing-card{min-width:0}
+.staffswap-marketplace .listing-list--grid .listing-main{width:100%;min-width:0;grid-template-columns:minmax(0,1fr);grid-template-areas:"profile" "route"}
+.staffswap-marketplace .listing-list--grid .listing-main>.listing-profile{grid-area:profile;min-width:0}
+.staffswap-marketplace .listing-list--grid .listing-main>.swap-route{grid-area:route;display:grid;width:100%;min-width:0;grid-template-columns:minmax(0,1fr) 36px minmax(0,1fr);gap:8px}
+.staffswap-marketplace .listing-list--grid .listing-main .route{box-sizing:border-box;width:100%;min-width:0}
+.staffswap-marketplace .listing-list--grid .listing-main .route span{overflow-wrap:break-word;word-break:normal}
 @media(min-width:1200px){
 	.staffswap-marketplace .listing-list--grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(max-width:520px){
+	.staffswap-marketplace .listing-list--grid .listing-main>.swap-route{grid-template-columns:minmax(0,1fr);gap:7px}
+	.staffswap-marketplace .listing-list--grid .listing-main>.swap-route .swap-icon{transform:rotate(90deg)}
+}
+@media(max-width:520px){
 	.listing-view-controls button{padding:8px}
+}
+
+.featured-carousel__viewport{overflow-x:auto;scroll-behavior:smooth;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.featured-carousel__viewport::-webkit-scrollbar{display:none}
+.featured-grid{display:flex;gap:18px;grid-template-columns:none;margin-bottom:0}
+.featured-grid>.listing-card,.featured-grid>.panel{flex:0 0 calc((100% - 36px)/3);min-width:0;scroll-snap-align:start}
+.featured-grid>.panel:only-child{flex-basis:100%}
+.featured-carousel__controls{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:18px}
+.featured-carousel__controls[hidden]{display:none}
+.featured-carousel__controls button{min-height:40px;padding:8px 14px;border:1px solid #d7e5df;border-radius:8px;background:#fff;color:#155a43;font:600 13px "DM Sans",sans-serif}
+.featured-carousel__controls button:hover{background:#edf8f2}
+.featured-carousel__controls button:focus-visible{outline:2px solid #0ea86f;outline-offset:2px}
+.badge-explainer__intro .eyebrow{font-size:12px}
+.badge-explainer__intro h2{font-size:22px}
+.badge-explainer__item strong{font-size:13px}
+.badge-explainer__item p{font-size:12px;line-height:1.5}
+.site-footer h3{font-size:12px}
+.site-footer__inner>div:not(.footer-bottom)>p{font-size:14px;line-height:1.6}
+.site-footer .footer-brand{font-size:20px}
+.site-footer .footer-bottom{font-size:12px}
+@media(max-width:850px){
+	.featured-grid>.listing-card,.featured-grid>.panel{flex-basis:calc((100% - 18px)/2)}
+}
+@media(max-width:520px){
+	.featured-grid>.listing-card,.featured-grid>.panel{flex-basis:100%}
+	.featured-carousel__controls{gap:6px}
+	.featured-carousel__controls button{padding:8px 10px;font-size:12px}
+	.badge-explainer__intro h2{font-size:20px}
+}
+@media(prefers-reduced-motion:reduce){
+	.featured-carousel__viewport{scroll-behavior:auto}
 }

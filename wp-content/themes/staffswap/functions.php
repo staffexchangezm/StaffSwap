@@ -4,7 +4,7 @@ function staffswap_setup() { add_theme_support( 'title-tag' ); add_theme_support
 add_action( 'after_setup_theme', 'staffswap_setup' );
 function staffswap_load_textdomain() { load_theme_textdomain( 'staffswap', get_template_directory() . '/languages' ); }
 add_action( 'after_setup_theme', 'staffswap_load_textdomain', 11 );
-function staffswap_assets() { wp_enqueue_style( 'staffswap-fonts', 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap', array(), null ); wp_enqueue_style( 'dashicons' ); wp_enqueue_style( 'staffswap-style', get_stylesheet_uri(), array( 'staffswap-fonts', 'dashicons' ), filemtime( get_stylesheet_directory() . '/style.css' ) ); wp_enqueue_script( 'staffswap-main', get_template_directory_uri() . '/assets/js/main.js', array(), filemtime( get_template_directory() . '/assets/js/main.js' ), true ); }
+function staffswap_assets() { wp_enqueue_style( 'staffswap-fonts', 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap', array(), null ); wp_enqueue_style( 'dashicons' ); wp_enqueue_style( 'staffswap-style', get_stylesheet_uri(), array( 'staffswap-fonts', 'dashicons' ), filemtime( get_stylesheet_directory() . '/style.css' ) ); wp_enqueue_script( 'staffswap-main', get_template_directory_uri() . '/assets/js/main.js', array(), filemtime( get_template_directory() . '/assets/js/main.js' ), true ); }
 add_action( 'wp_enqueue_scripts', 'staffswap_assets' );
 function staffswap_account_menu_shortcode() {
 	$user = wp_get_current_user();

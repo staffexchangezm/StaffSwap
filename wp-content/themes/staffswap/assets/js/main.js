@@ -71,4 +71,94 @@
 
     controls.hidden = false;
   });
+  document.querySelectorAll('[data-featured-carousel]').forEach(function (carousel) {
+    var viewport = carousel.querySelector('[data-featured-carousel-viewport]');
+    var track = carousel.querySelector('[data-featured-carousel-track]');
+    var controls = carousel.querySelector('[data-featured-carousel-controls]');
+    var previous = carousel.querySelector('[data-featured-carousel-prev]');
+    var next = carousel.querySelector('[data-featured-carousel-next]');
+    var pause = carousel.querySelector('[data-featured-carousel-pause]');
+    var cards = track ? Array.prototype.slice.call(track.children) : [];
+    var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    var timer;
+    var manuallyPaused = false;
+    var pointerOver = false;
+    var focusWithin = false;
+
+    if (!viewport || !track || !controls || !previous || !next || !pause || cards.length < 2) return;
+
+    function canScroll() {
+      return viewport.scrollWidth > viewport.clientWidth + 1;
+    }
+
+    function stopRotation() {
+      window.clearInterval(timer);
+      timer = null;
+    }
+
+    function startRotation() {
+      stopRotation();
+      if (canScroll() && !manuallyPaused && !pointerOver && !focusWithin && !reducedMotion.matches) {
+        timer = window.setInterval(advance, 5000);
+      }
+    }
+
+    function scrollByCard(direction) {
+      var firstCard = cards[0];
+      var cardStyle = window.getComputedStyle(track);
+      var gap = parseFloat(cardStyle.columnGap) || 0;
+      var distance = firstCard.getBoundingClientRect().width + gap;
+      var maxScroll = viewport.scrollWidth - viewport.clientWidth;
+
+      if (direction > 0 && viewport.scrollLeft + distance >= maxScroll - 1) {
+        viewport.scrollTo({ left: 0, behavior: reducedMotion.matches ? 'auto' : 'smooth' });
+      } else if (direction < 0 && viewport.scrollLeft <= 1) {
+        viewport.scrollTo({ left: maxScroll, behavior: reducedMotion.matches ? 'auto' : 'smooth' });
+      } else {
+        viewport.scrollBy({ left: direction * distance, behavior: reducedMotion.matches ? 'auto' : 'smooth' });
+      }
+    }
+
+    function advance() {
+      scrollByCard(1);
+    }
+
+    function updateCarousel() {
+      controls.hidden = !canScroll();
+      if (!canScroll()) {
+        viewport.scrollTo({ left: 0, behavior: 'auto' });
+      }
+      startRotation();
+    }
+
+    previous.addEventListener('click', function () { scrollByCard(-1); });
+    next.addEventListener('click', advance);
+    pause.addEventListener('click', function () {
+      manuallyPaused = !manuallyPaused;
+      pause.setAttribute('aria-pressed', manuallyPaused ? 'true' : 'false');
+      pause.textContent = manuallyPaused ? 'Resume rotation' : 'Pause rotation';
+      startRotation();
+    });
+    carousel.addEventListener('pointerenter', function () {
+      pointerOver = true;
+      stopRotation();
+    });
+    carousel.addEventListener('pointerleave', function () {
+      pointerOver = false;
+      startRotation();
+    });
+    carousel.addEventListener('focusin', function () {
+      focusWithin = true;
+      stopRotation();
+    });
+    carousel.addEventListener('focusout', function (event) {
+      if (!carousel.contains(event.relatedTarget)) {
+        focusWithin = false;
+        startRotation();
+      }
+    });
+    window.addEventListener('resize', updateCarousel);
+    reducedMotion.addEventListener('change', startRotation);
+    updateCarousel();
+  });
 }());

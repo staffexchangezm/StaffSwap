@@ -29,13 +29,18 @@
     "typography": {
       "fluid": true,
       "fontFamilies": [
-        { "fontFamily": "Manrope, sans-serif", "slug": "staffswap-heading", "name": "StaffSwap Headings" },
-        { "fontFamily": "Inter, sans-serif", "slug": "staffswap-body", "name": "StaffSwap Body" }
+        { "fontFamily": "Space Grotesk, sans-serif", "slug": "staffswap-heading", "name": "StaffSwap Headings" },
+        { "fontFamily": "DM Sans, sans-serif", "slug": "staffswap-body", "name": "StaffSwap Body" }
       ]
     }
   },
   "styles": {
     "color": { "background": "var:preset|color|staffswap-surface", "text": "var:preset|color|staffswap-ink" },
-    "typography": { "fontFamily": "var:preset|font-family|staffswap-body", "fontSize": "15px", "lineHeight": "1.55" }
+    "typography": { "fontFamily": "var:preset|font-family|staffswap-body", "fontSize": "16px", "lineHeight": "1.55" },
+    "elements": {
+      "heading": {
+        "typography": { "fontFamily": "var:preset|font-family|staffswap-heading" }
+      }
+    }
   }
 }

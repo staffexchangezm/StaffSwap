@@ -124,8 +124,17 @@ $benefits = array(
         <?php endif; ?>
         <a class="text-link" href="<?php echo esc_url( home_url( '/swaps/' ) ); ?>"><?php echo esc_html__( 'View all listings', 'staffswap' ); ?> &rarr;</a>
     </div>
-    <div class="featured-grid">
-        <?php if ( function_exists( 'staffswap_listing_card' ) ) : $featured = new WP_Query( array( 'post_type' => 'swap_listing', 'post_status' => 'publish', 'posts_per_page' => 3 ) ); if ( $featured->have_posts() ) : while ( $featured->have_posts() ) : $featured->the_post(); echo staffswap_listing_card( get_the_ID() ); endwhile; wp_reset_postdata(); else : ?><div class="panel"><h2><?php echo esc_html__( 'No swap requests published yet', 'staffswap' ); ?></h2><p class="muted"><?php echo esc_html__( 'Be the first to post a workplace swap request and appear here.', 'staffswap' ); ?></p><a class="button button--primary" href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>"><?php echo esc_html__( 'Create a swap post', 'staffswap' ); ?></a></div><?php endif; else : ?><div class="panel"><h2><?php echo esc_html__( 'Featured swaps are coming soon', 'staffswap' ); ?></h2><p class="muted"><?php echo esc_html__( 'Activate StaffSwap Core and publish your first listing.', 'staffswap' ); ?></p></div><?php endif; ?>
+    <div class="featured-carousel" data-featured-carousel role="region" aria-roledescription="carousel" aria-label="<?php echo esc_attr__( 'Latest swap opportunities', 'staffswap' ); ?>">
+        <div class="featured-carousel__viewport" data-featured-carousel-viewport>
+            <div class="featured-grid" data-featured-carousel-track>
+                <?php if ( function_exists( 'staffswap_listing_card' ) ) : $featured = new WP_Query( array( 'post_type' => 'swap_listing', 'post_status' => 'publish', 'posts_per_page' => 6 ) ); if ( $featured->have_posts() ) : while ( $featured->have_posts() ) : $featured->the_post(); echo staffswap_listing_card( get_the_ID() ); endwhile; wp_reset_postdata(); else : ?><div class="panel"><h2><?php echo esc_html__( 'No swap requests published yet', 'staffswap' ); ?></h2><p class="muted"><?php echo esc_html__( 'Be the first to post a workplace swap request and appear here.', 'staffswap' ); ?></p><a class="button button--primary" href="<?php echo esc_url( home_url( '/create-swap/' ) ); ?>"><?php echo esc_html__( 'Create a swap post', 'staffswap' ); ?></a></div><?php endif; else : ?><div class="panel"><h2><?php echo esc_html__( 'Featured swaps are coming soon', 'staffswap' ); ?></h2><p class="muted"><?php echo esc_html__( 'Activate StaffSwap Core and publish your first listing.', 'staffswap' ); ?></p></div><?php endif; ?>
+            </div>
+        </div>
+        <div class="featured-carousel__controls" data-featured-carousel-controls hidden>
+            <button type="button" data-featured-carousel-prev aria-label="<?php echo esc_attr__( 'Previous swap opportunities', 'staffswap' ); ?>">&larr; <?php echo esc_html__( 'Previous', 'staffswap' ); ?></button>
+            <button type="button" data-featured-carousel-pause aria-pressed="false"><?php echo esc_html__( 'Pause rotation', 'staffswap' ); ?></button>
+            <button type="button" data-featured-carousel-next aria-label="<?php echo esc_attr__( 'Next swap opportunities', 'staffswap' ); ?>"><?php echo esc_html__( 'Next', 'staffswap' ); ?> &rarr;</button>
+        </div>
     </div>
 </section>
 <section class="badge-explainer" aria-labelledby="badge-explainer-title">
