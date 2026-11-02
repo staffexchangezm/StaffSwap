@@ -3,7 +3,7 @@
     <div class="opportunities-hero">
         <div class="opportunities-hero__copy">
             <p class="eyebrow"><?php echo esc_html__( 'STAY INFORMED, GROW YOUR CAREER', 'staffswap' ); ?></p>
-            <h1><?php echo esc_html__( 'Updates & Opportunities', 'staffswap' ); ?></h1>
+            <h1><?php echo esc_html__( 'Opportunities & Updates', 'staffswap' ); ?></h1>
             <p><?php echo esc_html__( 'Discover the latest job opportunities, internships, transfer updates and professional development news across Zambia.', 'staffswap' ); ?></p>
             <form class="opportunities-search" action="<?php echo esc_url( home_url( '/' ) ); ?>" method="get">
                 <input type="text" name="s" placeholder="Search opportunities (e.g. nursing, teacher, internship, Lusaka)">

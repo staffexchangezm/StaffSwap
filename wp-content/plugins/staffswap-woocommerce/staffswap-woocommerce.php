@@ -17,22 +17,77 @@ function staffswap_has_active_membership( $user_id = 0 ) {
 }
 function staffswap_membership_required_notice( $action = 'use this feature' ) { return '<div class="panel membership-required"><p class="eyebrow">STAFFSWAP PLUS</p><h2>Membership required</h2><p>You need an active membership to ' . esc_html( $action ) . '.</p><a class="button button--primary" href="' . esc_url( home_url( '/pricing/' ) ) . '">View membership plans</a></div>'; }
 function staffswap_wc_plans() {
-	$plans = array( 'month' => array( 'title' => 'StaffSwap VIP Gold - 1 Month', 'price' => '99', 'sku' => 'STAFFSWAP-VIP-1M', 'duration' => '1 month' ), 'quarter' => array( 'title' => 'StaffSwap VIP Gold - 3 Months', 'price' => '249', 'sku' => 'STAFFSWAP-VIP-3M', 'duration' => '3 months' ), 'lifetime' => array( 'title' => 'StaffSwap VIP Gold - Lifetime', 'price' => '199', 'sku' => 'STAFFSWAP-VIP-LIFE', 'duration' => 'lifetime' ) );
+	$plans = array(
+		'month' => array( 'title' => 'StaffSwap VIP Gold - 1 Month', 'price' => '99', 'sku' => 'STAFFSWAP-VIP-1M', 'duration' => '1 month', 'listing_limit' => 1, 'monthly_interest_limit' => 20, 'benefits' => array( 'All Basic benefits', 'Member messaging access', 'Formal swap offers', 'Priority listing visibility', '30 days of VIP features' ) ),
+		'quarter' => array( 'title' => 'StaffSwap VIP Gold - 3 Months', 'price' => '249', 'sku' => 'STAFFSWAP-VIP-3M', 'duration' => '3 months', 'listing_limit' => 1, 'monthly_interest_limit' => 20, 'benefits' => array( 'All Basic benefits', 'Member messaging access', 'Formal swap offers', 'Priority listing visibility', '90 days of VIP features' ) ),
+		'lifetime' => array( 'title' => 'StaffSwap VIP Gold - Lifetime', 'price' => '199', 'sku' => 'STAFFSWAP-VIP-LIFE', 'duration' => 'lifetime', 'listing_limit' => 1, 'monthly_interest_limit' => 20, 'benefits' => array( 'All VIP Gold benefits', 'Lifetime core VIP access', 'Member messaging access', 'Formal swap offers', 'Priority listing visibility', 'No recurring renewal' ) ),
+	);
 	$overrides = get_option( 'staffswap_plan_settings', array() );
+	if ( ! is_array( $overrides ) ) { $overrides = array(); }
 	foreach ( $plans as $plan => $data ) {
-		if ( ! empty( $overrides[ $plan ]['title'] ) ) { $plans[ $plan ]['title'] = $overrides[ $plan ]['title']; }
-		if ( isset( $overrides[ $plan ]['price'] ) && '' !== $overrides[ $plan ]['price'] ) { $plans[ $plan ]['price'] = $overrides[ $plan ]['price']; }
+		if ( ! empty( $overrides[ $plan ]['title'] ) && is_scalar( $overrides[ $plan ]['title'] ) ) { $plans[ $plan ]['title'] = sanitize_text_field( (string) $overrides[ $plan ]['title'] ); }
+		if ( isset( $overrides[ $plan ]['price'] ) && is_numeric( $overrides[ $plan ]['price'] ) ) { $plans[ $plan ]['price'] = (string) $overrides[ $plan ]['price']; }
+		if ( isset( $overrides[ $plan ]['listing_limit'] ) ) { $plans[ $plan ]['listing_limit'] = max( 1, min( 100, absint( $overrides[ $plan ]['listing_limit'] ) ) ); }
+		if ( isset( $overrides[ $plan ]['monthly_interest_limit'] ) ) { $plans[ $plan ]['monthly_interest_limit'] = max( 1, min( 1000, absint( $overrides[ $plan ]['monthly_interest_limit'] ) ) ); }
+		if ( isset( $overrides[ $plan ]['benefits'] ) && is_array( $overrides[ $plan ]['benefits'] ) ) {
+			$benefits = array_filter( $overrides[ $plan ]['benefits'], 'is_scalar' );
+			$plans[ $plan ]['benefits'] = array_values( array_filter( array_map( static function ( $benefit ) { return sanitize_text_field( (string) $benefit ); }, $benefits ) ) );
+		}
 	}
 	return $plans;
 }
-// Pushes edited plan titles/prices from Theme Options onto the already-created WooCommerce products.
+function staffswap_wc_basic_plan() {
+	$plan = array( 'listing_limit' => 1, 'monthly_interest_limit' => 3, 'benefits' => array( 'Create your profile', 'Browse swap listings', 'Access free resources', 'Review potential matches' ) );
+	$overrides = get_option( 'staffswap_plan_settings', array() );
+	if ( is_array( $overrides ) && isset( $overrides['basic'] ) && is_array( $overrides['basic'] ) ) {
+		$settings = $overrides['basic'];
+		if ( isset( $settings['listing_limit'] ) ) { $plan['listing_limit'] = max( 1, min( 100, absint( $settings['listing_limit'] ) ) ); }
+		if ( isset( $settings['monthly_interest_limit'] ) ) { $plan['monthly_interest_limit'] = max( 1, min( 1000, absint( $settings['monthly_interest_limit'] ) ) ); }
+		if ( isset( $settings['benefits'] ) && is_array( $settings['benefits'] ) ) {
+			$benefits = array_filter( $settings['benefits'], 'is_scalar' );
+			$plan['benefits'] = array_values( array_filter( array_map( static function ( $benefit ) { return sanitize_text_field( (string) $benefit ); }, $benefits ) ) );
+		}
+	}
+	return $plan;
+}
+function staffswap_wc_listing_limit( $user_id = 0 ) {
+	$user_id = $user_id ? absint( $user_id ) : get_current_user_id();
+	if ( ! staffswap_has_active_membership( $user_id ) ) { return staffswap_wc_basic_plan()['listing_limit']; }
+	$plans = staffswap_wc_plans();
+	$plan = get_user_meta( $user_id, 'staffswap_vip_plan', true );
+	return isset( $plans[ $plan ]['listing_limit'] ) ? $plans[ $plan ]['listing_limit'] : staffswap_wc_basic_plan()['listing_limit'];
+}
+function staffswap_wc_monthly_interest_limit( $user_id = 0 ) {
+	$user_id = $user_id ? absint( $user_id ) : get_current_user_id();
+	if ( ! staffswap_has_active_membership( $user_id ) ) { return staffswap_wc_basic_plan()['monthly_interest_limit']; }
+	$plans = staffswap_wc_plans();
+	$plan = get_user_meta( $user_id, 'staffswap_vip_plan', true );
+	return isset( $plans[ $plan ]['monthly_interest_limit'] ) ? $plans[ $plan ]['monthly_interest_limit'] : staffswap_wc_basic_plan()['monthly_interest_limit'];
+}
+// Pushes edited plan titles, benefits and prices from Theme Options to WooCommerce products.
 function staffswap_wc_sync_plan_products() {
 	if ( ! class_exists( 'WooCommerce' ) ) { return; }
 	foreach ( staffswap_wc_plans() as $plan => $data ) {
 		$product_id = (int) get_option( 'staffswap_vip_product_' . $plan, 0 );
-		if ( $product_id && 'publish' === get_post_status( $product_id ) ) {
-			wp_update_post( array( 'ID' => $product_id, 'post_title' => $data['title'] ) );
+		if ( ! $product_id || 'publish' !== get_post_status( $product_id ) ) { $product_id = staffswap_wc_product( $plan ); }
+		if ( ! $product_id || 'publish' !== get_post_status( $product_id ) ) {
+			error_log( 'StaffSwap could not find or create the WooCommerce membership product for plan ' . $plan . '.' );
+			continue;
+		}
+		$updated = wp_update_post( array( 'ID' => $product_id, 'post_title' => $data['title'], 'post_content' => implode( "\n", $data['benefits'] ) ), true );
+		if ( is_wp_error( $updated ) ) {
+			error_log( 'StaffSwap could not update membership product ' . $product_id . ': ' . $updated->get_error_message() );
+			continue;
+		}
+		$product_object = function_exists( 'wc_get_product' ) ? wc_get_product( $product_id ) : false;
+		if ( $product_object ) {
+			$product_object->set_regular_price( $data['price'] );
+			$product_object->set_sale_price( '' );
+			$product_object->set_price( $data['price'] );
+			$product_object->save();
+		} else {
 			update_post_meta( $product_id, '_regular_price', $data['price'] );
+			update_post_meta( $product_id, '_sale_price', '' );
 			update_post_meta( $product_id, '_price', $data['price'] );
 		}
 	}
@@ -70,10 +125,23 @@ function staffswap_wc_product( $plan = 'month' ) {
 	$product_id = (int) get_option( 'staffswap_vip_product_' . $plan, 0 );
 	if ( $product_id && 'publish' === get_post_status( $product_id ) ) {
 		if ( 'lifetime' === $plan ) { staffswap_wc_setup_founder_stock( $product_id ); }
-		if ( (string) get_post_meta( $product_id, '_price', true ) !== (string) $plans[ $plan ]['price'] ) {
-			wp_update_post( array( 'ID' => $product_id, 'post_title' => $plans[ $plan ]['title'], 'post_content' => 'One-time StaffSwap membership providing access to member messaging and formal swap offers for ' . $plans[ $plan ]['duration'] . '.' ) );
-			update_post_meta( $product_id, '_regular_price', $plans[ $plan ]['price'] );
-			update_post_meta( $product_id, '_price', $plans[ $plan ]['price'] );
+		$product_content = implode( "\n", $plans[ $plan ]['benefits'] );
+		if ( get_the_title( $product_id ) !== $plans[ $plan ]['title'] || get_post_field( 'post_content', $product_id ) !== $product_content ) {
+			$updated = wp_update_post( array( 'ID' => $product_id, 'post_title' => $plans[ $plan ]['title'], 'post_content' => $product_content ), true );
+			if ( is_wp_error( $updated ) ) { error_log( 'StaffSwap could not update membership product ' . $product_id . ': ' . $updated->get_error_message() ); }
+		}
+		if ( (string) get_post_meta( $product_id, '_price', true ) !== (string) $plans[ $plan ]['price'] || (string) get_post_meta( $product_id, '_regular_price', true ) !== (string) $plans[ $plan ]['price'] || '' !== (string) get_post_meta( $product_id, '_sale_price', true ) ) {
+			$product_object = function_exists( 'wc_get_product' ) ? wc_get_product( $product_id ) : false;
+			if ( $product_object ) {
+				$product_object->set_regular_price( $plans[ $plan ]['price'] );
+				$product_object->set_sale_price( '' );
+				$product_object->set_price( $plans[ $plan ]['price'] );
+				$product_object->save();
+			} else {
+				update_post_meta( $product_id, '_regular_price', $plans[ $plan ]['price'] );
+				update_post_meta( $product_id, '_sale_price', '' );
+				update_post_meta( $product_id, '_price', $plans[ $plan ]['price'] );
+			}
 		}
 		return $product_id;
 	}

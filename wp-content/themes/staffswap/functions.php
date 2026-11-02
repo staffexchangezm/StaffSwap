@@ -27,7 +27,7 @@ function staffswap_account_menu_shortcode() {
 	<?php return ob_get_clean();
 }
 add_shortcode( 'staffswap_account_menu', 'staffswap_account_menu_shortcode' );
-function staffswap_fallback_menu() { echo '<ul><li><a href="' . esc_url( home_url( '/' ) ) . '">' . esc_html__( 'Home', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/swaps/' ) ) . '">' . esc_html__( 'Find Swaps', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/resources/' ) ) . '">' . esc_html__( 'Resources Centre', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/how-it-works/' ) ) . '">' . esc_html__( 'How It Works', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/blog/' ) ) . '">' . esc_html__( 'Updates & Opportunities', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/pricing/' ) ) . '">' . esc_html__( 'Pricing', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/about/' ) ) . '">' . esc_html__( 'About Us', 'staffswap' ) . '</a></li></ul>'; }
+function staffswap_fallback_menu() { echo '<ul><li><a href="' . esc_url( home_url( '/' ) ) . '">' . esc_html__( 'Home', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/swaps/' ) ) . '">' . esc_html__( 'Find Swaps', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/resources/' ) ) . '">' . esc_html__( 'Resources Centre', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/how-it-works/' ) ) . '">' . esc_html__( 'How It Works', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/blog/' ) ) . '">' . esc_html__( 'Opportunities & Updates', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/pricing/' ) ) . '">' . esc_html__( 'Pricing', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/about/' ) ) . '">' . esc_html__( 'About Us', 'staffswap' ) . '</a></li></ul>'; }
 
 function staffswap_customize_register( $wp_customize ) {
 	$wp_customize->add_section( 'staffswap_home', array( 'title' => __( 'StaffSwap Homepage', 'staffswap' ), 'priority' => 30 ) );
@@ -188,6 +188,40 @@ function staffswap_testimonials_shortcode( $atts ) {
 }
 add_shortcode( 'staffswap_success_stories', 'staffswap_testimonials_shortcode' );
 
+function staffswap_blog_posts_shortcode( $atts ) {
+	$atts = shortcode_atts( array( 'limit' => 6 ), $atts, 'staffswap_blog_posts' );
+	$limit = min( 24, max( 1, absint( $atts['limit'] ) ) );
+	$posts = new WP_Query( array(
+		'post_type' => 'post',
+		'post_status' => 'publish',
+		'posts_per_page' => $limit,
+		'orderby' => 'date',
+		'order' => 'DESC',
+	) );
+	if ( ! $posts->have_posts() ) {
+		return '<p class="muted">' . esc_html__( 'No updates have been published yet.', 'staffswap' ) . '</p>';
+	}
+
+	ob_start();
+	?>
+	<div class="article-grid staffswap-blog-posts">
+		<?php while ( $posts->have_posts() ) : $posts->the_post(); ?>
+			<article class="article-card">
+				<?php if ( has_post_thumbnail() ) : ?>
+					<a class="article-card__image" href="<?php echo esc_url( get_permalink() ); ?>"><?php the_post_thumbnail( 'medium', array( 'loading' => 'lazy' ) ); ?></a>
+				<?php endif; ?>
+				<p class="eyebrow"><?php echo esc_html( get_the_date() ); ?></p>
+				<h3><a href="<?php echo esc_url( get_permalink() ); ?>"><?php echo esc_html( get_the_title() ); ?></a></h3>
+				<p><?php echo esc_html( wp_trim_words( get_the_excerpt(), 24 ) ); ?></p>
+			</article>
+		<?php endwhile; ?>
+	</div>
+	<?php
+	wp_reset_postdata();
+	return ob_get_clean();
+}
+add_shortcode( 'staffswap_blog_posts', 'staffswap_blog_posts_shortcode' );
+
 function staffswap_random_testimonial() {
 	$story = get_posts( array( 'post_type' => 'staff_testimonial', 'post_status' => 'publish', 'posts_per_page' => 1, 'orderby' => 'rand', 'meta_key' => '_staffswap_testimonial_authorized', 'meta_value' => '1' ) );
 	if ( ! $story ) { return false; }
@@ -219,7 +253,7 @@ function staffswap_setup_pages() {
 		'resources' => array( 'title' => 'Resources Centre', 'slug' => 'resources', 'content' => '[staffswap_resources]' ),
 		'how' => array( 'title' => 'How It Works', 'slug' => 'how-it-works', 'content' => '<h1>How StaffExchangeHub Works</h1><p>Build your profile, post a request, compare matches, connect securely, and complete your workplace exchange.</p>' ),
 		'success' => array( 'title' => 'Success Stories', 'slug' => 'success-stories', 'content' => '<h1>Success Stories</h1><p>Read how professionals across Zambia have found better workplace placements.</p>' ),
-		'blog' => array( 'title' => 'Updates & Opportunities', 'slug' => 'blog', 'content' => '<h1>Updates & Opportunities</h1><p>Discover the latest career opportunities, transfer updates, internship announcements, and professional development news across Zambia.</p>' ),
+		'blog' => array( 'title' => 'Opportunities & Updates', 'slug' => 'blog', 'content' => '<h1>Opportunities & Updates</h1><p>Discover the latest career opportunities, transfer updates, internship announcements, and professional development news across Zambia.</p>' ),
 		'pricing' => array( 'title' => 'Pricing', 'slug' => 'pricing', 'content' => '<h1>Plans for every professional move</h1><p>Start with the free exchange network and choose premium visibility when you need it.</p>' ),
 		'about' => array( 'title' => 'About Us', 'slug' => 'about', 'content' => '' ),
 	);
@@ -255,7 +289,7 @@ function staffswap_setup_pages() {
 				$is_blog_page = (int) $item->object_id === (int) $created['blog'];
 				$is_blog_link = 'custom' === $item->type && untrailingslashit( $item->url ) === untrailingslashit( home_url( '/blog/' ) );
 				if ( $is_blog_page || $is_blog_link ) {
-					wp_update_nav_menu_item( $menu_id, $item->ID, array( 'menu-item-title' => 'Updates & Opportunities', 'menu-item-object' => 'page', 'menu-item-object-id' => $created['blog'], 'menu-item-type' => 'post_type', 'menu-item-status' => 'publish' ) );
+					wp_update_nav_menu_item( $menu_id, $item->ID, array( 'menu-item-title' => 'Opportunities & Updates', 'menu-item-object' => 'page', 'menu-item-object-id' => $created['blog'], 'menu-item-type' => 'post_type', 'menu-item-status' => 'publish' ) );
 				}
 			}
 			$items = wp_get_nav_menu_items( $menu_id );
@@ -479,7 +513,7 @@ function staffswap_sanitize_brand( $input, $current ) {
 function staffswap_footer_default_columns() {
 	return array(
 		array( 'title' => 'Platform', 'items' => array( array( 'text' => 'Browse Swaps', 'url' => home_url( '/swaps/' ) ), array( 'text' => 'Create Listing', 'url' => home_url( '/create-swap/' ) ) ) ),
-		array( 'title' => 'Resources', 'items' => array( array( 'text' => 'Resources Centre', 'url' => home_url( '/resources/' ) ), array( 'text' => 'Updates & Opportunities', 'url' => home_url( '/blog/' ) ) ) ),
+		array( 'title' => 'Resources', 'items' => array( array( 'text' => 'Resources Centre', 'url' => home_url( '/resources/' ) ), array( 'text' => 'Opportunities & Updates', 'url' => home_url( '/blog/' ) ) ) ),
 		array( 'title' => 'Legal', 'items' => array( array( 'text' => 'Privacy Policy', 'url' => home_url( '/privacy-policy/' ) ), array( 'text' => 'Terms of Service', 'url' => home_url( '/terms/' ) ) ) ),
 		array(
 			'title' => 'Contact',
@@ -627,32 +661,82 @@ function staffswap_hub_tab_brand() {
 
 function staffswap_hub_tab_plans() {
 	$plan_defaults = function_exists( 'staffswap_wc_plans' ) ? staffswap_wc_plans() : array(
-		'month' => array( 'title' => 'StaffSwap VIP Gold - 1 Month', 'price' => '99', 'duration' => '1 month' ),
-		'quarter' => array( 'title' => 'StaffSwap VIP Gold - 3 Months', 'price' => '249', 'duration' => '3 months' ),
-		'lifetime' => array( 'title' => 'StaffSwap VIP Gold - Lifetime', 'price' => '199', 'duration' => 'lifetime' ),
+		'month' => array( 'title' => 'StaffSwap VIP Gold - 1 Month', 'price' => '99', 'duration' => '1 month', 'listing_limit' => 1, 'monthly_interest_limit' => 20, 'benefits' => array( 'All Basic benefits', 'Member messaging access', 'Formal swap offers', 'Priority listing visibility', '30 days of VIP features' ) ),
+		'quarter' => array( 'title' => 'StaffSwap VIP Gold - 3 Months', 'price' => '249', 'duration' => '3 months', 'listing_limit' => 1, 'monthly_interest_limit' => 20, 'benefits' => array( 'All Basic benefits', 'Member messaging access', 'Formal swap offers', 'Priority listing visibility', '90 days of VIP features' ) ),
+		'lifetime' => array( 'title' => 'StaffSwap VIP Gold - Lifetime', 'price' => '199', 'duration' => 'lifetime', 'listing_limit' => 1, 'monthly_interest_limit' => 20, 'benefits' => array( 'All VIP Gold benefits', 'Lifetime core VIP access', 'Member messaging access', 'Formal swap offers', 'Priority listing visibility', 'No recurring renewal' ) ),
 	);
+	$basic_defaults = function_exists( 'staffswap_wc_basic_plan' ) ? staffswap_wc_basic_plan() : array( 'listing_limit' => 1, 'monthly_interest_limit' => 3, 'benefits' => array( 'Create your profile', 'Browse swap listings', 'Access free resources', 'Review potential matches' ) );
 	if ( isset( $_POST['staffswap_save_plans'] ) && check_admin_referer( 'staffswap_save_plans', 'staffswap_plans_nonce' ) ) {
 		$overrides = array();
-		foreach ( array_keys( $plan_defaults ) as $plan ) { $overrides[ $plan ] = array( 'title' => sanitize_text_field( wp_unslash( $_POST[ 'plan_title_' . $plan ] ?? '' ) ), 'price' => sanitize_text_field( wp_unslash( $_POST[ 'plan_price_' . $plan ] ?? '' ) ) ); }
-		update_option( 'staffswap_plan_settings', $overrides );
-		if ( function_exists( 'staffswap_wc_sync_plan_products' ) ) { staffswap_wc_sync_plan_products(); }
-		echo '<div class="notice notice-success is-dismissible"><p>Membership plan pricing saved.</p></div>';
-		if ( function_exists( 'staffswap_wc_plans' ) ) { $plan_defaults = staffswap_wc_plans(); }
+		$errors = array();
+		$get_plan_text = static function ( $key ) {
+			$value = $_POST[ $key ] ?? '';
+			return is_scalar( $value ) ? sanitize_text_field( wp_unslash( (string) $value ) ) : '';
+		};
+		$get_plan_limit = static function ( $key ) {
+			$value = $_POST[ $key ] ?? '';
+			return is_scalar( $value ) ? absint( $value ) : 0;
+		};
+		$get_plan_benefits = static function ( $key ) {
+			$value = $_POST[ $key ] ?? '';
+			$text = is_scalar( $value ) ? sanitize_textarea_field( wp_unslash( (string) $value ) ) : '';
+			return array_values( array_filter( array_map( 'sanitize_text_field', array_map( 'trim', explode( "\n", $text ) ) ) ) );
+		};
+		foreach ( $plan_defaults as $plan => $data ) {
+			$title = $get_plan_text( 'plan_title_' . $plan );
+			$price = trim( $get_plan_text( 'plan_price_' . $plan ) );
+			$listing_limit = $get_plan_limit( 'plan_listing_limit_' . $plan );
+			$interest_limit = $get_plan_limit( 'plan_interest_limit_' . $plan );
+			$benefits = $get_plan_benefits( 'plan_benefits_' . $plan );
+			if ( '' === $title ) { $errors[] = ucfirst( $plan ) . ' needs a title.'; }
+			if ( ! preg_match( '/^\d+(?:\.\d{1,2})?$/', $price ) || (float) $price <= 0 ) { $errors[] = ucfirst( $plan ) . ' price must be greater than zero and have no more than two decimal places.'; }
+			if ( $listing_limit < 1 || $listing_limit > 100 ) { $errors[] = ucfirst( $plan ) . ' swap-post limit must be between 1 and 100.'; }
+			if ( $interest_limit < 1 || $interest_limit > 1000 ) { $errors[] = ucfirst( $plan ) . ' monthly contact-request limit must be between 1 and 1,000.'; }
+			if ( ! $benefits ) { $errors[] = ucfirst( $plan ) . ' must include at least one benefit.'; }
+			$overrides[ $plan ] = array( 'title' => $title, 'price' => $price, 'listing_limit' => $listing_limit, 'monthly_interest_limit' => $interest_limit, 'benefits' => $benefits );
+		}
+		$basic_listing_limit = $get_plan_limit( 'plan_listing_limit_basic' );
+		$basic_interest_limit = $get_plan_limit( 'plan_interest_limit_basic' );
+		$basic_benefits = $get_plan_benefits( 'plan_benefits_basic' );
+		if ( $basic_listing_limit < 1 || $basic_listing_limit > 100 ) { $errors[] = 'Basic swap-post limit must be between 1 and 100.'; }
+		if ( $basic_interest_limit < 1 || $basic_interest_limit > 1000 ) { $errors[] = 'Basic monthly contact-request limit must be between 1 and 1,000.'; }
+		if ( ! $basic_benefits ) { $errors[] = 'Basic must include at least one benefit.'; }
+		$overrides['basic'] = array( 'listing_limit' => $basic_listing_limit, 'monthly_interest_limit' => $basic_interest_limit, 'benefits' => $basic_benefits );
+		if ( $errors ) {
+			echo '<div class="notice notice-error"><p>' . esc_html( implode( ' ', $errors ) ) . '</p></div>';
+		} else {
+			update_option( 'staffswap_plan_settings', $overrides );
+			if ( function_exists( 'staffswap_wc_sync_plan_products' ) ) { staffswap_wc_sync_plan_products(); }
+			echo class_exists( 'WooCommerce' )
+				? '<div class="notice notice-success is-dismissible"><p>Membership plans saved and WooCommerce products synchronized.</p></div>'
+				: '<div class="notice notice-success is-dismissible"><p>Membership plans saved. Activate WooCommerce to synchronize the products.</p></div>';
+			if ( function_exists( 'staffswap_wc_plans' ) ) { $plan_defaults = staffswap_wc_plans(); }
+			if ( function_exists( 'staffswap_wc_basic_plan' ) ) { $basic_defaults = staffswap_wc_basic_plan(); }
+		}
 	}
 	if ( ! class_exists( 'WooCommerce' ) ) { echo '<p>Install and activate WooCommerce to sell StaffSwap VIP Gold memberships.</p>'; }
 	?>
 	<form method="post">
 		<div class="staffswap-hub__plans">
+			<div class="staffswap-hub__plan-card">
+				<h3>Basic <small>(Free)</small></h3>
+				<label>Active swap posts allowed<input name="plan_listing_limit_basic" type="number" min="1" max="100" step="1" value="<?php echo esc_attr( $basic_defaults['listing_limit'] ); ?>"></label>
+				<label>Monthly contact requests<input name="plan_interest_limit_basic" type="number" min="1" max="1000" step="1" value="<?php echo esc_attr( $basic_defaults['monthly_interest_limit'] ); ?>"></label>
+				<label>Benefits <small>Enter one benefit per line.</small><textarea name="plan_benefits_basic" rows="6"><?php echo esc_textarea( implode( "\n", $basic_defaults['benefits'] ) ); ?></textarea></label>
+			</div>
 			<?php foreach ( $plan_defaults as $plan => $data ) : ?>
 				<div class="staffswap-hub__plan-card">
 					<h3><?php echo esc_html( ucfirst( $plan ) ); ?> <small>(<?php echo esc_html( $data['duration'] ?? '' ); ?>)</small></h3>
 					<label>Plan title<input name="plan_title_<?php echo esc_attr( $plan ); ?>" value="<?php echo esc_attr( $data['title'] ); ?>"></label>
-					<label>Price (ZMW)<input name="plan_price_<?php echo esc_attr( $plan ); ?>" value="<?php echo esc_attr( $data['price'] ); ?>"></label>
+					<label>Price (ZMW)<input name="plan_price_<?php echo esc_attr( $plan ); ?>" type="number" min="0.01" step="0.01" value="<?php echo esc_attr( $data['price'] ); ?>"></label>
+					<label>Active swap posts allowed<input name="plan_listing_limit_<?php echo esc_attr( $plan ); ?>" type="number" min="1" max="100" step="1" value="<?php echo esc_attr( $data['listing_limit'] ); ?>"></label>
+					<label>Monthly contact requests<input name="plan_interest_limit_<?php echo esc_attr( $plan ); ?>" type="number" min="1" max="1000" step="1" value="<?php echo esc_attr( $data['monthly_interest_limit'] ); ?>"></label>
+					<label>Benefits <small>Enter one benefit per line.</small><textarea name="plan_benefits_<?php echo esc_attr( $plan ); ?>" rows="6"><?php echo esc_textarea( implode( "\n", $data['benefits'] ) ); ?></textarea></label>
 				</div>
 			<?php endforeach; ?>
 		</div>
 		<?php wp_nonce_field( 'staffswap_save_plans', 'staffswap_plans_nonce' ); ?>
-		<p><button type="submit" name="staffswap_save_plans" class="button button-primary">Save plan pricing</button></p>
+		<p><button type="submit" name="staffswap_save_plans" class="button button-primary">Save membership plans</button></p>
 	</form>
 	<?php
 }

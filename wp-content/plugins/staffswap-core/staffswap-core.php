@@ -191,19 +191,25 @@ function staffswap_clear_profession_options_cache( $new_status, $old_status, $po
 }
 add_action( 'transition_post_status', 'staffswap_clear_profession_options_cache', 10, 3 );
 
-function staffswap_active_listing_ids( $user_id ) {
+function staffswap_active_listing_ids( $user_id, $limit = 2 ) {
     return get_posts( array(
         'post_type' => 'swap_listing',
         'post_status' => array( 'publish', 'pending' ),
         'author' => absint( $user_id ),
-        'posts_per_page' => 2,
+        'posts_per_page' => max( 1, min( 101, absint( $limit ) ) ),
         'fields' => 'ids',
         'no_found_rows' => true,
     ) );
 }
 
+function staffswap_user_listing_limit( $user_id = 0 ) {
+    $user_id = $user_id ? absint( $user_id ) : get_current_user_id();
+    return function_exists( 'staffswap_wc_listing_limit' ) ? staffswap_wc_listing_limit( $user_id ) : 1;
+}
+
 function staffswap_monthly_interest_limit( $user_id = 0 ) {
     $user_id = $user_id ? absint( $user_id ) : get_current_user_id();
+    if ( function_exists( 'staffswap_wc_monthly_interest_limit' ) ) { return staffswap_wc_monthly_interest_limit( $user_id ); }
     return function_exists( 'staffswap_has_active_membership' ) && staffswap_has_active_membership( $user_id ) ? 20 : 3;
 }
 
@@ -1021,7 +1027,8 @@ function staffswap_handle_create_listing_submission() {
     $current_user_id = get_current_user_id();
     $form_data = staffswap_create_listing_form_defaults( $current_user_id );
     $errors = array();
-    if ( staffswap_active_listing_ids( $current_user_id ) ) { $errors[] = 'You already have an active swap request. You can publish one active request at a time.'; }
+    $listing_limit = staffswap_user_listing_limit( $current_user_id );
+    if ( count( staffswap_active_listing_ids( $current_user_id, $listing_limit ) ) >= $listing_limit ) { $errors[] = sprintf( 'Your plan allows up to %d active swap post(s). Close or remove an existing post, or upgrade your plan to create another.', $listing_limit ); }
     foreach ( array( 'name', 'profession', 'current_employer', 'employer_type', 'current_location', 'desired_employer', 'desired_location', 'experience', 'housing', 'swap_reason', 'nearby_towns', 'relocation_support', 'urgent' ) as $key ) {
         $raw_value = $_POST[ $key ] ?? '';
         $form_data[ $key ] = is_scalar( $raw_value ) ? sanitize_text_field( wp_unslash( (string) $raw_value ) ) : '';
@@ -1109,14 +1116,15 @@ function staffswap_create_form_shortcode() {
         <?php return ob_get_clean();
     }
 
-    $active_listing_ids = staffswap_active_listing_ids( $current_user_id );
-    if ( $active_listing_ids ) {
+    $listing_limit = staffswap_user_listing_limit( $current_user_id );
+    $active_listing_ids = staffswap_active_listing_ids( $current_user_id, $listing_limit );
+    if ( count( $active_listing_ids ) >= $listing_limit ) {
         $active_listing_id = (int) $active_listing_ids[0];
         ob_start(); ?>
         <section class="panel content-form" role="status">
-            <p class="eyebrow"><?php echo esc_html__( 'ONE ACTIVE REQUEST', 'staffswap-core' ); ?></p>
-            <h1><?php echo esc_html__( 'Your swap request is already listed', 'staffswap-core' ); ?></h1>
-            <p class="muted"><?php echo esc_html__( 'The Basic, VIP Gold and Lifetime plans each allow one active swap request. You can create another after this request is closed or removed.', 'staffswap-core' ); ?></p>
+            <p class="eyebrow"><?php echo esc_html__( 'SWAP POST LIMIT REACHED', 'staffswap-core' ); ?></p>
+            <h1><?php echo esc_html__( 'You have reached your plan limit', 'staffswap-core' ); ?></h1>
+            <p class="muted"><?php echo esc_html( sprintf( 'Your plan allows up to %d active swap post(s). Close or remove an existing post, or upgrade your plan to create another.', $listing_limit ) ); ?></p>
             <a class="button button--primary" href="<?php echo esc_url( staffswap_listing_management_url( $active_listing_id ) ); ?>"><?php echo esc_html__( 'View your current request', 'staffswap-core' ); ?></a>
         </section>
         <?php return ob_get_clean();

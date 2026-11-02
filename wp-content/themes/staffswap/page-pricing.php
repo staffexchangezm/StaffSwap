@@ -7,6 +7,13 @@ if ( ! empty( $staffswap_pricing_elementor_data ) || isset( $_GET['elementor-pre
 	return;
 endif;
 $pricing_page_image = get_the_post_thumbnail_url( get_queried_object_id(), 'large' );
+$pricing_plans = function_exists( 'staffswap_wc_plans' ) ? staffswap_wc_plans() : array(
+    'month' => array( 'title' => 'StaffSwap VIP Gold - 1 Month', 'price' => '99', 'duration' => '1 month', 'listing_limit' => 1, 'monthly_interest_limit' => 20, 'benefits' => array( 'All Basic benefits', 'Member messaging access', 'Formal swap offers', 'Priority listing visibility', '30 days of VIP features' ) ),
+    'quarter' => array( 'title' => 'StaffSwap VIP Gold - 3 Months', 'price' => '249', 'duration' => '3 months', 'listing_limit' => 1, 'monthly_interest_limit' => 20, 'benefits' => array( 'All Basic benefits', 'Member messaging access', 'Formal swap offers', 'Priority listing visibility', '90 days of VIP features' ) ),
+    'lifetime' => array( 'title' => 'StaffSwap VIP Gold - Lifetime', 'price' => '199', 'duration' => 'lifetime', 'listing_limit' => 1, 'monthly_interest_limit' => 20, 'benefits' => array( 'All VIP Gold benefits', 'Lifetime core VIP access', 'Member messaging access', 'Formal swap offers', 'Priority listing visibility', 'No recurring renewal' ) ),
+);
+$basic_plan = function_exists( 'staffswap_wc_basic_plan' ) ? staffswap_wc_basic_plan() : array( 'listing_limit' => 1, 'monthly_interest_limit' => 3, 'benefits' => array( 'Create your profile', 'Browse swap listings', 'Access free resources', 'Review potential matches' ) );
+$basic_benefits = array_merge( $basic_plan['benefits'], array( 'Browse swap listings', 'Publish up to ' . $basic_plan['listing_limit'] . ' active swap post(s)', $basic_plan['monthly_interest_limit'] . ' member contact requests per month' ) );
 ?>
 <section class="pricing-page">
     <div class="pricing-page__hero">
@@ -50,12 +57,7 @@ $pricing_page_image = get_the_post_thumbnail_url( get_queried_object_id(), 'larg
             <h2>Free Forever</h2>
             <p class="pricing-price">K0 <small>/ free</small></p>
             <ul>
-                <li>Create your profile</li>
-                <li>Browse swap listings</li>
-                <li>Publish 1 active swap request</li>
-                <li>3 member contact requests per month</li>
-                <li>Access free resources</li>
-                <li>Review potential matches</li>
+                <?php foreach ( array_unique( $basic_benefits ) as $benefit ) : ?><li><?php echo esc_html( $benefit ); ?></li><?php endforeach; ?>
             </ul>
             <?php if ( is_user_logged_in() ) : ?>
                 <a class="button button--outline" href="<?php echo esc_url( home_url( '/swaps/' ) ); ?>"><?php echo esc_html__( 'Browse Swap Listings', 'staffswap' ); ?></a>
@@ -64,44 +66,24 @@ $pricing_page_image = get_the_post_thumbnail_url( get_queried_object_id(), 'larg
             <?php endif; ?>
         </article>
 
-        <article class="pricing-card pricing-card--featured">
-            <div class="pricing-card__top">
-                <div class="pricing-card__icon pricing-card__icon--gold"><span class="dashicons dashicons-star-filled" aria-hidden="true"></span></div>
-                <p class="eyebrow">VIP Gold</p>
-            </div>
-            <div class="pricing-card__badge">BEST VALUE</div>
-            <h2>30 Days</h2>
-            <p class="pricing-price"><?php echo shortcode_exists( 'staffswap_plan_price' ) ? wp_kses_post( do_shortcode( '[staffswap_plan_price plan="month"]' ) ) : 'K99'; ?> <small>/ one-time</small></p>
-            <ul>
-                <li>All Basic benefits</li>
-                <li>Member messaging access</li>
-                <li>Formal swap offers</li>
-                <li>20 member contact requests per month</li>
-                <li>Priority listing visibility</li>
-                <li>30 days of VIP features</li>
-            </ul>
-            <?php echo shortcode_exists( 'staffswap_upgrade' ) ? do_shortcode( '[staffswap_upgrade plan="month"]' ) : ''; ?>
-        </article>
-
-        <article class="pricing-card pricing-card--lifetime">
-            <div class="pricing-card__top">
-                <div class="pricing-card__icon pricing-card__icon--lifetime"><span class="dashicons dashicons-awards" aria-hidden="true"></span></div>
-                <p class="eyebrow">Founding VIP Lifetime</p>
-            </div>
-            <h2>Lifetime Access</h2>
-            <p class="pricing-price"><?php echo shortcode_exists( 'staffswap_plan_price' ) ? wp_kses_post( do_shortcode( '[staffswap_plan_price plan="lifetime"]' ) ) : 'K199'; ?> <small>/ once</small></p>
-            <ul>
-                <li>All VIP Gold benefits</li>
-                <li>Lifetime core VIP access</li>
-                <li>Member messaging access</li>
-                <li>Formal swap offers</li>
-                <li>20 member contact requests per month</li>
-                <li>Priority listing visibility</li>
-                <li>No recurring renewal</li>
-            </ul>
-            <p class="muted">Limited to the first 150 founding members. Founding Members receive a badge on their swap listing.</p>
-            <?php echo shortcode_exists( 'staffswap_upgrade' ) ? do_shortcode( '[staffswap_upgrade plan="lifetime"]' ) : ''; ?>
-        </article>
+        <?php foreach ( $pricing_plans as $plan_key => $plan_data ) : ?>
+            <article class="pricing-card<?php echo 'month' === $plan_key ? ' pricing-card--featured' : ( 'lifetime' === $plan_key ? ' pricing-card--lifetime' : '' ); ?>">
+                <div class="pricing-card__top">
+                    <div class="pricing-card__icon <?php echo 'lifetime' === $plan_key ? 'pricing-card__icon--lifetime' : 'pricing-card__icon--gold'; ?>"><span class="dashicons <?php echo 'lifetime' === $plan_key ? 'dashicons-awards' : 'dashicons-star-filled'; ?>" aria-hidden="true"></span></div>
+                    <p class="eyebrow"><?php echo esc_html( 'lifetime' === $plan_key ? 'Founding VIP Lifetime' : 'VIP Gold' ); ?></p>
+                </div>
+                <?php if ( 'month' === $plan_key ) : ?><div class="pricing-card__badge">BEST VALUE</div><?php endif; ?>
+                <h2><?php echo esc_html( $plan_data['title'] ); ?></h2>
+                <p class="pricing-price"><?php echo shortcode_exists( 'staffswap_plan_price' ) ? wp_kses_post( do_shortcode( '[staffswap_plan_price plan="' . esc_attr( $plan_key ) . '"]' ) ) : 'K' . esc_html( $plan_data['price'] ); ?> <small>/ one-time</small></p>
+                <ul>
+                    <li><?php echo esc_html( 'Up to ' . $plan_data['listing_limit'] . ' active swap post(s)' ); ?></li>
+                    <li><?php echo esc_html( $plan_data['monthly_interest_limit'] . ' member contact requests per month' ); ?></li>
+                    <?php foreach ( $plan_data['benefits'] as $benefit ) : ?><li><?php echo esc_html( $benefit ); ?></li><?php endforeach; ?>
+                </ul>
+                <?php if ( 'lifetime' === $plan_key ) : ?><p class="muted">Limited to the first 150 founding members. Founding Members receive a badge on their swap listing.</p><?php endif; ?>
+                <?php echo shortcode_exists( 'staffswap_upgrade' ) ? do_shortcode( '[staffswap_upgrade plan="' . esc_attr( $plan_key ) . '"]' ) : ''; ?>
+            </article>
+        <?php endforeach; ?>
     </div>
 
     <div class="membership-compare">
@@ -111,21 +93,22 @@ $pricing_page_image = get_the_post_thumbnail_url( get_queried_object_id(), 'larg
                 <tr>
                     <th>Feature</th>
                     <th>Basic (Free)</th>
-                    <th>VIP Gold (<?php echo esc_html( shortcode_exists( 'staffswap_plan_price' ) ? wp_strip_all_tags( do_shortcode( '[staffswap_plan_price plan="month"]' ) ) : 'K99' ); ?>)</th>
-                    <th>VIP Lifetime (<?php echo esc_html( shortcode_exists( 'staffswap_plan_price' ) ? wp_strip_all_tags( do_shortcode( '[staffswap_plan_price plan="lifetime"]' ) ) : 'K199' ); ?>)</th>
+                    <?php foreach ( $pricing_plans as $plan_key => $plan_data ) : ?>
+                        <th><?php echo esc_html( $plan_data['title'] ); ?> (<?php echo esc_html( shortcode_exists( 'staffswap_plan_price' ) ? wp_strip_all_tags( do_shortcode( '[staffswap_plan_price plan="' . esc_attr( $plan_key ) . '"]' ) ) : 'K' . $plan_data['price'] ); ?>)</th>
+                    <?php endforeach; ?>
                 </tr>
             </thead>
             <tbody>
-                <tr><td>Membership duration</td><td>Unlimited</td><td>30 days</td><td>Lifetime</td></tr>
-                <tr><td>Create profile</td><td>✓</td><td>✓</td><td>✓</td></tr>
-                <tr><td>Browse swap listings</td><td>✓</td><td>✓</td><td>✓</td></tr>
-                <tr><td>Active swap listings</td><td>1</td><td>1</td><td>1</td></tr>
-                <tr><td>Monthly member contact requests</td><td>3</td><td>20</td><td>20</td></tr>
-                <tr><td>Member messaging and swap offers</td><td>Within monthly allowance</td><td>Within monthly allowance</td><td>Within monthly allowance</td></tr>
-                <tr><td>Priority listing visibility</td><td>—</td><td>✓</td><td>✓</td></tr>
-                <tr><td>Founding Member badge</td><td>—</td><td>—</td><td>✓ (first 150)</td></tr>
-                <tr><td>Access free resources</td><td>✓</td><td>✓</td><td>✓</td></tr>
-                <tr><td>Automatic renewal</td><td>No</td><td>No</td><td>No</td></tr>
+                <tr><td>Membership duration</td><td>Unlimited</td><?php foreach ( $pricing_plans as $plan_data ) : ?><td><?php echo esc_html( $plan_data['duration'] ); ?></td><?php endforeach; ?></tr>
+                <tr><td>Active swap posts</td><td><?php echo esc_html( $basic_plan['listing_limit'] ); ?></td><?php foreach ( $pricing_plans as $plan_data ) : ?><td><?php echo esc_html( $plan_data['listing_limit'] ); ?></td><?php endforeach; ?></tr>
+                <tr><td>Monthly member contact requests</td><td><?php echo esc_html( $basic_plan['monthly_interest_limit'] ); ?></td><?php foreach ( $pricing_plans as $plan_data ) : ?><td><?php echo esc_html( $plan_data['monthly_interest_limit'] ); ?></td><?php endforeach; ?></tr>
+                <?php
+                $benefit_rows = array_unique( array_merge( $basic_plan['benefits'], ...array_map( static function ( $plan_data ) { return $plan_data['benefits']; }, $pricing_plans ) ) );
+                foreach ( $benefit_rows as $benefit ) :
+                    if ( '' === trim( $benefit ) ) { continue; }
+                ?>
+                    <tr><td><?php echo esc_html( $benefit ); ?></td><td><?php echo in_array( $benefit, $basic_plan['benefits'], true ) ? '✓' : '—'; ?></td><?php foreach ( $pricing_plans as $plan_data ) : ?><td><?php echo in_array( $benefit, $plan_data['benefits'], true ) ? '✓' : '—'; ?></td><?php endforeach; ?></tr>
+                <?php endforeach; ?>
             </tbody>
         </table>
     </div>

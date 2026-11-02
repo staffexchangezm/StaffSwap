@@ -16,7 +16,7 @@ while ( have_posts() ) :
 	?>
 	<article <?php post_class( 'single-article' ); ?>>
 		<header class="single-article__header">
-			<a class="single-article__back" href="<?php echo esc_url( home_url( '/blog/' ) ); ?>"><span aria-hidden="true">&larr;</span> <?php echo esc_html__( 'Updates & Opportunities', 'staffswap' ); ?></a>
+			<a class="single-article__back" href="<?php echo esc_url( home_url( '/blog/' ) ); ?>"><span aria-hidden="true">&larr;</span> <?php echo esc_html__( 'Opportunities & Updates', 'staffswap' ); ?></a>
 			<div class="single-article__eyebrow">
 				<?php if ( $categories ) : ?><span><?php echo esc_html( $categories[0]->name ); ?></span><?php endif; ?>
 				<time datetime="<?php echo esc_attr( get_the_date( DATE_W3C ) ); ?>"><?php echo esc_html( get_the_date() ); ?></time>
@@ -55,7 +55,7 @@ while ( have_posts() ) :
 				</div>
 			</section>
 		<?php endif; ?>
-		<p class="single-article__back-bottom"><a class="button button--outline" href="<?php echo esc_url( home_url( '/blog/' ) ); ?>">&larr; <?php echo esc_html__( 'Back to Updates & Opportunities', 'staffswap' ); ?></a></p>
+		<p class="single-article__back-bottom"><a class="button button--outline" href="<?php echo esc_url( home_url( '/blog/' ) ); ?>">&larr; <?php echo esc_html__( 'Back to Opportunities & Updates', 'staffswap' ); ?></a></p>
 	</article>
 	<?php if ( comments_open() || get_comments_number() ) : comments_template(); endif; ?>
 <?php endwhile; ?>

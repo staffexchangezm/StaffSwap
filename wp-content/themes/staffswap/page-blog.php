@@ -1,6 +1,5 @@
 <?php
 get_header();
-if ( staffswap_has_builder_content() ) : while ( have_posts() ) : the_post(); the_content(); endwhile; get_footer(); return; endif;
 $category_value = $_GET['opportunity_category'] ?? '';
 $search_value = $_GET['opportunity_search'] ?? '';
 $profession_value = $_GET['opportunity_profession'] ?? '';
@@ -52,7 +51,7 @@ $page_image = get_the_post_thumbnail_url( get_queried_object_id(), 'large' );
 	<header class="opportunities-hero"<?php if ( $page_image ) : ?> style="--opportunities-image:url('<?php echo esc_url( $page_image ); ?>')"<?php endif; ?>>
 		<div class="opportunities-hero__copy">
 			<p class="eyebrow"><?php echo esc_html__( 'STAY INFORMED, GROW YOUR CAREER', 'staffswap' ); ?></p>
-			<h1><?php echo esc_html__( 'Updates & Opportunities', 'staffswap' ); ?></h1>
+			<h1><?php echo esc_html__( 'Opportunities & Updates', 'staffswap' ); ?></h1>
 			<p><?php echo esc_html__( 'Discover career opportunities, internship programmes, transfer updates and professional development news across Zambia.', 'staffswap' ); ?></p>
 			<form class="opportunities-search" method="get">
 				<label class="screen-reader-text" for="opportunity-search"><?php echo esc_html__( 'Search opportunities', 'staffswap' ); ?></label>
