@@ -164,7 +164,7 @@ function staffswap_wc_upgrade_shortcode( $atts ) {
 		if ( $product && ! $product->is_in_stock() ) { return '<span class="button button--outline" aria-disabled="true">Founding memberships sold out</span>'; }
 	}
 	if ( ! is_user_logged_in() ) {
-		return '<a class="button button--outline" href="' . esc_url( wp_login_url( get_permalink() ) ) . '">Sign in to choose this plan</a>';
+		return '<a class="button button--outline" href="' . esc_url( add_query_arg( 'redirect_to', get_permalink(), home_url( '/sign-in/' ) ) ) . '">Sign in to choose this plan</a>';
 	}
 	if ( staffswap_has_active_membership() && $plan === get_user_meta( get_current_user_id(), 'staffswap_vip_plan', true ) ) {
 		$expires_at = get_user_meta( get_current_user_id(), 'staffswap_vip_expires_at', true );

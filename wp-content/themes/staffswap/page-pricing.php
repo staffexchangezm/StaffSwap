@@ -48,7 +48,7 @@ $basic_benefits = array_merge( $basic_plan['benefits'], array( 'Browse swap list
         </div>
     </div>
 
-    <div class="pricing-grid">
+    <div class="pricing-grid" id="pricing-plans">
         <article class="pricing-card pricing-card--basic">
             <div class="pricing-card__top">
                 <div class="pricing-card__icon pricing-card__icon--basic"><span class="dashicons dashicons-admin-users" aria-hidden="true"></span></div>
@@ -167,7 +167,7 @@ $basic_benefits = array_merge( $basic_plan['benefits'], array( 'Browse swap list
                 <a class="button button--outline button--outline-light" href="<?php echo esc_url( home_url( '/swaps/' ) ); ?>"><?php echo esc_html__( 'Find Swaps', 'staffswap' ); ?></a>
             <?php else : ?>
                 <a class="button button--primary" href="<?php echo esc_url( home_url( '/register/' ) ); ?>"><?php echo esc_html__( 'Sign Up Free', 'staffswap' ); ?></a>
-                <a class="button button--outline button--outline-light" href="<?php echo esc_url( home_url( '/swaps/' ) ); ?>"><?php echo esc_html__( 'View Pricing Plans', 'staffswap' ); ?></a>
+                <a class="button button--outline button--outline-light" href="<?php echo esc_url( get_permalink() . '#pricing-plans' ); ?>"><?php echo esc_html__( 'View Pricing Plans', 'staffswap' ); ?></a>
             <?php endif; ?>
         </div>
     </div>

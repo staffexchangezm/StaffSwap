@@ -56,7 +56,7 @@ register_activation_hook( __FILE__, function() { staffswap_message_post_type(); 
 function staffswap_contact_form_shortcode( $atts ) {
 	$atts = shortcode_atts( array( 'listing' => get_the_ID() ), $atts, 'staffswap_contact' );
 	if ( ! is_user_logged_in() ) {
-		return '<div class="panel"><p>Please sign in to contact this member.</p><a class="button button--primary" href="' . esc_url( wp_login_url( get_permalink() ) ) . '">Sign in</a></div>';
+		return '<div class="panel"><p>Please sign in to contact this member.</p><a class="button button--primary" href="' . esc_url( add_query_arg( 'redirect_to', get_permalink(), home_url( '/sign-in/' ) ) ) . '">Sign in</a></div>';
 	}
 	$notice = '';
 	$user_id = get_current_user_id();
@@ -879,7 +879,7 @@ function staffswap_offer_form_shortcode( $atts ) {
 		return '';
 	}
 	if ( ! is_user_logged_in() ) {
-		return '<section class="panel" style="margin-top:16px"><h2>Send a formal swap offer</h2><p class="muted">Sign in to send a formal swap offer for this listing.</p><a class="button button--primary" href="' . esc_url( wp_login_url( get_permalink( $listing->ID ) ) ) . '">Sign in to send an offer</a></section>';
+		return '<section class="panel" style="margin-top:16px"><h2>Send a formal swap offer</h2><p class="muted">Sign in to send a formal swap offer for this listing.</p><a class="button button--primary" href="' . esc_url( add_query_arg( 'redirect_to', get_permalink( $listing->ID ), home_url( '/sign-in/' ) ) ) . '">Sign in to send an offer</a></section>';
 	}
 	if ( (int) $listing->post_author === get_current_user_id() ) {
 		return '';
