@@ -103,7 +103,11 @@ $basic_benefits = array_merge( $basic_plan['benefits'], array( 'Browse swap list
                 <tr><td>Active swap posts</td><td><?php echo esc_html( $basic_plan['listing_limit'] ); ?></td><?php foreach ( $pricing_plans as $plan_data ) : ?><td><?php echo esc_html( $plan_data['listing_limit'] ); ?></td><?php endforeach; ?></tr>
                 <tr><td>Monthly member contact requests</td><td><?php echo esc_html( $basic_plan['monthly_interest_limit'] ); ?></td><?php foreach ( $pricing_plans as $plan_data ) : ?><td><?php echo esc_html( $plan_data['monthly_interest_limit'] ); ?></td><?php endforeach; ?></tr>
                 <?php
-                $benefit_rows = array_unique( array_merge( $basic_plan['benefits'], ...array_map( static function ( $plan_data ) { return $plan_data['benefits']; }, $pricing_plans ) ) );
+                $benefit_rows = $basic_plan['benefits'];
+                foreach ( $pricing_plans as $plan_data ) {
+                    $benefit_rows = array_merge( $benefit_rows, $plan_data['benefits'] );
+                }
+                $benefit_rows = array_unique( $benefit_rows );
                 foreach ( $benefit_rows as $benefit ) :
                     if ( '' === trim( $benefit ) ) { continue; }
                 ?>
