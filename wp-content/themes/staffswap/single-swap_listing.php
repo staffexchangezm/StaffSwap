@@ -23,13 +23,13 @@ while ( have_posts() ) :
 		<?php echo do_shortcode( '[staffswap_contact]' ); ?>
 		<?php echo do_shortcode( '[staffswap_offer_form]' ); ?>
 		<?php
-		if ( $profession && function_exists( 'staffswap_listing_card' ) ) {
-			$similar = new WP_Query( array( 'post_type' => 'swap_listing', 'post_status' => 'publish', 'post__not_in' => array( $listing_id ), 'posts_per_page' => 3, 'meta_key' => '_staffswap_profession', 'meta_value' => $profession ) );
-			if ( $similar->have_posts() ) :
+		if ( function_exists( 'staffswap_get_listing_suggestions' ) ) {
+			$suggestions = staffswap_get_listing_suggestions( $listing_id, 3 );
+			if ( ! empty( $suggestions ) ) :
 				?>
 				<section style="margin-top:32px">
 					<div class="page-heading"><div><p class="eyebrow"><?php echo esc_html__( 'MORE LIKE THIS', 'staffswap' ); ?></p><h2><?php echo esc_html__( 'Similar swap listings', 'staffswap' ); ?></h2></div></div>
-					<div class="listing-list"><?php while ( $similar->have_posts() ) : $similar->the_post(); echo staffswap_listing_card( get_the_ID() ); endwhile; wp_reset_postdata(); ?></div>
+					<div class="listing-list"><?php foreach ( $suggestions as $suggestion ) : echo staffswap_listing_card( $suggestion->ID ); endforeach; ?></div>
 				</section>
 				<?php
 			endif;

@@ -348,12 +348,38 @@ function staffswap_complete_inbox_shortcode() {
 		}
 	}
 	$vault_documents = get_posts( array( 'post_type' => 'staffswap_document', 'post_status' => 'publish', 'author' => $user_id, 'posts_per_page' => 100, 'orderby' => 'date', 'order' => 'DESC' ) );
+	$group_keys = array_keys( $groups );
+	$selected_group_key = isset( $_GET['conversation'] ) && is_scalar( $_GET['conversation'] ) ? sanitize_text_field( wp_unslash( (string) $_GET['conversation'] ) ) : '';
+	if ( ! $selected_group_key || ! isset( $groups[ $selected_group_key ] ) ) {
+		$selected_group_key = $group_keys[0] ?? '';
+	}
 	ob_start(); echo $notice; ?>
 	<div class="message-inbox">
 		<div class="page-heading"><div><p class="eyebrow">PRIVATE CONVERSATIONS</p><h1>Your messages</h1><p class="muted">Connect with potential exchange partners before you make a move.</p></div><a class="button button--outline" href="<?php echo esc_url( home_url( '/document-vault/' ) ); ?>">Document Vault</a></div>
 		<?php if ( $groups ) : ?>
 			<div class="message-conversations">
-				<?php foreach ( $groups as $group ) : $listing_id = $group['listing_id']; $participant_id = $group['participant_id']; $thread_messages = array_reverse( $group['messages'] ); $unread = (bool) array_intersect( wp_list_pluck( $thread_messages, 'ID' ), $newly_read ); $reply_form_id = 'reply-' . $listing_id . '-' . $participant_id; ?>
+				<aside class="message-contacts panel">
+					<header>
+						<h2>Contacts</h2>
+					</header>
+					<ul>
+						<?php foreach ( $groups as $group_key => $group ) : $listing_id = $group['listing_id']; $participant_id = $group['participant_id']; $thread_messages = array_reverse( $group['messages'] ); $last_message = end( $thread_messages ); $unread = (bool) array_intersect( wp_list_pluck( $thread_messages, 'ID' ), $newly_read ); ?>
+							<li class="message-contact <?php echo $group_key === $selected_group_key ? 'is-active' : ''; ?>">
+								<a href="<?php echo esc_url( add_query_arg( 'conversation', rawurlencode( $group_key ), home_url( '/messages/' ) ) ); ?>">
+									<span class="chat-avatar"><?php echo get_avatar( $participant_id, 42 ); ?></span>
+									<div>
+										<strong><?php echo esc_html( get_the_author_meta( 'display_name', $participant_id ) ); ?></strong>
+										<span class="muted"><?php echo esc_html( $listing_id && get_post( $listing_id ) ? get_the_title( $listing_id ) : 'General conversation' ); ?></span>
+										<small><?php echo esc_html( $last_message ? get_the_date( 'j M', $last_message ) : '' ); ?></small>
+									</div>
+									<?php if ( $unread ) : ?><span class="message-count">New</span><?php endif; ?>
+								</a>
+							</li>
+						<?php endforeach; ?>
+					</ul>
+				</aside>
+
+				<?php $selected_group = $groups[ $selected_group_key ] ?? ( $group_keys ? $groups[ $group_keys[0] ] : null ); if ( $selected_group ) : $listing_id = $selected_group['listing_id']; $participant_id = $selected_group['participant_id']; $thread_messages = array_reverse( $selected_group['messages'] ); $reply_form_id = 'reply-' . $listing_id . '-' . $participant_id; $unread = (bool) array_intersect( wp_list_pluck( $thread_messages, 'ID' ), $newly_read ); ?>
 					<section class="panel message-conversation <?php echo $unread ? 'is-unread' : ''; ?>">
 						<header>
 							<span class="chat-avatar"><?php echo get_avatar( $participant_id, 44 ); ?></span>
@@ -382,7 +408,7 @@ function staffswap_complete_inbox_shortcode() {
 							<input type="hidden" name="listing_id" value="<?php echo esc_attr( $listing_id ); ?>"><input type="hidden" name="recipient_id" value="<?php echo esc_attr( $participant_id ); ?>"><?php wp_nonce_field( 'staffswap_reply_' . $listing_id, 'staffswap_reply_nonce' ); ?>
 						</form><?php endif; ?>
 					</section>
-				<?php endforeach; ?>
+				<?php endif; ?>
 			</div>
 		<?php else : ?><section class="panel"><p class="muted">No conversations yet.</p></section><?php endif; ?>
 	</div>
@@ -397,16 +423,7 @@ function staffswap_chat_assets() {
 	$done = true;
 	?>
 <style>
-.message-conversation{padding:0;overflow:hidden}.message-conversation>header{display:flex;align-items:center;gap:12px;padding:12px 16px;background:#0d2240;color:#fff;border:0;margin:0}.message-conversation>header h2{margin:0;font-size:1rem;color:#fff}.message-conversation>header .eyebrow{margin:0;color:#b8c7dc;font-size:.75rem}.message-conversation>header .message-count{margin-left:auto;background:#00bb7f;color:#fff;border-radius:999px;padding:2px 10px;font-size:.75rem}.chat-avatar img{border-radius:50%;display:block}
-.chat-thread{display:flex;flex-direction:column;gap:6px;padding:16px;max-height:460px;overflow-y:auto;background:#efeae2}
-.chat-thread .message-row{max-width:78%;align-self:flex-start;background:#fff;border-radius:10px 10px 10px 2px;padding:7px 10px 4px;box-shadow:0 1px 1px rgba(0,0,0,.12);border:0;margin:0}.chat-thread .message-row.is-own{align-self:flex-end;background:#d9fdd3;border-radius:10px 10px 2px 10px}.chat-thread .message-row.is-unread{box-shadow:0 0 0 2px #00bb7f}
-.chat-thread .message-row p{margin:0 0 2px;overflow-wrap:anywhere}.chat-thread .message-row small{display:block;text-align:right;font-size:.7rem}.chat-thread .message-attachment{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:rgba(0,0,0,.05);border-radius:8px;padding:8px;margin:2px 0}
-.chat-composer{position:relative;padding:10px 12px;background:#f0f2f5;display:block;margin:0}.chat-composer__bar{display:flex;align-items:flex-end;gap:8px}.chat-composer textarea{flex:1;border:0;border-radius:20px;padding:10px 14px;resize:none;max-height:120px;min-height:40px;margin:0}
-.chat-btn{background:none;border:0;font-size:1.35rem;cursor:pointer;padding:6px;line-height:1;margin:0}.chat-send{width:42px;height:42px;border-radius:50%;border:0;background:#00bb7f;color:#fff;font-size:1.1rem;cursor:pointer;flex:none}
-.chat-composer__file{background:#fff;border-radius:8px;padding:6px 10px;margin-bottom:8px;font-size:.85rem;display:flex;justify-content:space-between;gap:8px}.chat-composer__file[hidden],.chat-emoji-panel[hidden]{display:none}.chat-composer__file button{border:0;background:none;cursor:pointer}
-.chat-emoji-panel{display:grid;grid-template-columns:repeat(auto-fill,minmax(36px,1fr));gap:2px;background:#fff;border-radius:10px;padding:8px;margin-top:8px;max-height:170px;overflow-y:auto}.chat-emoji-panel button{border:0;background:none;font-size:1.4rem;cursor:pointer;border-radius:6px}.chat-emoji-panel button:hover{background:#f0f2f5}
-.chat-vault{margin-top:8px;font-size:.85rem}.chat-vault select{width:100%;margin-top:6px}
-</style>
+.message-conversations{display:grid;grid-template-columns:320px minmax(0,1fr);gap:0;min-height:620px;border:1px solid #e5eaf0;border-radius:14px;overflow:hidden;background:#f6f8fb}.message-contacts{border-right:1px solid #e5eaf0;border-radius:0;overflow:hidden}.message-contacts header{padding:18px 16px 12px}.message-contacts header h2{margin:0;font-size:1rem;color:#0d2240}.message-contacts ul{list-style:none;margin:0;padding:0}.message-contact a{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #eef2f7;color:inherit;text-decoration:none;transition:background .15s ease}.message-contact a:hover,.message-contact.is-active a{background:#edfdf7}.message-contact a > div{display:flex;flex:1;flex-direction:column;min-width:0}.message-contact a strong{display:block;font-size:.95rem;color:#0d2240;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.message-contact a .muted{display:block;font-size:.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.message-contact a small{display:block;font-size:.72rem;color:#64748b;margin-top:3px}.message-contact .message-count{margin-left:auto;background:#00bb7f;color:#fff;border-radius:999px;padding:2px 8px;font-size:.7rem}.message-conversation{padding:0;overflow:hidden;border-radius:0;border:0}.message-conversation>header{display:flex;align-items:center;gap:12px;padding:12px 16px;background:#0d2240;color:#fff;border:0;margin:0}.message-conversation>header h2{margin:0;font-size:1rem;color:#fff}.message-conversation>header .eyebrow{margin:0;color:#b8c7dc;font-size:.75rem}.message-conversation>header .message-count{margin-left:auto;background:#00bb7f;color:#fff;border-radius:999px;padding:2px 10px;font-size:.75rem}.chat-avatar img{border-radius:50%;display:block}.chat-thread{display:flex;flex-direction:column;gap:6px;padding:16px;max-height:460px;overflow-y:auto;background:#efeae2}.chat-thread .message-row{max-width:78%;align-self:flex-start;background:#fff;border-radius:10px 10px 10px 2px;padding:7px 10px 4px;box-shadow:0 1px 1px rgba(0,0,0,.12);border:0;margin:0}.chat-thread .message-row.is-own{align-self:flex-end;background:#d9fdd3;border-radius:10px 10px 2px 10px}.chat-thread .message-row.is-unread{box-shadow:0 0 0 2px #00bb7f}.chat-thread .message-row p{margin:0 0 2px;overflow-wrap:anywhere}.chat-thread .message-row small{display:block;text-align:right;font-size:.7rem}.chat-thread .message-attachment{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:rgba(0,0,0,.05);border-radius:8px;padding:8px;margin:2px 0}.chat-composer{position:relative;padding:10px 12px;background:#f0f2f5;display:block;margin:0}.chat-composer__bar{display:flex;align-items:flex-end;gap:8px}.chat-composer textarea{flex:1;border:0;border-radius:20px;padding:10px 14px;resize:none;max-height:120px;min-height:40px;margin:0}.chat-btn{background:none;border:0;font-size:1.35rem;cursor:pointer;padding:6px;line-height:1;margin:0}.chat-send{width:42px;height:42px;border-radius:50%;border:0;background:#00bb7f;color:#fff;font-size:1.1rem;cursor:pointer;flex:none}.chat-composer__file{background:#fff;border-radius:8px;padding:6px 10px;margin-bottom:8px;font-size:.85rem;display:flex;justify-content:space-between;gap:8px}.chat-composer__file[hidden],.chat-emoji-panel[hidden]{display:none}.chat-composer__file button{border:0;background:none;cursor:pointer}.chat-emoji-panel{display:grid;grid-template-columns:repeat(auto-fill,minmax(36px,1fr));gap:2px;background:#fff;border-radius:10px;padding:8px;margin-top:8px;max-height:170px;overflow-y:auto}.chat-emoji-panel button{border:0;background:none;font-size:1.4rem;cursor:pointer;border-radius:6px}.chat-emoji-panel button:hover{background:#f0f2f5}.chat-vault{margin-top:8px;font-size:.85rem}.chat-vault select{width:100%;margin-top:6px}@media (max-width: 860px){.message-conversations{grid-template-columns:1fr}.message-contacts{border-right:0;border-bottom:1px solid #e5eaf0;max-height:240px;overflow-y:auto}.message-contact a{padding:10px 12px}} </style>
 <script>
 (function(){
 var E='😀 😃 😄 😁 😆 😅 😂 🤣 😊 😇 🙂 😉 😍 🥰 😘 😋 😎 🤩 🥳 🤔 😐 😴 😢 😭 😡 🤝 👍 👎 👏 🙏 💪 🙌 👋 ✅ ❌ ⭐ 🔥 🎉 ❤️ 💼 🏢 🏠 📍 📄 📎 📞 ✉️ 🚗 ✈️'.split(' ');
