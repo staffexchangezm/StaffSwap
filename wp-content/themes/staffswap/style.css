@@ -588,11 +588,13 @@ html{scroll-padding-top:90px}
 .offer-history summary,.offer-actions__more summary{cursor:pointer;color:#0f766e;font-weight:600;font-size:13px;padding:6px 0}
 .offer-actions{border-top:1px solid var(--line);margin-top:12px;padding-top:12px;display:grid;gap:10px}.offer-actions__buttons{display:flex;flex-wrap:wrap;gap:8px}.offer-actions__more{display:grid;gap:8px}.offer-actions textarea,.offer-actions input[type=date]{width:100%}
 .offer-actions button.button--ghost{background:#fff;color:#334155;border:1px solid var(--line)}
+.offer-progress{margin:14px 0;padding:14px;border:1px solid var(--line);border-radius:var(--radius);background:#f8fafc}.offer-progress h4,.offer-review-form h4{margin:0 0 10px}.offer-progress ol{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;list-style:none;padding:0;margin:0 0 12px}.offer-progress li{border-top:3px solid #cbd5e1;padding-top:8px;color:#64748b;font-size:12px}.offer-progress li.is-complete{border-color:#00bb7f;color:#0f766e}.offer-progress li small{display:block;color:var(--muted);margin-top:4px}.offer-review-form{margin-top:12px;padding:14px;border-top:1px solid var(--line)}.staffswap-profile-reviews{margin-top:16px}.staffswap-profile-review{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;padding:12px 0;border-top:1px solid var(--line)}.staffswap-profile-review>strong{color:#0f766e}.staffswap-profile-review>span{color:var(--muted);font-size:12px}.staffswap-profile-review p{grid-column:1/-1;margin:4px 0 0}.staffswap-three-way{margin-top:16px}.staffswap-three-way__chain{padding-top:10px;border-top:1px solid var(--line);margin-top:14px}.staffswap-three-way__chain ol{display:grid;gap:10px;list-style:none;padding:0;margin:0}.staffswap-three-way__chain .listing-card{margin:0}
 @media(max-width:560px){
 	.offer-card{padding:14px}
 	.offer-route{grid-template-columns:1fr;gap:4px}.offer-route__swap{transform:rotate(90deg);font-size:20px;line-height:1}
 	.offer-docs>*,.offer-docs .button,.offer-docs button,.offer-actions__buttons>*{flex:1 1 100%;width:100%;min-height:44px;text-align:center;justify-content:center}
 	.offer-facts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+	.offer-progress ol{grid-template-columns:1fr 1fr}
 }
 
 /* Editable footer: adapt to any number of columns */

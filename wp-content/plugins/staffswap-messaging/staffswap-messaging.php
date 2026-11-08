@@ -958,6 +958,14 @@ function staffswap_offer_action() {
 	if ( ! is_user_logged_in() ) {
 		return;
 	}
+	if ( isset( $_POST['staffswap_offer_milestone'] ) ) {
+		staffswap_handle_offer_milestone();
+		return;
+	}
+	if ( isset( $_POST['staffswap_submit_review'] ) ) {
+		staffswap_handle_offer_review();
+		return;
+	}
 
 	if ( isset( $_POST['staffswap_generate_agreement'] ) ) {
 		$offer_id = absint( $_POST['offer_id'] ?? 0 );
@@ -1062,6 +1070,134 @@ function staffswap_offer_expiry_sweep() {
 }
 add_action( 'staffswap_saved_search_alerts', 'staffswap_offer_expiry_sweep' );
 
+function staffswap_offer_progress_steps() {
+	return array(
+		'paperwork' => 'Paperwork started',
+		'approval' => 'Required approvals received',
+		'transfer_scheduled' => 'Transfer scheduled',
+	);
+}
+
+function staffswap_handle_offer_milestone() {
+	if ( ! is_user_logged_in() || ( function_exists( 'staffswap_has_active_membership' ) && ! staffswap_has_active_membership() ) ) { return; }
+	$offer_id = absint( $_POST['offer_id'] ?? 0 );
+	$key = sanitize_key( wp_unslash( $_POST['staffswap_offer_milestone'] ?? '' ) );
+	$steps = staffswap_offer_progress_steps();
+	if ( ! $offer_id || ! isset( $steps[ $key ] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['staffswap_offer_action_nonce'] ?? '' ) ), 'staffswap_offer_action_' . $offer_id ) ) { return; }
+	$offer = get_post( $offer_id );
+	$user_id = get_current_user_id();
+	$is_party = $offer && 'staffswap_offer' === $offer->post_type && ( (int) $offer->post_author === $user_id || (int) get_post_meta( $offer_id, '_staffswap_offer_recipient', true ) === $user_id );
+	if ( ! $is_party || 'accepted' !== staffswap_offer_current_status( $offer_id ) ) { return; }
+	$milestones = (array) get_post_meta( $offer_id, '_staffswap_offer_milestones', true );
+	$next_key = '';
+	foreach ( $steps as $step_key => $label ) {
+		if ( empty( $milestones[ $step_key ] ) ) { $next_key = $step_key; break; }
+	}
+	if ( $key !== $next_key ) { return; }
+	$milestones[ $key ] = array( 'at' => current_time( 'mysql', true ), 'by' => $user_id );
+	if ( ! update_post_meta( $offer_id, '_staffswap_offer_milestones', $milestones ) ) {
+		error_log( 'StaffSwap offer milestone could not be saved for offer ' . $offer_id . '.' );
+		return;
+	}
+	$other_party = (int) $offer->post_author === $user_id ? absint( get_post_meta( $offer_id, '_staffswap_offer_recipient', true ) ) : (int) $offer->post_author;
+	if ( $other_party && function_exists( 'staffswap_notify_user' ) ) {
+		staffswap_notify_user( $other_party, 'Swap progress updated', wp_get_current_user()->display_name . ' updated the swap progress: ' . $steps[ $key ] . '.' . "\n\n" . 'View the progress: ' . home_url( '/offers/' ), 'offer' );
+	}
+	if ( function_exists( 'staffswap_record_event' ) ) { staffswap_record_event( 'offer_milestone_' . $key, $offer_id, array(), $user_id ); }
+}
+
+function staffswap_handle_offer_review() {
+	if ( ! is_user_logged_in() ) { return; }
+	$offer_id = absint( $_POST['offer_id'] ?? 0 );
+	$user_id = get_current_user_id();
+	if ( ! $offer_id || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['staffswap_offer_review_nonce'] ?? '' ) ), 'staffswap_offer_review_' . $offer_id ) ) { return; }
+	$offer = get_post( $offer_id );
+	$is_party = $offer && 'staffswap_offer' === $offer->post_type && ( (int) $offer->post_author === $user_id || (int) get_post_meta( $offer_id, '_staffswap_offer_recipient', true ) === $user_id );
+	$rating = absint( $_POST['review_rating'] ?? 0 );
+	$reviews = (array) get_post_meta( $offer_id, '_staffswap_offer_reviews', true );
+	if ( ! $is_party || 'completed' !== staffswap_offer_current_status( $offer_id ) || $rating < 1 || $rating > 5 || isset( $reviews[ (string) $user_id ] ) ) { return; }
+	$raw_review = $_POST['review_text'] ?? '';
+	$review_text = is_scalar( $raw_review ) ? sanitize_textarea_field( wp_unslash( (string) $raw_review ) ) : '';
+	$reviews[ (string) $user_id ] = array(
+		'rating' => $rating,
+		'text' => mb_substr( $review_text, 0, 1000 ),
+		'created_at' => current_time( 'mysql', true ),
+	);
+	if ( ! update_post_meta( $offer_id, '_staffswap_offer_reviews', $reviews ) ) {
+		error_log( 'StaffSwap offer review could not be saved for offer ' . $offer_id . '.' );
+		return;
+	}
+	$reviewed_user = (int) $offer->post_author === $user_id ? absint( get_post_meta( $offer_id, '_staffswap_offer_recipient', true ) ) : (int) $offer->post_author;
+	if ( $reviewed_user && function_exists( 'staffswap_notify_user' ) ) {
+		staffswap_notify_user( $reviewed_user, 'You received a swap review', 'Your completed exchange received a new member review. View your profile for details: ' . home_url( '/my-profile/' ), 'general' );
+	}
+	if ( function_exists( 'staffswap_record_event' ) ) { staffswap_record_event( 'offer_review_submitted', $offer_id, array( 'rating' => $rating ), $user_id ); }
+}
+
+function staffswap_profile_reviews_shortcode( $atts ) {
+	$atts = shortcode_atts( array( 'user' => 0 ), $atts, 'staffswap_profile_reviews' );
+	$user_id = absint( $atts['user'] );
+	if ( ! $user_id || ! post_type_exists( 'staffswap_offer' ) ) { return ''; }
+	$offer_query = array(
+		'post_type' => 'staffswap_offer',
+		'post_status' => 'publish',
+		'posts_per_page' => 50,
+		'meta_key' => '_staffswap_offer_status',
+		'meta_value' => 'completed',
+		'orderby' => 'date',
+		'order' => 'DESC',
+		'no_found_rows' => true,
+	);
+	$offers = array_merge(
+		get_posts( array_merge( $offer_query, array( 'author' => $user_id ) ) ),
+		get_posts( array_merge( $offer_query, array( 'meta_query' => array( array( 'key' => '_staffswap_offer_recipient', 'value' => $user_id ) ) ) ) )
+	);
+	$offers = array_values( array_reduce( $offers, function( $unique, $offer ) {
+		$unique[ $offer->ID ] = $offer;
+		return $unique;
+	}, array() ) );
+	usort( $offers, function( $first, $second ) {
+		return strcmp( $second->post_date, $first->post_date );
+	} );
+	$offers = array_slice( $offers, 0, 50 );
+	$reviews = array();
+	foreach ( $offers as $offer ) {
+		$sender_id = (int) $offer->post_author;
+		$recipient_id = absint( get_post_meta( $offer->ID, '_staffswap_offer_recipient', true ) );
+		if ( $sender_id !== $user_id && $recipient_id !== $user_id ) { continue; }
+		$reviewer_id = $sender_id === $user_id ? $recipient_id : $sender_id;
+		$offer_reviews = (array) get_post_meta( $offer->ID, '_staffswap_offer_reviews', true );
+		if ( empty( $offer_reviews[ (string) $reviewer_id ]['rating'] ) ) { continue; }
+		$reviews[] = array(
+			'rating' => absint( $offer_reviews[ (string) $reviewer_id ]['rating'] ),
+			'text' => sanitize_textarea_field( $offer_reviews[ (string) $reviewer_id ]['text'] ?? '' ),
+			'reviewer' => get_the_author_meta( 'display_name', $reviewer_id ),
+			'date' => $offer_reviews[ (string) $reviewer_id ]['created_at'] ?? '',
+		);
+	}
+	if ( ! $reviews ) { return ''; }
+	$average = array_sum( wp_list_pluck( $reviews, 'rating' ) ) / count( $reviews );
+	ob_start(); ?>
+	<section class="panel staffswap-profile-reviews"><h2>Swap reviews</h2><p><strong><?php echo esc_html( number_format_i18n( $average, 1 ) ); ?>/5</strong> average from <?php echo esc_html( count( $reviews ) ); ?> completed swap<?php echo 1 === count( $reviews ) ? '' : 's'; ?></p>
+		<?php foreach ( $reviews as $review ) : ?><article class="staffswap-profile-review"><strong><?php echo esc_html( $review['rating'] ); ?>/5</strong><span>From <?php echo esc_html( $review['reviewer'] ); ?><?php if ( $review['date'] ) : ?> &middot; <?php echo esc_html( mysql2date( 'j M Y', $review['date'] ) ); ?><?php endif; ?></span><?php if ( $review['text'] ) : ?><p><?php echo esc_html( $review['text'] ); ?></p><?php endif; ?></article><?php endforeach; ?>
+	</section>
+	<?php return ob_get_clean();
+}
+add_shortcode( 'staffswap_profile_reviews', 'staffswap_profile_reviews_shortcode' );
+
+function staffswap_profile_reviews_in_profile_shortcode() {
+	if ( ! shortcode_exists( 'staffswap_profile' ) ) { return; }
+	remove_shortcode( 'staffswap_profile' );
+	add_shortcode( 'staffswap_profile', 'staffswap_profile_with_reviews_shortcode' );
+}
+add_action( 'init', 'staffswap_profile_reviews_in_profile_shortcode', 99 );
+
+function staffswap_profile_with_reviews_shortcode( $atts ) {
+	$atts = shortcode_atts( array( 'user' => get_current_user_id() ), $atts, 'staffswap_profile' );
+	$profile = function_exists( 'staffswap_profile_shortcode' ) ? staffswap_profile_shortcode( $atts ) : '';
+	return $profile . do_shortcode( '[staffswap_profile_reviews user="' . absint( $atts['user'] ) . '"]' );
+}
+
 function staffswap_offers_shortcode() {
 	if ( ! is_user_logged_in() ) { return '<div class="panel"><p>Please sign in to view offers.</p></div>'; }
 	$offers = new WP_Query( array( 'post_type' => 'staffswap_offer', 'post_status' => 'publish', 'posts_per_page' => 30, 'meta_key' => '_staffswap_offer_recipient', 'meta_value' => get_current_user_id() ) );
@@ -1081,6 +1217,15 @@ function staffswap_offer_item( $offer, $can_respond = false ) {
 	$document_url = staffswap_offer_document_url( $offer_id );
 	$letter_url = staffswap_offer_letter_url( $offer_id, get_current_user_id() );
 	$status_log = array_filter( (array) get_post_meta( $offer_id, '_staffswap_offer_status_log', true ) );
+	$milestones = (array) get_post_meta( $offer_id, '_staffswap_offer_milestones', true );
+	$progress_steps = staffswap_offer_progress_steps();
+	$next_milestone = '';
+	foreach ( $progress_steps as $step_key => $step_label ) {
+		if ( empty( $milestones[ $step_key ] ) ) { $next_milestone = $step_key; break; }
+	}
+	$offer_reviews = (array) get_post_meta( $offer_id, '_staffswap_offer_reviews', true );
+	$my_review = $offer_reviews[ (string) get_current_user_id() ] ?? null;
+	$is_offer_party = (int) $offer->post_author === get_current_user_id() || absint( get_post_meta( $offer_id, '_staffswap_offer_recipient', true ) ) === get_current_user_id();
 	$nonce = wp_nonce_field( 'staffswap_offer_action_' . $offer_id, 'staffswap_offer_action_nonce', true, false );
 	$hidden = '<input type="hidden" name="offer_id" value="' . esc_attr( $offer_id ) . '">';
 	ob_start(); ?>
@@ -1101,6 +1246,15 @@ function staffswap_offer_item( $offer, $can_respond = false ) {
 			<div><dt>Housing</dt><dd><?php echo esc_html( $housing ); ?></dd></div>
 			<?php if ( $expires_at ) : ?><div><dt>Expires</dt><dd><?php echo esc_html( $expires_at ); ?></dd></div><?php endif; ?>
 		</dl>
+		<?php if ( in_array( $status, array( 'accepted', 'completed' ), true ) ) : ?>
+			<section class="offer-progress" aria-label="Swap progress"><h4>Swap progress</h4><ol>
+				<li class="is-complete"><strong>Offer accepted</strong></li>
+				<?php foreach ( $progress_steps as $step_key => $step_label ) : $milestone = $milestones[ $step_key ] ?? array(); ?><li class="<?php echo $milestone ? 'is-complete' : ''; ?>"><strong><?php echo esc_html( $step_label ); ?></strong><?php if ( $milestone ) : ?><small><?php echo esc_html( mysql2date( 'j M Y', $milestone['at'] ?? '' ) ); ?> &middot; <?php echo esc_html( get_the_author_meta( 'display_name', absint( $milestone['by'] ?? 0 ) ) ); ?></small><?php endif; ?></li><?php endforeach; ?>
+				<li class="<?php echo 'completed' === $status ? 'is-complete' : ''; ?>"><strong>Swap completed</strong></li>
+			</ol>
+			<?php if ( 'accepted' === $status && $is_offer_party && $next_milestone ) : ?><form method="post"><?php echo $hidden . $nonce; ?><button type="submit" name="staffswap_offer_milestone" value="<?php echo esc_attr( $next_milestone ); ?>">Mark <?php echo esc_html( $progress_steps[ $next_milestone ] ); ?></button></form><?php endif; ?>
+			</section>
+		<?php endif; ?>
 		<?php if ( $parent_id ) : ?><p class="muted offer-card__note">Counter-offer to: <?php echo esc_html( get_the_title( $parent_id ) ); ?></p><?php endif; ?>
 		<?php if ( '' !== trim( $offer->post_content ) ) : ?><p class="offer-card__message"><?php echo esc_html( $offer->post_content ); ?></p><?php endif; ?>
 		<div class="offer-docs">
@@ -1131,6 +1285,10 @@ function staffswap_offer_item( $offer, $can_respond = false ) {
 				<textarea name="status_reason" rows="2" placeholder="Note (optional)"></textarea>
 				<div class="offer-actions__buttons"><button type="submit" name="staffswap_offer_action" value="completed">Mark swap completed</button><button type="submit" name="staffswap_offer_action" value="cancelled" class="button--ghost">Cancel agreement</button></div>
 			</form>
+		<?php endif; ?>
+		<?php if ( 'completed' === $status && $is_offer_party ) : ?>
+			<?php if ( $my_review ) : ?><p class="notice" role="status">Thanks for reviewing your completed swap.</p>
+			<?php else : ?><form method="post" class="offer-review-form"><h4>Review your swap partner</h4><p class="muted">Your rating and optional feedback will appear on their public profile.</p><input type="hidden" name="offer_id" value="<?php echo esc_attr( $offer_id ); ?>"><div class="field"><label for="review-rating-<?php echo esc_attr( $offer_id ); ?>">Rating</label><select id="review-rating-<?php echo esc_attr( $offer_id ); ?>" name="review_rating" required><option value="">Choose a rating</option><?php for ( $rating = 5; $rating >= 1; --$rating ) : ?><option value="<?php echo esc_attr( $rating ); ?>"><?php echo esc_html( $rating ); ?>/5</option><?php endfor; ?></select></div><div class="field"><label for="review-text-<?php echo esc_attr( $offer_id ); ?>">Feedback <span class="muted">(optional)</span></label><textarea id="review-text-<?php echo esc_attr( $offer_id ); ?>" name="review_text" rows="3" maxlength="1000"></textarea></div><?php wp_nonce_field( 'staffswap_offer_review_' . $offer_id, 'staffswap_offer_review_nonce' ); ?><button type="submit" name="staffswap_submit_review" value="1">Submit review</button></form><?php endif; ?>
 		<?php endif; ?>
 	</article>
 	<?php return ob_get_clean();
