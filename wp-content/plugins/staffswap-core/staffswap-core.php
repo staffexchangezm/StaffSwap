@@ -159,6 +159,7 @@ function staffswap_create_pages() {
         'register' => array( 'title' => 'Create Your Account', 'content' => '[staffswap_register]' ),
         'sign-in' => array( 'title' => 'Sign In', 'content' => '[staffswap_login]' ),
         'my-profile' => array( 'title' => 'My Profile', 'content' => '[staffswap_dashboard]' ),
+        'contact-us' => array( 'title' => 'Contact Us', 'content' => '[staffswap_contact_us]' ),
     );
     foreach ( $pages as $slug => $page ) {
         if ( ! get_page_by_path( $slug ) ) {
@@ -166,6 +167,28 @@ function staffswap_create_pages() {
         }
     }
 }
+function staffswap_create_contact_page() {
+    if ( '1' === get_option( 'staffswap_contact_page_version' ) ) { return; }
+    $page = get_page_by_path( 'contact-us' );
+    if ( $page ) {
+        if ( false === strpos( $page->post_content, '[staffswap_contact_us' ) ) {
+            $updated = wp_update_post( array( 'ID' => $page->ID, 'post_content' => rtrim( $page->post_content ) . "\n\n[staffswap_contact_us]" ), true );
+            if ( is_wp_error( $updated ) || ! $updated ) {
+                error_log( 'StaffSwap could not add the contact form to the existing Contact Us page.' );
+                return;
+            }
+        }
+        update_option( 'staffswap_contact_page_version', '1' );
+        return;
+    }
+    $page_id = wp_insert_post( array( 'post_title' => 'Contact Us', 'post_name' => 'contact-us', 'post_content' => '[staffswap_contact_us]', 'post_status' => 'publish', 'post_type' => 'page' ), true );
+    if ( is_wp_error( $page_id ) || ! $page_id ) {
+        error_log( 'StaffSwap could not create the Contact Us page' . ( is_wp_error( $page_id ) ? ': ' . $page_id->get_error_message() : '.' ) );
+        return;
+    }
+    update_option( 'staffswap_contact_page_version', '1' );
+}
+add_action( 'init', 'staffswap_create_contact_page', 20 );
 register_activation_hook( __FILE__, function() { staffswap_register_listing(); staffswap_db_install(); staffswap_create_pages(); flush_rewrite_rules(); } );
 register_deactivation_hook( __FILE__, 'flush_rewrite_rules' );
 
@@ -1699,6 +1722,85 @@ function staffswap_send_saved_search_alerts() {
 }
 add_action( 'staffswap_saved_search_alerts', 'staffswap_send_saved_search_alerts' );
 add_action( 'init', function() { if ( ! wp_next_scheduled( 'staffswap_saved_search_alerts' ) ) { wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', 'staffswap_saved_search_alerts' ); } } );
+
+function staffswap_contact_us_shortcode() {
+    $topic_value = $_GET['topic'] ?? 'contact';
+    $topic = is_scalar( $topic_value ) ? sanitize_key( wp_unslash( (string) $topic_value ) ) : 'contact';
+    if ( ! in_array( $topic, array( 'contact', 'problem' ), true ) ) { $topic = 'contact'; }
+    $status_value = $_GET['contact_status'] ?? '';
+    $status = is_scalar( $status_value ) ? sanitize_key( wp_unslash( (string) $status_value ) ) : '';
+    $notices = array(
+        'sent' => array( 'success', 'Thanks for contacting StaffExchangeHub. Your message has been sent.' ),
+        'failed' => array( 'error', 'We could not send your message right now. Please try again later.' ),
+        'invalid' => array( 'error', 'Please check the form and complete all required fields with valid information.' ),
+    );
+    ob_start();
+    ?>
+    <section class="panel content-form staffswap-contact">
+        <p class="eyebrow">WE'RE HERE TO HELP</p>
+        <h1>Contact Us</h1>
+        <p class="muted">Send us a question or report a problem. Our team will reply to the email address you provide.</p>
+        <?php if ( isset( $notices[ $status ] ) ) : ?>
+            <div class="notice notice--<?php echo esc_attr( $notices[ $status ][0] ); ?>" role="status"><p><?php echo esc_html( $notices[ $status ][1] ); ?></p></div>
+        <?php endif; ?>
+        <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+            <input type="hidden" name="action" value="staffswap_contact_submission">
+            <?php wp_nonce_field( 'staffswap_contact_submission', 'staffswap_contact_nonce' ); ?>
+            <div class="screen-reader-text" aria-hidden="true"><label for="staffswap_contact_website">Leave this field empty</label><input id="staffswap_contact_website" name="website" type="text" tabindex="-1" autocomplete="off"></div>
+            <div class="field"><label for="staffswap_contact_name">Your name</label><input id="staffswap_contact_name" name="full_name" type="text" maxlength="100" autocomplete="name" required></div>
+            <div class="field"><label for="staffswap_contact_email">Email address</label><input id="staffswap_contact_email" name="email" type="email" maxlength="254" autocomplete="email" required></div>
+            <div class="field"><label for="staffswap_contact_topic">What can we help with?</label><select id="staffswap_contact_topic" name="topic"><option value="contact" <?php selected( $topic, 'contact' ); ?>>General question</option><option value="problem" <?php selected( $topic, 'problem' ); ?>>Report a problem</option></select></div>
+            <div class="field"><label for="staffswap_contact_subject">Subject</label><input id="staffswap_contact_subject" name="subject" type="text" maxlength="150" value="<?php echo esc_attr( 'problem' === $topic ? 'StaffExchangeHub support' : '' ); ?>" required></div>
+            <div class="field"><label for="staffswap_contact_message">Message</label><textarea id="staffswap_contact_message" name="message" rows="7" maxlength="5000" required></textarea></div>
+            <p><button type="submit" class="button button--primary">Send message</button></p>
+        </form>
+    </section>
+    <?php
+    return ob_get_clean();
+}
+add_shortcode( 'staffswap_contact_us', 'staffswap_contact_us_shortcode' );
+
+function staffswap_handle_contact_submission() {
+    $contact_url = home_url( '/contact-us/' );
+    $nonce_value = $_POST['staffswap_contact_nonce'] ?? '';
+    $nonce = is_scalar( $nonce_value ) ? sanitize_text_field( wp_unslash( $nonce_value ) ) : '';
+    if ( ! wp_verify_nonce( $nonce, 'staffswap_contact_submission' ) ) {
+        wp_safe_redirect( add_query_arg( 'contact_status', 'invalid', $contact_url ) );
+        exit;
+    }
+
+    $topic_value = $_POST['topic'] ?? '';
+    $topic = is_scalar( $topic_value ) ? sanitize_key( wp_unslash( $topic_value ) ) : '';
+    $redirect_url = add_query_arg( 'topic', in_array( $topic, array( 'contact', 'problem' ), true ) ? $topic : 'contact', $contact_url );
+    $honeypot = $_POST['website'] ?? '';
+    if ( is_scalar( $honeypot ) && '' !== trim( (string) wp_unslash( $honeypot ) ) ) {
+        wp_safe_redirect( add_query_arg( 'contact_status', 'sent', $redirect_url ) );
+        exit;
+    }
+
+    $name_value = $_POST['full_name'] ?? '';
+    $email_value = $_POST['email'] ?? '';
+    $subject_value = $_POST['subject'] ?? '';
+    $message_value = $_POST['message'] ?? '';
+    $name = is_scalar( $name_value ) ? sanitize_text_field( wp_unslash( $name_value ) ) : '';
+    $email = is_scalar( $email_value ) ? sanitize_email( wp_unslash( $email_value ) ) : '';
+    $subject = is_scalar( $subject_value ) ? sanitize_text_field( wp_unslash( $subject_value ) ) : '';
+    $message = is_scalar( $message_value ) ? sanitize_textarea_field( wp_unslash( $message_value ) ) : '';
+    if ( '' === $name || ! is_email( $email ) || ! in_array( $topic, array( 'contact', 'problem' ), true ) || '' === $subject || '' === $message || strlen( $name ) > 100 || strlen( $subject ) > 150 || strlen( $message ) > 5000 ) {
+        wp_safe_redirect( add_query_arg( 'contact_status', 'invalid', $redirect_url ) );
+        exit;
+    }
+
+    $kind = 'problem' === $topic ? 'Problem report' : 'Contact request';
+    $mail_subject = '[' . get_bloginfo( 'name' ) . '] ' . $kind . ': ' . $subject;
+    $mail_body = "Name: {$name}\nEmail: {$email}\nType: {$kind}\nSubject: {$subject}\n\nMessage:\n{$message}";
+    $sent = wp_mail( 'mwapemusonda@gmail.com', $mail_subject, $mail_body, array( 'Reply-To: ' . $name . ' <' . $email . '>' ) );
+    if ( ! $sent ) { error_log( 'StaffSwap contact form email could not be sent.' ); }
+    wp_safe_redirect( add_query_arg( 'contact_status', $sent ? 'sent' : 'failed', $redirect_url ) );
+    exit;
+}
+add_action( 'admin_post_staffswap_contact_submission', 'staffswap_handle_contact_submission' );
+add_action( 'admin_post_nopriv_staffswap_contact_submission', 'staffswap_handle_contact_submission' );
 
 // The homepage "Get Swap Alerts" form previously submitted nowhere; it now stores subscribers and emails a weekly digest.
 function staffswap_alert_signup_shortcode() {

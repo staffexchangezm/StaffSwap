@@ -256,6 +256,7 @@ function staffswap_setup_pages() {
 		'blog' => array( 'title' => 'Opportunities & Updates', 'slug' => 'blog', 'content' => '<h1>Opportunities & Updates</h1><p>Discover the latest career opportunities, transfer updates, internship announcements, and professional development news across Zambia.</p>' ),
 		'pricing' => array( 'title' => 'Pricing', 'slug' => 'pricing', 'content' => '<h1>Plans for every professional move</h1><p>Start with the free exchange network and choose premium visibility when you need it.</p>' ),
 		'about' => array( 'title' => 'About Us', 'slug' => 'about', 'content' => '' ),
+		'contact' => array( 'title' => 'Contact Us', 'slug' => 'contact-us', 'content' => '[staffswap_contact_us]' ),
 	);
 	$created = array();
 	foreach ( $pages as $key => $page ) {
@@ -306,7 +307,7 @@ function staffswap_setup_pages() {
 function staffswap_setup_status() {
 	$menu = wp_get_nav_menu_object( 'StaffSwap Main Menu' );
 	$locations = get_theme_mod( 'nav_menu_locations', array() );
-	$required = array( 'home', 'swaps', 'search', 'create-swap', 'register', 'sign-in', 'my-profile', 'resources', 'blog', 'pricing' );
+	$required = array( 'home', 'swaps', 'search', 'create-swap', 'register', 'sign-in', 'my-profile', 'resources', 'blog', 'pricing', 'contact-us' );
 	$pages = array();
 	foreach ( $required as $slug ) { $pages[ $slug ] = (bool) get_page_by_path( $slug ); }
 	return array( 'menu' => (bool) $menu, 'menu_assigned' => $menu && ! empty( $locations['primary'] ) && (int) $locations['primary'] === (int) $menu->term_id, 'pages' => $pages, 'elementor' => defined( 'ELEMENTOR_VERSION' ), 'elementskit' => defined( 'ELEMENTSKIT_VERSION' ), 'front_page' => 'page' === get_option( 'show_on_front' ) && (bool) get_option( 'page_on_front' ) );
@@ -518,8 +519,8 @@ function staffswap_footer_default_columns() {
 		array(
 			'title' => 'Contact',
 			'items' => array(
-				array( 'text' => 'Contact Us', 'url' => 'mailto:' . sanitize_email( get_option( 'admin_email' ) ) ),
-				array( 'text' => 'Report a Problem', 'url' => 'mailto:' . sanitize_email( get_option( 'admin_email' ) ) . '?subject=' . rawurlencode( 'StaffExchangeHub support' ) ),
+				array( 'text' => 'Contact Us', 'url' => home_url( '/contact-us/' ) ),
+				array( 'text' => 'Report a Problem', 'url' => add_query_arg( 'topic', 'problem', home_url( '/contact-us/' ) ) ),
 			),
 		),
 	);
@@ -539,6 +540,17 @@ function staffswap_footer_columns() {
 			if ( ! in_array( $item['text'], $existing_labels, true ) ) { $columns[ $column_index ]['items'][] = $item; }
 		}
 	}
+	$migrated = false;
+	foreach ( $columns as $column_index => $column ) {
+		if ( 'Contact' !== ( $column['title'] ?? '' ) ) { continue; }
+		foreach ( (array) ( $column['items'] ?? array() ) as $item_index => $item ) {
+			$label = $item['text'] ?? '';
+			if ( ! in_array( $label, array( 'Contact Us', 'Report a Problem' ), true ) || 0 !== strpos( (string) ( $item['url'] ?? '' ), 'mailto:' ) ) { continue; }
+			$columns[ $column_index ]['items'][ $item_index ]['url'] = 'Report a Problem' === $label ? add_query_arg( 'topic', 'problem', home_url( '/contact-us/' ) ) : home_url( '/contact-us/' );
+			$migrated = true;
+		}
+	}
+	if ( $migrated ) { update_option( 'staffswap_footer_columns', $columns ); }
 	return $columns;
 }
 
