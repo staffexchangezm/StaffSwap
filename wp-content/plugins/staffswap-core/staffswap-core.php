@@ -1037,7 +1037,7 @@ add_shortcode( 'staffswap_listings', 'staffswap_audited_listings_shortcode' );
 function staffswap_handle_frontend_login() {
     if ( ! is_page( 'sign-in' ) || 'POST' !== ( $_SERVER['REQUEST_METHOD'] ?? '' ) || ! isset( $_POST['staffswap_login'] ) ) { return; }
     $redirect_candidate = $_POST['redirect_to'] ?? '';
-    $redirect_to = wp_validate_redirect( is_scalar( $redirect_candidate ) ? wp_unslash( $redirect_candidate ) : '', home_url( '/my-profile/' ) );
+    $redirect_to = wp_validate_redirect( is_scalar( $redirect_candidate ) ? wp_unslash( $redirect_candidate ) : '', home_url( '/' ) );
     $nonce = isset( $_POST['staffswap_login_nonce'] ) && is_scalar( $_POST['staffswap_login_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['staffswap_login_nonce'] ) ) : '';
     if ( ! wp_verify_nonce( $nonce, 'staffswap_login' ) ) {
         wp_safe_redirect( add_query_arg( array( 'login' => 'failed', 'redirect_to' => $redirect_to ), home_url( '/sign-in/' ) ) );
@@ -1070,7 +1070,7 @@ function staffswap_frontend_login_url( $login_url, $redirect, $force_reauth ) {
 
     $args = array();
     if ( is_scalar( $redirect ) && '' !== (string) $redirect ) {
-        $args['redirect_to'] = wp_validate_redirect( (string) $redirect, home_url( '/my-profile/' ) );
+        $args['redirect_to'] = wp_validate_redirect( (string) $redirect, home_url( '/' ) );
     }
 
     return add_query_arg( $args, home_url( '/sign-in/' ) );
@@ -1082,7 +1082,7 @@ function staffswap_login_shortcode() {
         return '<div class="panel content-form"><h2>You are signed in</h2><p><a class="button button--primary" href="' . esc_url( home_url( '/my-profile/' ) ) . '">Open my profile</a></p></div>';
     }
     $redirect_candidate = $_REQUEST['redirect_to'] ?? '';
-    $redirect_to = wp_validate_redirect( is_scalar( $redirect_candidate ) ? wp_unslash( $redirect_candidate ) : '', home_url( '/my-profile/' ) );
+    $redirect_to = wp_validate_redirect( is_scalar( $redirect_candidate ) ? wp_unslash( $redirect_candidate ) : '', home_url( '/' ) );
     ob_start();
     ?>
     <div class="panel content-form">
