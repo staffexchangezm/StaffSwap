@@ -1034,20 +1034,27 @@ function staffswap_audited_listings_shortcode( $atts ) {
 remove_shortcode( 'staffswap_listings' );
 add_shortcode( 'staffswap_listings', 'staffswap_audited_listings_shortcode' );
 
+function staffswap_frontend_login_redirect( $url ) {
+    nocache_headers();
+    if ( wp_safe_redirect( $url ) ) { exit; }
+    error_log( 'StaffSwap could not send login redirect headers; using browser redirect fallback.' );
+    echo '<p>Sign-in complete. <a href="' . esc_url( $url ) . '">Continue</a>.</p><script>window.location.replace(' . wp_json_encode( esc_url_raw( $url ) ) . ');</script>';
+    exit;
+}
+
 function staffswap_handle_frontend_login() {
     if ( ! is_page( 'sign-in' ) || 'POST' !== ( $_SERVER['REQUEST_METHOD'] ?? '' ) || ! isset( $_POST['staffswap_login'] ) ) { return; }
+    nocache_headers();
     $redirect_candidate = $_POST['redirect_to'] ?? '';
     $redirect_to = wp_validate_redirect( is_scalar( $redirect_candidate ) ? wp_unslash( $redirect_candidate ) : '', home_url( '/' ) );
     $nonce = isset( $_POST['staffswap_login_nonce'] ) && is_scalar( $_POST['staffswap_login_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['staffswap_login_nonce'] ) ) : '';
     if ( ! wp_verify_nonce( $nonce, 'staffswap_login' ) ) {
-        wp_safe_redirect( add_query_arg( array( 'login' => 'failed', 'redirect_to' => $redirect_to ), home_url( '/sign-in/' ) ) );
-        exit;
+        staffswap_frontend_login_redirect( add_query_arg( array( 'login' => 'failed', 'redirect_to' => $redirect_to ), home_url( '/sign-in/' ) ) );
     }
     $username = $_POST['user_login'] ?? '';
     $password = $_POST['user_pass'] ?? '';
     if ( ! is_scalar( $username ) || ! is_scalar( $password ) ) {
-        wp_safe_redirect( add_query_arg( array( 'login' => 'failed', 'redirect_to' => $redirect_to ), home_url( '/sign-in/' ) ) );
-        exit;
+        staffswap_frontend_login_redirect( add_query_arg( array( 'login' => 'failed', 'redirect_to' => $redirect_to ), home_url( '/sign-in/' ) ) );
     }
 
     $user = wp_signon( array(
@@ -1056,12 +1063,11 @@ function staffswap_handle_frontend_login() {
         'remember' => isset( $_POST['rememberme'] ) && '1' === wp_unslash( $_POST['rememberme'] ),
     ) );
     if ( is_wp_error( $user ) ) {
-        wp_safe_redirect( add_query_arg( array( 'login' => 'failed', 'redirect_to' => $redirect_to ), home_url( '/sign-in/' ) ) );
-        exit;
+        staffswap_frontend_login_redirect( add_query_arg( array( 'login' => 'failed', 'redirect_to' => $redirect_to ), home_url( '/sign-in/' ) ) );
     }
 
-    wp_safe_redirect( $redirect_to );
-    exit;
+    wp_set_current_user( $user->ID );
+    staffswap_frontend_login_redirect( $redirect_to );
 }
 add_action( 'template_redirect', 'staffswap_handle_frontend_login' );
 
