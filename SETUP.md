@@ -51,6 +51,7 @@ The wizard creates or repairs:
 - Blog
 - Pricing
 - Messages, when Messaging is activated
+- Contact Us, with the public contact form
 
 It also:
 
@@ -78,6 +79,8 @@ All StaffSwap settings live on a single page at **Appearance > Theme Options**, 
 Open **Appearance > Customize > StaffSwap Homepage** for live visual customization if you prefer the Customizer for the same hero/color fields.
 
 To grant one member additional concurrent swap posts beyond their Basic or VIP plan, open **Users > All Users > Edit** and set **Extra active swap posts** under **StaffSwap Posting Allowance**. Enter `0` to leave their plan limit unchanged.
+
+The Contact Us page provides a public message form for general questions and problem reports. Submissions are sent to `mwapemusonda@gmail.com` through WordPress `wp_mail`, so the configured Resend mail integration handles delivery. Footer links open the form, with **Report a Problem** preselecting the problem-report topic.
 
 ### Navigation
 
