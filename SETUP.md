@@ -77,6 +77,8 @@ All StaffSwap settings live on a single page at **Appearance > Theme Options**, 
 
 Open **Appearance > Customize > StaffSwap Homepage** for live visual customization if you prefer the Customizer for the same hero/color fields.
 
+To grant one member additional concurrent swap posts beyond their Basic or VIP plan, open **Users > All Users > Edit** and set **Extra active swap posts** under **StaffSwap Posting Allowance**. Enter `0` to leave their plan limit unchanged.
+
 ### Navigation
 
 Open **Appearance > Menus**:

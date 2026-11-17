@@ -197,7 +197,7 @@ function staffswap_active_listing_ids( $user_id, $limit = 2 ) {
         'post_type' => 'swap_listing',
         'post_status' => array( 'publish', 'pending' ),
         'author' => absint( $user_id ),
-        'posts_per_page' => max( 1, min( 101, absint( $limit ) ) ),
+        'posts_per_page' => max( 1, min( 201, absint( $limit ) ) ),
         'fields' => 'ids',
         'no_found_rows' => true,
     ) );
@@ -205,8 +205,42 @@ function staffswap_active_listing_ids( $user_id, $limit = 2 ) {
 
 function staffswap_user_listing_limit( $user_id = 0 ) {
     $user_id = $user_id ? absint( $user_id ) : get_current_user_id();
-    return function_exists( 'staffswap_wc_listing_limit' ) ? staffswap_wc_listing_limit( $user_id ) : 1;
+    $plan_limit = function_exists( 'staffswap_wc_listing_limit' ) ? staffswap_wc_listing_limit( $user_id ) : 1;
+    $extra_limit = min( 100, absint( get_user_meta( $user_id, 'staffswap_extra_listing_slots', true ) ) );
+    return $plan_limit + $extra_limit;
 }
+
+function staffswap_admin_listing_limit_field( $user ) {
+    if ( ! current_user_can( 'manage_options' ) ) { return; }
+    $extra_limit = min( 100, absint( get_user_meta( $user->ID, 'staffswap_extra_listing_slots', true ) ) );
+    ?>
+    <h2>StaffSwap Posting Allowance</h2>
+    <table class="form-table">
+        <tr>
+            <th><label for="staffswap_extra_listing_slots">Extra active swap posts</label></th>
+            <td>
+                <input type="number" id="staffswap_extra_listing_slots" name="staffswap_extra_listing_slots" min="0" max="100" step="1" value="<?php echo esc_attr( $extra_limit ); ?>">
+                <p class="description">Added to this user's plan limit. Enter 0 to keep the plan allowance unchanged.</p>
+                <?php wp_nonce_field( 'staffswap_save_listing_limit_' . absint( $user->ID ), 'staffswap_listing_limit_nonce' ); ?>
+            </td>
+        </tr>
+    </table>
+    <?php
+}
+add_action( 'show_user_profile', 'staffswap_admin_listing_limit_field' );
+add_action( 'edit_user_profile', 'staffswap_admin_listing_limit_field' );
+
+function staffswap_save_admin_listing_limit( $user_id ) {
+    if ( ! current_user_can( 'manage_options' ) || ! current_user_can( 'edit_user', $user_id ) || ! isset( $_POST['staffswap_extra_listing_slots'] ) ) { return; }
+    check_admin_referer( 'staffswap_save_listing_limit_' . absint( $user_id ), 'staffswap_listing_limit_nonce' );
+    $raw_limit = wp_unslash( $_POST['staffswap_extra_listing_slots'] );
+    if ( ! is_scalar( $raw_limit ) || ! preg_match( '/^\d+$/', (string) $raw_limit ) || (int) $raw_limit > 100 ) {
+        wp_die( esc_html__( 'Extra active swap posts must be a whole number between 0 and 100.', 'staffswap-core' ), esc_html__( 'Invalid posting allowance', 'staffswap-core' ), array( 'response' => 400 ) );
+    }
+    update_user_meta( $user_id, 'staffswap_extra_listing_slots', absint( $raw_limit ) );
+}
+add_action( 'personal_options_update', 'staffswap_save_admin_listing_limit' );
+add_action( 'edit_user_profile_update', 'staffswap_save_admin_listing_limit' );
 
 function staffswap_monthly_interest_limit( $user_id = 0 ) {
     $user_id = $user_id ? absint( $user_id ) : get_current_user_id();
