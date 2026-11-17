@@ -12,7 +12,7 @@
     toggle.addEventListener('click', function () { setMenu(!nav.classList.contains('is-open')); });
     nav.addEventListener('click', function (event) { if (event.target.closest('a')) setMenu(false); });
     document.addEventListener('keydown', function (event) { if (event.key === 'Escape') setMenu(false); });
-    window.matchMedia('(min-width: 761px)').addEventListener('change', function (mq) { if (mq.matches) setMenu(false); });
+    window.matchMedia('(min-width: 1281px)').addEventListener('change', function (mq) { if (mq.matches) setMenu(false); });
   }
   if (nav) {
     nav.querySelectorAll('li.menu-item-has-children').forEach(function (item, index) {
