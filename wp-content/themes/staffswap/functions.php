@@ -4,7 +4,7 @@ function staffswap_setup() { add_theme_support( 'title-tag' ); add_theme_support
 add_action( 'after_setup_theme', 'staffswap_setup' );
 function staffswap_load_textdomain() { load_theme_textdomain( 'staffswap', get_template_directory() . '/languages' ); }
 add_action( 'after_setup_theme', 'staffswap_load_textdomain', 11 );
-function staffswap_assets() { wp_enqueue_style( 'staffswap-fonts', 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap', array(), null ); wp_enqueue_style( 'dashicons' ); wp_enqueue_style( 'staffswap-style', get_stylesheet_uri(), array( 'staffswap-fonts', 'dashicons' ), filemtime( get_stylesheet_directory() . '/style.css' ) ); wp_enqueue_script( 'staffswap-main', get_template_directory_uri() . '/assets/js/main.js', array(), filemtime( get_template_directory() . '/assets/js/main.js' ), true ); }
+function staffswap_assets() { wp_enqueue_style( 'staffswap-fonts', 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap', array(), null ); wp_enqueue_style( 'dashicons' ); wp_enqueue_style( 'staffswap-style', get_stylesheet_uri(), array( 'staffswap-fonts', 'dashicons' ), filemtime( get_stylesheet_directory() . '/style.css' ) ); wp_enqueue_script( 'staffswap-main', get_template_directory_uri() . '/assets/js/main.js', array(), filemtime( get_template_directory() . '/assets/js/main.js' ), true ); }
 add_action( 'wp_enqueue_scripts', 'staffswap_assets' );
 function staffswap_account_menu_shortcode() {
 	$user = wp_get_current_user();
@@ -27,20 +27,56 @@ function staffswap_account_menu_shortcode() {
 	<?php return ob_get_clean();
 }
 add_shortcode( 'staffswap_account_menu', 'staffswap_account_menu_shortcode' );
-function staffswap_fallback_menu() { echo '<ul><li><a href="' . esc_url( home_url( '/' ) ) . '">' . esc_html__( 'Home', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/swaps/' ) ) . '">' . esc_html__( 'Find Swaps', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/how-it-works/' ) ) . '">' . esc_html__( 'How It Works', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/success-stories/' ) ) . '">' . esc_html__( 'Success Stories', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/resources/' ) ) . '">' . esc_html__( 'Resources', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/blog/' ) ) . '">' . esc_html__( 'Blog', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/pricing/' ) ) . '">' . esc_html__( 'Pricing', 'staffswap' ) . '</a></li></ul>'; }
+function staffswap_fallback_menu() { echo '<ul><li><a href="' . esc_url( home_url( '/' ) ) . '">' . esc_html__( 'Home', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/swaps/' ) ) . '">' . esc_html__( 'Find Swaps', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/resources/' ) ) . '">' . esc_html__( 'Resources Centre', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/how-it-works/' ) ) . '">' . esc_html__( 'How It Works', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/blog/' ) ) . '">' . esc_html__( 'Opportunities & Updates', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/pricing/' ) ) . '">' . esc_html__( 'Pricing', 'staffswap' ) . '</a></li><li><a href="' . esc_url( home_url( '/about/' ) ) . '">' . esc_html__( 'About Us', 'staffswap' ) . '</a></li></ul>'; }
 
 function staffswap_customize_register( $wp_customize ) {
 	$wp_customize->add_section( 'staffswap_home', array( 'title' => __( 'StaffSwap Homepage', 'staffswap' ), 'priority' => 30 ) );
 	$settings = array(
-		'staffswap_hero_title' => array( 'label' => 'Hero title', 'default' => 'Swap Your Workplace. Change Your Life.' ),
-		'staffswap_hero_text' => array( 'label' => 'Hero description', 'default' => 'Connect with verified professionals across Zambia who want to swap their workplace just like you. Secure, efficient, and professional workplace mobility.' ),
-		'staffswap_hero_primary_label' => array( 'label' => 'Primary button label', 'default' => 'Create Swap Post' ),
-		'staffswap_hero_secondary_label' => array( 'label' => 'Secondary button label', 'default' => 'Browse Swaps' ),
-		'staffswap_stats_text' => array( 'label' => 'Homepage stats', 'default' => '12,000+|3,200+|150+|10|20+' ),
+		'staffswap_hero_title' => array( 'label' => 'Hero title', 'default' => 'Workplace mobility, made simple' ),
+		'staffswap_hero_text' => array( 'label' => 'Hero description', 'default' => 'Connect with professionals across Zambia looking to exchange work locations. Search available opportunities, create your swap request and explore relocation possibilities.' ),
+		'staffswap_hero_primary_label' => array( 'label' => 'Primary button label', 'default' => 'Sign Up Free' ),
+		'staffswap_hero_secondary_label' => array( 'label' => 'Secondary button label', 'default' => 'Find Swaps' ),
+		'staffswap_stats_text' => array( 'label' => 'Homepage stats', 'default' => 'Search by profession|Compare routes|Protect your privacy' ),
 	);
 	foreach ( $settings as $id => $setting ) {
 		$wp_customize->add_setting( $id, array( 'default' => $setting['default'], 'sanitize_callback' => 'sanitize_textarea_field' ) );
 		$wp_customize->add_control( $id, array( 'label' => $setting['label'], 'section' => 'staffswap_home', 'type' => 'textarea' ) );
+	}
+	$wp_customize->add_setting( 'staffswap_hero_image', array(
+		'default' => 0,
+		'sanitize_callback' => 'absint',
+	) );
+	$wp_customize->add_control( new WP_Customize_Media_Control( $wp_customize, 'staffswap_hero_image', array(
+		'label' => __( 'Hero image', 'staffswap' ),
+		'description' => __( 'Upload an image for the right side of the homepage hero. Leave empty to show the swap illustration.', 'staffswap' ),
+		'section' => 'staffswap_home',
+		'mime_type' => 'image',
+	) ) );
+	$homepage_images = array(
+		'staffswap_how_it_works_image' => array(
+			'label' => __( 'How It Works image', 'staffswap' ),
+			'description' => __( 'Optional image displayed beside the How It Works heading.', 'staffswap' ),
+		),
+		'staffswap_opportunities_image' => array(
+			'label' => __( 'Latest Opportunities image', 'staffswap' ),
+			'description' => __( 'Optional image displayed with the latest swap opportunities heading.', 'staffswap' ),
+		),
+		'staffswap_resources_image' => array(
+			'label' => __( 'Resources Centre image', 'staffswap' ),
+			'description' => __( 'Optional image displayed in the Resources Centre feature card.', 'staffswap' ),
+		),
+	);
+	foreach ( $homepage_images as $setting_id => $image ) {
+		$wp_customize->add_setting( $setting_id, array(
+			'default' => 0,
+			'sanitize_callback' => 'absint',
+		) );
+		$wp_customize->add_control( new WP_Customize_Media_Control( $wp_customize, $setting_id, array(
+			'label' => $image['label'],
+			'description' => $image['description'],
+			'section' => 'staffswap_home',
+			'mime_type' => 'image',
+		) ) );
 	}
 	$wp_customize->add_setting( 'staffswap_primary_color', array( 'default' => '#005f2e', 'sanitize_callback' => 'sanitize_hex_color' ) );
 	$wp_customize->add_control( new WP_Customize_Color_Control( $wp_customize, 'staffswap_primary_color', array( 'label' => 'Primary action color', 'section' => 'staffswap_home' ) ) );
@@ -86,9 +122,11 @@ function staffswap_testimonial_meta_box_render( $post ) {
 	wp_nonce_field( 'staffswap_save_testimonial', 'staffswap_testimonial_nonce' );
 	$role = get_post_meta( $post->ID, '_staffswap_testimonial_role', true );
 	$variant = get_post_meta( $post->ID, '_staffswap_testimonial_variant', true ) ?: 'default';
+	$authorized = get_post_meta( $post->ID, '_staffswap_testimonial_authorized', true );
 	echo '<p><label for="staffswap_testimonial_role"><strong>Role &amp; location</strong></label><br><input type="text" id="staffswap_testimonial_role" name="staffswap_testimonial_role" class="widefat" value="' . esc_attr( $role ) . '" placeholder="e.g. Registered Nurse · Ndola"></p>';
 	echo '<p><label for="staffswap_testimonial_variant"><strong>Accent colour</strong></label><br><select id="staffswap_testimonial_variant" name="staffswap_testimonial_variant" class="widefat"><option value="default" ' . selected( $variant, 'default', false ) . '>Green (default)</option><option value="blue" ' . selected( $variant, 'blue', false ) . '>Blue</option><option value="gold" ' . selected( $variant, 'gold', false ) . '>Gold</option></select></p>';
 	echo '<p class="description">Title is the member\'s name. The editor content is the quote.</p>';
+	echo '<p><label><input type="checkbox" name="staffswap_testimonial_authorized" value="1" ' . checked( $authorized, '1', false ) . '> Consent to publish has been documented</label></p>';
 }
 
 function staffswap_testimonial_meta_box_save( $post_id ) {
@@ -98,40 +136,94 @@ function staffswap_testimonial_meta_box_save( $post_id ) {
 	update_post_meta( $post_id, '_staffswap_testimonial_role', sanitize_text_field( wp_unslash( $_POST['staffswap_testimonial_role'] ?? '' ) ) );
 	$variant = sanitize_key( wp_unslash( $_POST['staffswap_testimonial_variant'] ?? 'default' ) );
 	update_post_meta( $post_id, '_staffswap_testimonial_variant', in_array( $variant, array( 'default', 'blue', 'gold' ), true ) ? $variant : 'default' );
+	update_post_meta( $post_id, '_staffswap_testimonial_authorized', isset( $_POST['staffswap_testimonial_authorized'] ) ? '1' : '0' );
 }
 add_action( 'save_post_staff_testimonial', 'staffswap_testimonial_meta_box_save' );
 
-function staffswap_seed_testimonials() {
-	if ( get_option( 'staffswap_testimonials_seeded' ) ) { return; }
-	update_option( 'staffswap_testimonials_seeded', '1' );
-	if ( get_posts( array( 'post_type' => 'staff_testimonial', 'post_status' => 'publish', 'posts_per_page' => 1, 'fields' => 'ids' ) ) ) { return; }
-	$seed = array(
-		array( 'name' => 'Lydia Mwansa', 'role' => 'Registered Nurse · Ndola', 'quote' => 'The process was simple, secure and fast. I found a placement that works better for my family.', 'variant' => 'default' ),
-		array( 'name' => 'Brian Chileshe', 'role' => 'Maths Teacher · Southern Province', 'quote' => 'I could compare real institutions and speak to someone who understood the work before making a decision.', 'variant' => 'blue' ),
-		array( 'name' => 'Robert Tembo', 'role' => 'Bank Officer · Kabwe', 'quote' => 'StaffExchangeHub made a complicated career move feel organised and professional from the first post.', 'variant' => 'gold' ),
-	);
-	foreach ( $seed as $story ) {
-		$post_id = wp_insert_post( array( 'post_type' => 'staff_testimonial', 'post_title' => $story['name'], 'post_content' => $story['quote'], 'post_status' => 'publish' ) );
-		if ( $post_id && ! is_wp_error( $post_id ) ) {
-			update_post_meta( $post_id, '_staffswap_testimonial_role', $story['role'] );
-			update_post_meta( $post_id, '_staffswap_testimonial_variant', $story['variant'] );
+function staffswap_opportunity_meta_box() {
+	add_meta_box( 'staffswap_opportunity_details', 'Opportunity Details', 'staffswap_opportunity_meta_box_render', 'post', 'normal', 'default' );
+}
+add_action( 'add_meta_boxes', 'staffswap_opportunity_meta_box' );
+
+function staffswap_opportunity_meta_box_render( $post ) {
+	wp_nonce_field( 'staffswap_save_opportunity_details', 'staffswap_opportunity_nonce' );
+	foreach ( array( 'organization' => 'Organization', 'organization_type' => 'Organization type', 'profession' => 'Profession', 'location' => 'Location', 'closing_date' => 'Closing date (YYYY-MM-DD)', 'source_url' => 'Original source URL' ) as $key => $label ) {
+		$value = get_post_meta( $post->ID, '_staffswap_opportunity_' . $key, true );
+		if ( 'organization_type' === $key ) {
+			echo '<p><label><strong>' . esc_html( $label ) . '</strong><br><select class="widefat" name="staffswap_opportunity_organization_type"><option value="">Select type</option>';
+			foreach ( array( 'government' => 'Government', 'ngo' => 'NGO', 'private' => 'Private sector', 'education' => 'Education', 'healthcare' => 'Healthcare' ) as $type => $type_label ) {
+				echo '<option value="' . esc_attr( $type ) . '" ' . selected( $value, $type, false ) . '>' . esc_html( $type_label ) . '</option>';
+			}
+			echo '</select></label></p>';
+			continue;
 		}
+		echo '<p><label><strong>' . esc_html( $label ) . '</strong><br><input class="widefat" name="staffswap_opportunity_' . esc_attr( $key ) . '" value="' . esc_attr( $value ) . '" ' . ( 'source_url' === $key ? 'type="url"' : ( 'closing_date' === $key ? 'type="date"' : 'type="text"' ) ) . '></label></p>';
 	}
 }
-add_action( 'after_switch_theme', 'staffswap_seed_testimonials' );
-add_action( 'admin_init', 'staffswap_seed_testimonials' );
+
+function staffswap_opportunity_meta_box_save( $post_id ) {
+	if ( ! isset( $_POST['staffswap_opportunity_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['staffswap_opportunity_nonce'] ) ), 'staffswap_save_opportunity_details' ) || ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) || ! current_user_can( 'edit_post', $post_id ) ) { return; }
+	$organization = sanitize_text_field( wp_unslash( $_POST['staffswap_opportunity_organization'] ?? '' ) );
+	$organization_type = sanitize_key( wp_unslash( $_POST['staffswap_opportunity_organization_type'] ?? '' ) );
+	$profession = sanitize_text_field( wp_unslash( $_POST['staffswap_opportunity_profession'] ?? '' ) );
+	$location = sanitize_text_field( wp_unslash( $_POST['staffswap_opportunity_location'] ?? '' ) );
+	$closing_date = sanitize_text_field( wp_unslash( $_POST['staffswap_opportunity_closing_date'] ?? '' ) );
+	if ( $closing_date && ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $closing_date ) ) { $closing_date = ''; }
+	$source_url = esc_url_raw( wp_unslash( $_POST['staffswap_opportunity_source_url'] ?? '' ), array( 'http', 'https' ) );
+	update_post_meta( $post_id, '_staffswap_opportunity_organization', $organization );
+	update_post_meta( $post_id, '_staffswap_opportunity_organization_type', $organization_type );
+	update_post_meta( $post_id, '_staffswap_opportunity_profession', $profession );
+	update_post_meta( $post_id, '_staffswap_opportunity_location', $location );
+	update_post_meta( $post_id, '_staffswap_opportunity_closing_date', $closing_date );
+	update_post_meta( $post_id, '_staffswap_opportunity_source_url', $source_url );
+}
+add_action( 'save_post_post', 'staffswap_opportunity_meta_box_save' );
 
 function staffswap_testimonials_shortcode( $atts ) {
 	$atts = shortcode_atts( array( 'limit' => 3 ), $atts, 'staffswap_success_stories' );
-	$stories = get_posts( array( 'post_type' => 'staff_testimonial', 'post_status' => 'publish', 'posts_per_page' => absint( $atts['limit'] ), 'orderby' => 'date', 'order' => 'DESC' ) );
+	$stories = get_posts( array( 'post_type' => 'staff_testimonial', 'post_status' => 'publish', 'posts_per_page' => absint( $atts['limit'] ), 'orderby' => 'date', 'order' => 'DESC', 'meta_key' => '_staffswap_testimonial_authorized', 'meta_value' => '1' ) );
 	if ( ! $stories ) { return ''; }
 	$initials = function ( $name ) { $parts = preg_split( '/\s+/', trim( $name ) ); return strtoupper( substr( $parts[0] ?? '', 0, 1 ) . substr( end( $parts ) ?: '', 0, 1 ) ); };
 	ob_start(); ?><section class="stories-grid"><?php foreach ( $stories as $story ) : $variant = get_post_meta( $story->ID, '_staffswap_testimonial_variant', true ) ?: 'default'; $variant_class = 'default' === $variant ? '' : ' story-card--' . $variant; $avatar_class = 'default' === $variant ? '' : ' featured-avatar--' . $variant; ?><article class="story-card<?php echo esc_attr( $variant_class ); ?>"><span class="featured-avatar<?php echo esc_attr( $avatar_class ); ?>"><?php echo esc_html( $initials( $story->post_title ) ); ?></span><p class="story-quote">&ldquo;<?php echo esc_html( $story->post_content ); ?>&rdquo;</p><strong><?php echo esc_html( $story->post_title ); ?></strong><small><?php echo esc_html( get_post_meta( $story->ID, '_staffswap_testimonial_role', true ) ); ?></small></article><?php endforeach; ?></section><?php return ob_get_clean();
 }
 add_shortcode( 'staffswap_success_stories', 'staffswap_testimonials_shortcode' );
 
+function staffswap_blog_posts_shortcode( $atts ) {
+	$atts = shortcode_atts( array( 'limit' => 6 ), $atts, 'staffswap_blog_posts' );
+	$limit = min( 24, max( 1, absint( $atts['limit'] ) ) );
+	$posts = new WP_Query( array(
+		'post_type' => 'post',
+		'post_status' => 'publish',
+		'posts_per_page' => $limit,
+		'orderby' => 'date',
+		'order' => 'DESC',
+	) );
+	if ( ! $posts->have_posts() ) {
+		return '<p class="muted">' . esc_html__( 'No updates have been published yet.', 'staffswap' ) . '</p>';
+	}
+
+	ob_start();
+	?>
+	<div class="article-grid staffswap-blog-posts">
+		<?php while ( $posts->have_posts() ) : $posts->the_post(); ?>
+			<article class="article-card">
+				<?php if ( has_post_thumbnail() ) : ?>
+					<a class="article-card__image" href="<?php echo esc_url( get_permalink() ); ?>"><?php the_post_thumbnail( 'medium', array( 'loading' => 'lazy' ) ); ?></a>
+				<?php endif; ?>
+				<p class="eyebrow"><?php echo esc_html( get_the_date() ); ?></p>
+				<h3><a href="<?php echo esc_url( get_permalink() ); ?>"><?php echo esc_html( get_the_title() ); ?></a></h3>
+				<p><?php echo esc_html( wp_trim_words( get_the_excerpt(), 24 ) ); ?></p>
+			</article>
+		<?php endwhile; ?>
+	</div>
+	<?php
+	wp_reset_postdata();
+	return ob_get_clean();
+}
+add_shortcode( 'staffswap_blog_posts', 'staffswap_blog_posts_shortcode' );
+
 function staffswap_random_testimonial() {
-	$story = get_posts( array( 'post_type' => 'staff_testimonial', 'post_status' => 'publish', 'posts_per_page' => 1, 'orderby' => 'rand' ) );
+	$story = get_posts( array( 'post_type' => 'staff_testimonial', 'post_status' => 'publish', 'posts_per_page' => 1, 'orderby' => 'rand', 'meta_key' => '_staffswap_testimonial_authorized', 'meta_value' => '1' ) );
 	if ( ! $story ) { return false; }
 	$story = $story[0];
 	$parts = preg_split( '/\s+/', trim( $story->post_title ) );
@@ -161,8 +253,9 @@ function staffswap_setup_pages() {
 		'resources' => array( 'title' => 'Resources Centre', 'slug' => 'resources', 'content' => '[staffswap_resources]' ),
 		'how' => array( 'title' => 'How It Works', 'slug' => 'how-it-works', 'content' => '<h1>How StaffExchangeHub Works</h1><p>Build your profile, post a request, compare matches, connect securely, and complete your workplace exchange.</p>' ),
 		'success' => array( 'title' => 'Success Stories', 'slug' => 'success-stories', 'content' => '<h1>Success Stories</h1><p>Read how professionals across Zambia have found better workplace placements.</p>' ),
-		'blog' => array( 'title' => 'Blog', 'slug' => 'blog', 'content' => '<h1>StaffExchangeHub Blog</h1><p>Practical advice for workplace mobility, career growth, and professional exchange.</p>' ),
+		'blog' => array( 'title' => 'Opportunities & Updates', 'slug' => 'blog', 'content' => '<h1>Opportunities & Updates</h1><p>Discover the latest career opportunities, transfer updates, internship announcements, and professional development news across Zambia.</p>' ),
 		'pricing' => array( 'title' => 'Pricing', 'slug' => 'pricing', 'content' => '<h1>Plans for every professional move</h1><p>Start with the free exchange network and choose premium visibility when you need it.</p>' ),
+		'about' => array( 'title' => 'About Us', 'slug' => 'about', 'content' => '' ),
 	);
 	$created = array();
 	foreach ( $pages as $key => $page ) {
@@ -172,12 +265,36 @@ function staffswap_setup_pages() {
 			$created[ $key ] = wp_insert_post( array( 'post_title' => $page['title'], 'post_name' => $page['slug'], 'post_content' => $page['content'], 'post_status' => 'publish', 'post_type' => 'page' ) );
 		}
 	}
+	foreach ( array( 'Job Opportunities', 'Internships & Attachments', 'Transfer & Placement Updates', 'Scholarships & Training', 'Events & Deadlines', 'Professional News' ) as $category_name ) {
+		if ( ! term_exists( $category_name, 'category' ) ) { wp_insert_term( $category_name, 'category' ); }
+	}
 	if ( ! empty( $created['home'] ) ) { update_option( 'show_on_front', 'page' ); update_option( 'page_on_front', $created['home'] ); }
 	$menu = wp_get_nav_menu_object( 'StaffSwap Main Menu' );
 	$menu_id = $menu ? $menu->term_id : wp_create_nav_menu( 'StaffSwap Main Menu' );
 	if ( ! is_wp_error( $menu_id ) ) {
 		$items = wp_get_nav_menu_items( $menu_id );
-		$menu_keys = array( 'home', 'swaps', 'how', 'success', 'resources', 'blog', 'pricing' );
+		$about_menu_item_exists = false;
+		foreach ( (array) $items as $item ) { if ( ! empty( $created['about'] ) && (int) $item->object_id === (int) $created['about'] ) { $about_menu_item_exists = true; break; } }
+		if ( ! $about_menu_item_exists && ! empty( $created['about'] ) && ! empty( $created['success'] ) ) {
+			foreach ( (array) $items as $item ) {
+				if ( (int) $item->object_id === (int) $created['success'] ) {
+					wp_update_nav_menu_item( $menu_id, $item->ID, array( 'menu-item-title' => 'About Us', 'menu-item-object' => 'page', 'menu-item-object-id' => $created['about'], 'menu-item-type' => 'post_type', 'menu-item-status' => 'publish' ) );
+					break;
+				}
+			}
+			$items = wp_get_nav_menu_items( $menu_id );
+		}
+		if ( ! empty( $created['blog'] ) ) {
+			foreach ( (array) $items as $item ) {
+				$is_blog_page = (int) $item->object_id === (int) $created['blog'];
+				$is_blog_link = 'custom' === $item->type && untrailingslashit( $item->url ) === untrailingslashit( home_url( '/blog/' ) );
+				if ( $is_blog_page || $is_blog_link ) {
+					wp_update_nav_menu_item( $menu_id, $item->ID, array( 'menu-item-title' => 'Opportunities & Updates', 'menu-item-object' => 'page', 'menu-item-object-id' => $created['blog'], 'menu-item-type' => 'post_type', 'menu-item-status' => 'publish' ) );
+				}
+			}
+			$items = wp_get_nav_menu_items( $menu_id );
+		}
+		$menu_keys = array( 'home', 'swaps', 'resources', 'how', 'blog', 'pricing', 'about' );
 		$existing_ids = array(); foreach ( (array) $items as $item ) { $existing_ids[] = (int) $item->object_id; }
 		foreach ( $menu_keys as $key ) { if ( ! empty( $created[ $key ] ) && ! in_array( (int) $created[ $key ], $existing_ids, true ) ) { wp_update_nav_menu_item( $menu_id, 0, array( 'menu-item-title' => $pages[ $key ]['title'], 'menu-item-object' => 'page', 'menu-item-object-id' => $created[ $key ], 'menu-item-type' => 'post_type', 'menu-item-status' => 'publish' ) ); } }
 		$locations = get_theme_mod( 'nav_menu_locations', array() ); $locations['primary'] = $menu_id; set_theme_mod( 'nav_menu_locations', $locations );
@@ -236,7 +353,7 @@ function staffswap_admin_settings_menu() { add_options_page( 'StaffSwap Settings
 add_action( 'admin_menu', 'staffswap_admin_settings_menu' );
 function staffswap_admin_settings_screen() {
 	if ( ! current_user_can( 'manage_options' ) ) { return; }
-	$defaults = array( 'site_name' => 'StaffExchangeHub', 'hero_title' => 'Swap Your Workplace. Change Your Life.', 'hero_text' => 'Connect with verified professionals across Zambia who want to swap their workplace just like you. Secure, efficient, and professional workplace mobility.', 'primary_label' => 'Create Swap Post', 'secondary_label' => 'Browse Swaps', 'stats' => '12,000+|3,200+|150+|10|20+' );
+	$defaults = array( 'site_name' => 'StaffExchangeHub', 'hero_title' => 'Workplace mobility, made simple', 'hero_text' => 'Connect with professionals across Zambia looking to exchange work locations. Search available opportunities, create your swap request and explore relocation possibilities.', 'primary_label' => 'Sign Up Free', 'secondary_label' => 'Find Swaps', 'stats' => 'Search by profession|Compare routes|Protect your privacy' );
 	$settings = wp_parse_args( get_option( 'staffswap_settings', array() ), $defaults );
 	if ( isset( $_POST['staffswap_save_settings'] ) && check_admin_referer( 'staffswap_save_settings', 'staffswap_settings_nonce' ) ) { foreach ( $defaults as $key => $default ) { $settings[ $key ] = sanitize_textarea_field( wp_unslash( $_POST[ $key ] ?? $default ) ); } update_option( 'staffswap_settings', $settings ); echo '<div class="notice notice-success is-dismissible"><p><strong>Settings saved.</strong> Your StaffSwap brand content is updated.</p></div>'; }
 	?><div class="wrap staffswap-admin-settings"><div class="staffswap-settings-hero"><span class="staffswap-kicker">STAFFEXCHANGEHUB / CONTROL CENTRE</span><h1>StaffSwap settings</h1><p>Keep the marketplace voice, actions, and network numbers aligned from one place.</p></div><form method="post"><div class="staffswap-settings-layout"><main class="staffswap-settings-card"><h2>Homepage content</h2><p class="description">These values power the public landing page. You can still use Appearance > Customize for live visual previews.</p><div class="staffswap-settings-field"><label for="site_name">Site name</label><input class="regular-text" id="site_name" name="site_name" value="<?php echo esc_attr( $settings['site_name'] ); ?>"></div><div class="staffswap-settings-field"><label for="hero_title">Hero title</label><input class="large-text" id="hero_title" name="hero_title" value="<?php echo esc_attr( $settings['hero_title'] ); ?>"></div><div class="staffswap-settings-field"><label for="hero_text">Hero description</label><textarea class="large-text" id="hero_text" name="hero_text" rows="4"><?php echo esc_textarea( $settings['hero_text'] ); ?></textarea></div><div class="staffswap-settings-row"><div class="staffswap-settings-field"><label for="primary_label">Primary action</label><input class="regular-text" id="primary_label" name="primary_label" value="<?php echo esc_attr( $settings['primary_label'] ); ?>"></div><div class="staffswap-settings-field"><label for="secondary_label">Secondary action</label><input class="regular-text" id="secondary_label" name="secondary_label" value="<?php echo esc_attr( $settings['secondary_label'] ); ?>"></div></div><div class="staffswap-settings-field"><label for="stats">Network statistics</label><input class="large-text" id="stats" name="stats" value="<?php echo esc_attr( $settings['stats'] ); ?>"><p class="description">Use five values separated by the | character.</p></div><?php wp_nonce_field( 'staffswap_save_settings', 'staffswap_settings_nonce' ); ?><p><button type="submit" name="staffswap_save_settings" class="button button-primary button-hero">Save StaffSwap settings</button></p></main><aside class="staffswap-settings-side"><div class="staffswap-settings-card"><h2>Quick links</h2><a class="button" href="<?php echo esc_url( admin_url( 'customize.php' ) ); ?>">Open visual Customizer</a><a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=staffswap-setup' ) ); ?>">Open setup guide</a><a class="button" href="<?php echo esc_url( home_url( '/' ) ); ?>">View live homepage</a></div><div class="staffswap-settings-card staffswap-settings-tip"><strong>Content tip</strong><p>Keep your headline focused on the career move. Use the description to explain trust, locations, and the professionals you serve.</p></div></aside></div></form></div><?php
@@ -256,7 +373,7 @@ add_action( 'admin_menu', 'staffswap_theme_options_menu' );
 
 function staffswap_theme_options_screen() {
 	if ( ! current_user_can( 'manage_options' ) ) { return; }
-	$defaults = array( 'site_name' => 'StaffExchangeHub', 'hero_title' => 'Swap Your Workplace. Change Your Life.', 'hero_text' => 'Connect with verified professionals across Zambia who want to swap their workplace just like you. Secure, efficient, and professional workplace mobility.', 'primary_label' => 'Create Swap Post', 'secondary_label' => 'Browse Swaps', 'stats' => '12,000+|3,200+|150+|10|20+', 'primary_color' => '#00bb7f' );
+	$defaults = array( 'site_name' => 'StaffExchangeHub', 'hero_title' => 'Workplace mobility, made simple', 'hero_text' => 'Connect with professionals across Zambia looking to exchange work locations. Search available opportunities, create your swap request and explore relocation possibilities.', 'primary_label' => 'Sign Up Free', 'secondary_label' => 'Find Swaps', 'stats' => 'Search by profession|Compare routes|Protect your privacy', 'primary_color' => '#00bb7f' );
 	$settings = wp_parse_args( get_option( 'staffswap_settings', array() ), $defaults );
 	if ( isset( $_POST['staffswap_save_theme_options'] ) && check_admin_referer( 'staffswap_save_theme_options', 'staffswap_theme_options_nonce' ) ) {
 		foreach ( $defaults as $key => $default ) { $settings[ $key ] = 'primary_color' === $key ? sanitize_hex_color( wp_unslash( $_POST[ $key ] ?? $default ) ) : sanitize_textarea_field( wp_unslash( $_POST[ $key ] ?? $default ) ); }
@@ -360,7 +477,7 @@ function staffswap_theme_options_hub() {
 }
 
 function staffswap_brand_defaults() {
-	return array( 'site_name' => 'StaffExchangeHub', 'hero_title' => 'Swap Your Workplace. Change Your Life.', 'hero_text' => 'Connect with verified professionals across Zambia who want to swap their workplace just like you. Secure, efficient, and professional workplace mobility.', 'primary_label' => 'Create Swap Post', 'secondary_label' => 'Browse Swaps', 'stats' => '12,000+|3,200+|150+|10|20+', 'primary_color' => '#00bb7f', 'header_color' => '#0d2240', 'radius' => '6', 'heading_font' => 'space-grotesk', 'container' => '1200', 'sticky_header' => 'yes', 'mobile_nav' => 'yes', 'announcement_enabled' => 'no', 'announcement_text' => '', 'announcement_link' => '', 'logo_height' => '44', 'logo_height_mobile' => '32', 'logo_max_width' => '260', 'header_height' => '80', 'nav_font_size' => '13', 'nav_color' => '#ffffff', 'header_shadow' => 'yes', 'body_bg' => '#f6f8fb', 'footer_bg' => '', 'footer_text_color' => '', 'footer_text' => 'The professional exchange marketplace helping individuals and institutions find workplace swaps across Zambia.' );
+	return array( 'site_name' => 'StaffExchangeHub', 'hero_title' => 'Workplace mobility, made simple', 'hero_text' => 'Connect with professionals across Zambia looking to exchange work locations. Search available opportunities, create your swap request and explore relocation possibilities.', 'primary_label' => 'Sign Up Free', 'secondary_label' => 'Find Swaps', 'stats' => 'Search by profession|Compare routes|Protect your privacy', 'primary_color' => '#00bb7f', 'header_color' => '#0d2240', 'radius' => '6', 'heading_font' => 'space-grotesk', 'container' => '1200', 'sticky_header' => 'yes', 'mobile_nav' => 'yes', 'announcement_enabled' => 'no', 'announcement_text' => '', 'announcement_link' => '', 'logo_height' => '44', 'logo_height_mobile' => '32', 'logo_max_width' => '260', 'header_height' => '80', 'nav_font_size' => '13', 'nav_color' => '#ffffff', 'header_shadow' => 'yes', 'body_bg' => '#f6f8fb', 'footer_bg' => '', 'footer_text_color' => '', 'footer_text' => 'The professional exchange marketplace helping individuals and institutions find workplace swaps across Zambia.' );
 }
 
 function staffswap_brand_fonts() {
@@ -396,14 +513,33 @@ function staffswap_sanitize_brand( $input, $current ) {
 function staffswap_footer_default_columns() {
 	return array(
 		array( 'title' => 'Platform', 'items' => array( array( 'text' => 'Browse Swaps', 'url' => home_url( '/swaps/' ) ), array( 'text' => 'Create Listing', 'url' => home_url( '/create-swap/' ) ) ) ),
-		array( 'title' => 'Resources', 'items' => array( array( 'text' => 'Career Advice', 'url' => home_url( '/resources/' ) ), array( 'text' => 'Help Center', 'url' => home_url( '/help/' ) ) ) ),
+		array( 'title' => 'Resources', 'items' => array( array( 'text' => 'Resources Centre', 'url' => home_url( '/resources/' ) ), array( 'text' => 'Opportunities & Updates', 'url' => home_url( '/blog/' ) ) ) ),
 		array( 'title' => 'Legal', 'items' => array( array( 'text' => 'Privacy Policy', 'url' => home_url( '/privacy-policy/' ) ), array( 'text' => 'Terms of Service', 'url' => home_url( '/terms/' ) ) ) ),
+		array(
+			'title' => 'Contact',
+			'items' => array(
+				array( 'text' => 'Contact Us', 'url' => 'mailto:' . sanitize_email( get_option( 'admin_email' ) ) ),
+				array( 'text' => 'Report a Problem', 'url' => 'mailto:' . sanitize_email( get_option( 'admin_email' ) ) . '?subject=' . rawurlencode( 'StaffExchangeHub support' ) ),
+			),
+		),
 	);
 }
 
 function staffswap_footer_columns() {
 	$columns = get_option( 'staffswap_footer_columns', null );
-	return is_array( $columns ) ? $columns : staffswap_footer_default_columns();
+	$columns = is_array( $columns ) ? $columns : staffswap_footer_default_columns();
+	foreach ( staffswap_footer_default_columns() as $default_column ) {
+		$column_index = null;
+		foreach ( $columns as $index => $column ) {
+			if ( ( $column['title'] ?? '' ) === $default_column['title'] ) { $column_index = $index; break; }
+		}
+		if ( null === $column_index ) { $columns[] = $default_column; continue; }
+		$existing_labels = array_map( function ( $item ) { return $item['text'] ?? ''; }, $columns[ $column_index ]['items'] ?? array() );
+		foreach ( $default_column['items'] as $item ) {
+			if ( ! in_array( $item['text'], $existing_labels, true ) ) { $columns[ $column_index ]['items'][] = $item; }
+		}
+	}
+	return $columns;
 }
 
 function staffswap_sanitize_footer_columns( $input ) {
@@ -525,32 +661,82 @@ function staffswap_hub_tab_brand() {
 
 function staffswap_hub_tab_plans() {
 	$plan_defaults = function_exists( 'staffswap_wc_plans' ) ? staffswap_wc_plans() : array(
-		'month' => array( 'title' => 'StaffSwap VIP Gold - 1 Month', 'price' => '99', 'duration' => '1 month' ),
-		'quarter' => array( 'title' => 'StaffSwap VIP Gold - 3 Months', 'price' => '249', 'duration' => '3 months' ),
-		'lifetime' => array( 'title' => 'StaffSwap VIP Gold - Lifetime', 'price' => '799', 'duration' => 'lifetime' ),
+		'month' => array( 'title' => 'StaffSwap VIP Gold - 1 Month', 'price' => '99', 'duration' => '1 month', 'listing_limit' => 1, 'monthly_interest_limit' => 20, 'benefits' => array( 'All Basic benefits', 'Member messaging access', 'Formal swap offers', 'Priority listing visibility', '30 days of VIP features' ) ),
+		'quarter' => array( 'title' => 'StaffSwap VIP Gold - 3 Months', 'price' => '249', 'duration' => '3 months', 'listing_limit' => 1, 'monthly_interest_limit' => 20, 'benefits' => array( 'All Basic benefits', 'Member messaging access', 'Formal swap offers', 'Priority listing visibility', '90 days of VIP features' ) ),
+		'lifetime' => array( 'title' => 'StaffSwap VIP Gold - Lifetime', 'price' => '199', 'duration' => 'lifetime', 'listing_limit' => 1, 'monthly_interest_limit' => 20, 'benefits' => array( 'All VIP Gold benefits', 'Lifetime core VIP access', 'Member messaging access', 'Formal swap offers', 'Priority listing visibility', 'No recurring renewal' ) ),
 	);
+	$basic_defaults = function_exists( 'staffswap_wc_basic_plan' ) ? staffswap_wc_basic_plan() : array( 'listing_limit' => 1, 'monthly_interest_limit' => 3, 'benefits' => array( 'Create your profile', 'Browse swap listings', 'Access free resources', 'Review potential matches' ) );
 	if ( isset( $_POST['staffswap_save_plans'] ) && check_admin_referer( 'staffswap_save_plans', 'staffswap_plans_nonce' ) ) {
 		$overrides = array();
-		foreach ( array_keys( $plan_defaults ) as $plan ) { $overrides[ $plan ] = array( 'title' => sanitize_text_field( wp_unslash( $_POST[ 'plan_title_' . $plan ] ?? '' ) ), 'price' => sanitize_text_field( wp_unslash( $_POST[ 'plan_price_' . $plan ] ?? '' ) ) ); }
-		update_option( 'staffswap_plan_settings', $overrides );
-		if ( function_exists( 'staffswap_wc_sync_plan_products' ) ) { staffswap_wc_sync_plan_products(); }
-		echo '<div class="notice notice-success is-dismissible"><p>Membership plan pricing saved.</p></div>';
-		if ( function_exists( 'staffswap_wc_plans' ) ) { $plan_defaults = staffswap_wc_plans(); }
+		$errors = array();
+		$get_plan_text = static function ( $key ) {
+			$value = $_POST[ $key ] ?? '';
+			return is_scalar( $value ) ? sanitize_text_field( wp_unslash( (string) $value ) ) : '';
+		};
+		$get_plan_limit = static function ( $key ) {
+			$value = $_POST[ $key ] ?? '';
+			return is_scalar( $value ) ? absint( $value ) : 0;
+		};
+		$get_plan_benefits = static function ( $key ) {
+			$value = $_POST[ $key ] ?? '';
+			$text = is_scalar( $value ) ? sanitize_textarea_field( wp_unslash( (string) $value ) ) : '';
+			return array_values( array_filter( array_map( 'sanitize_text_field', array_map( 'trim', explode( "\n", $text ) ) ) ) );
+		};
+		foreach ( $plan_defaults as $plan => $data ) {
+			$title = $get_plan_text( 'plan_title_' . $plan );
+			$price = trim( $get_plan_text( 'plan_price_' . $plan ) );
+			$listing_limit = $get_plan_limit( 'plan_listing_limit_' . $plan );
+			$interest_limit = $get_plan_limit( 'plan_interest_limit_' . $plan );
+			$benefits = $get_plan_benefits( 'plan_benefits_' . $plan );
+			if ( '' === $title ) { $errors[] = ucfirst( $plan ) . ' needs a title.'; }
+			if ( ! preg_match( '/^\d+(?:\.\d{1,2})?$/', $price ) || (float) $price <= 0 ) { $errors[] = ucfirst( $plan ) . ' price must be greater than zero and have no more than two decimal places.'; }
+			if ( $listing_limit < 1 || $listing_limit > 100 ) { $errors[] = ucfirst( $plan ) . ' swap-post limit must be between 1 and 100.'; }
+			if ( $interest_limit < 1 || $interest_limit > 1000 ) { $errors[] = ucfirst( $plan ) . ' monthly contact-request limit must be between 1 and 1,000.'; }
+			if ( ! $benefits ) { $errors[] = ucfirst( $plan ) . ' must include at least one benefit.'; }
+			$overrides[ $plan ] = array( 'title' => $title, 'price' => $price, 'listing_limit' => $listing_limit, 'monthly_interest_limit' => $interest_limit, 'benefits' => $benefits );
+		}
+		$basic_listing_limit = $get_plan_limit( 'plan_listing_limit_basic' );
+		$basic_interest_limit = $get_plan_limit( 'plan_interest_limit_basic' );
+		$basic_benefits = $get_plan_benefits( 'plan_benefits_basic' );
+		if ( $basic_listing_limit < 1 || $basic_listing_limit > 100 ) { $errors[] = 'Basic swap-post limit must be between 1 and 100.'; }
+		if ( $basic_interest_limit < 1 || $basic_interest_limit > 1000 ) { $errors[] = 'Basic monthly contact-request limit must be between 1 and 1,000.'; }
+		if ( ! $basic_benefits ) { $errors[] = 'Basic must include at least one benefit.'; }
+		$overrides['basic'] = array( 'listing_limit' => $basic_listing_limit, 'monthly_interest_limit' => $basic_interest_limit, 'benefits' => $basic_benefits );
+		if ( $errors ) {
+			echo '<div class="notice notice-error"><p>' . esc_html( implode( ' ', $errors ) ) . '</p></div>';
+		} else {
+			update_option( 'staffswap_plan_settings', $overrides );
+			if ( function_exists( 'staffswap_wc_sync_plan_products' ) ) { staffswap_wc_sync_plan_products(); }
+			echo class_exists( 'WooCommerce' )
+				? '<div class="notice notice-success is-dismissible"><p>Membership plans saved and WooCommerce products synchronized.</p></div>'
+				: '<div class="notice notice-success is-dismissible"><p>Membership plans saved. Activate WooCommerce to synchronize the products.</p></div>';
+			if ( function_exists( 'staffswap_wc_plans' ) ) { $plan_defaults = staffswap_wc_plans(); }
+			if ( function_exists( 'staffswap_wc_basic_plan' ) ) { $basic_defaults = staffswap_wc_basic_plan(); }
+		}
 	}
 	if ( ! class_exists( 'WooCommerce' ) ) { echo '<p>Install and activate WooCommerce to sell StaffSwap VIP Gold memberships.</p>'; }
 	?>
 	<form method="post">
 		<div class="staffswap-hub__plans">
+			<div class="staffswap-hub__plan-card">
+				<h3>Basic <small>(Free)</small></h3>
+				<label>Active swap posts allowed<input name="plan_listing_limit_basic" type="number" min="1" max="100" step="1" value="<?php echo esc_attr( $basic_defaults['listing_limit'] ); ?>"></label>
+				<label>Monthly contact requests<input name="plan_interest_limit_basic" type="number" min="1" max="1000" step="1" value="<?php echo esc_attr( $basic_defaults['monthly_interest_limit'] ); ?>"></label>
+				<label>Benefits <small>Enter one benefit per line.</small><textarea name="plan_benefits_basic" rows="6"><?php echo esc_textarea( implode( "\n", $basic_defaults['benefits'] ) ); ?></textarea></label>
+			</div>
 			<?php foreach ( $plan_defaults as $plan => $data ) : ?>
 				<div class="staffswap-hub__plan-card">
 					<h3><?php echo esc_html( ucfirst( $plan ) ); ?> <small>(<?php echo esc_html( $data['duration'] ?? '' ); ?>)</small></h3>
 					<label>Plan title<input name="plan_title_<?php echo esc_attr( $plan ); ?>" value="<?php echo esc_attr( $data['title'] ); ?>"></label>
-					<label>Price (ZMW)<input name="plan_price_<?php echo esc_attr( $plan ); ?>" value="<?php echo esc_attr( $data['price'] ); ?>"></label>
+					<label>Price (ZMW)<input name="plan_price_<?php echo esc_attr( $plan ); ?>" type="number" min="0.01" step="0.01" value="<?php echo esc_attr( $data['price'] ); ?>"></label>
+					<label>Active swap posts allowed<input name="plan_listing_limit_<?php echo esc_attr( $plan ); ?>" type="number" min="1" max="100" step="1" value="<?php echo esc_attr( $data['listing_limit'] ); ?>"></label>
+					<label>Monthly contact requests<input name="plan_interest_limit_<?php echo esc_attr( $plan ); ?>" type="number" min="1" max="1000" step="1" value="<?php echo esc_attr( $data['monthly_interest_limit'] ); ?>"></label>
+					<label>Benefits <small>Enter one benefit per line.</small><textarea name="plan_benefits_<?php echo esc_attr( $plan ); ?>" rows="6"><?php echo esc_textarea( implode( "\n", $data['benefits'] ) ); ?></textarea></label>
 				</div>
 			<?php endforeach; ?>
 		</div>
 		<?php wp_nonce_field( 'staffswap_save_plans', 'staffswap_plans_nonce' ); ?>
-		<p><button type="submit" name="staffswap_save_plans" class="button button-primary">Save plan pricing</button></p>
+		<p><button type="submit" name="staffswap_save_plans" class="button button-primary">Save membership plans</button></p>
 	</form>
 	<?php
 }

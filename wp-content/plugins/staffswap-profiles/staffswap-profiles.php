@@ -129,7 +129,48 @@ function staffswap_verification_shortcode() {
 		}
 	}
 	$status = get_user_meta( $user_id, 'staffswap_verified_status', true ) ?: 'unverified';
-	ob_start(); echo $notice; ?><section class="panel content-form"><h1>Verification</h1><p class="muted">Status: <strong><?php echo esc_html( ucfirst( $status ) ); ?></strong></p><form method="post" enctype="multipart/form-data"><div class="field"><label for="nrc_document">National Registration Card (NRC)</label><input id="nrc_document" name="nrc_document" type="file" accept=".jpg,.jpeg,.png,.pdf" required></div><div class="field"><label for="payslip_document">Recent ministry payslip</label><input id="payslip_document" name="payslip_document" type="file" accept=".jpg,.jpeg,.png,.pdf" required></div><div class="field"><label for="license_document">Professional practicing license (optional)</label><input id="license_document" name="license_document" type="file" accept=".jpg,.jpeg,.png,.pdf"></div><?php wp_nonce_field( 'staffswap_submit_verification', 'staffswap_verification_nonce' ); ?><input type="submit" name="staffswap_submit_verification" value="Submit for verification"></form></section><?php return ob_get_clean();
+	$uploaded_docs = array(
+		'nrc_document' => (bool) get_user_meta( $user_id, 'staffswap_nrc_document', true ),
+		'payslip_document' => (bool) get_user_meta( $user_id, 'staffswap_payslip_document', true ),
+		'license_document' => (bool) get_user_meta( $user_id, 'staffswap_license_document', true ),
+	);
+	$uploaded_count = count( array_filter( $uploaded_docs ) );
+	$review_ready = $uploaded_docs['nrc_document'] && $uploaded_docs['payslip_document'];
+	ob_start(); echo $notice; ?>
+	<section class="content-form">
+		<div class="page-heading">
+			<div>
+				<p class="eyebrow">MEMBER TRUST</p>
+				<h1>Verification</h1>
+				<p class="muted">Status: <strong><?php echo esc_html( ucfirst( $status ) ); ?></strong></p>
+			</div>
+		</div>
+		<div class="panel" style="margin-bottom:20px;">
+			<h2>Why verification matters</h2>
+			<ul class="muted" style="margin:0 0 0 18px; padding-left:0; line-height:1.7;">
+				<li>Verified members are more trusted by other public officers.</li>
+				<li>Verified profiles show stronger match confidence and better reply rates.</li>
+				<li>Admins review documents privately before your profile receives a verified badge.</li>
+			</ul>
+		</div>
+		<div class="panel" style="margin-bottom:20px;">
+			<h2>Document checklist</h2>
+			<p class="muted">You have uploaded <?php echo esc_html( $uploaded_count ); ?> of 3 required document(s).</p>
+			<ul style="margin:0; padding-left:18px; line-height:1.8;">
+				<li><?php echo $uploaded_docs['nrc_document'] ? '✓' : '•'; ?> NRC</li>
+				<li><?php echo $uploaded_docs['payslip_document'] ? '✓' : '•'; ?> Recent payslip</li>
+				<li><?php echo $uploaded_docs['license_document'] ? '✓' : '•'; ?> Optional professional license</li>
+			</ul>
+		</div>
+		<form method="post" enctype="multipart/form-data" class="panel">
+			<div class="field"><label for="nrc_document">National Registration Card (NRC)</label><input id="nrc_document" name="nrc_document" type="file" accept=".jpg,.jpeg,.png,.pdf" <?php echo $review_ready ? '' : 'required'; ?>></div>
+			<div class="field"><label for="payslip_document">Recent ministry payslip</label><input id="payslip_document" name="payslip_document" type="file" accept=".jpg,.jpeg,.png,.pdf" <?php echo $review_ready ? '' : 'required'; ?>></div>
+			<div class="field"><label for="license_document">Professional practicing license (optional)</label><input id="license_document" name="license_document" type="file" accept=".jpg,.jpeg,.png,.pdf"></div>
+			<?php wp_nonce_field( 'staffswap_submit_verification', 'staffswap_verification_nonce' ); ?>
+			<input type="submit" name="staffswap_submit_verification" value="Submit for verification">
+		</form>
+	</section>
+	<?php return ob_get_clean();
 }
 add_shortcode( 'staffswap_verification', 'staffswap_verification_shortcode' );
 
@@ -184,7 +225,15 @@ function staffswap_profile_settings_shortcode() {
 	if ( isset( $_POST['staffswap_save_frontend_profile'] ) && check_admin_referer( 'staffswap_save_frontend_profile', 'staffswap_profile_settings_nonce' ) ) {
 		$display_name = sanitize_text_field( wp_unslash( $_POST['display_name'] ?? '' ) );
 		if ( $display_name ) { wp_update_user( array( 'ID' => $user_id, 'display_name' => $display_name ) ); }
-		foreach ( $fields as $key => $label ) { update_user_meta( $user_id, 'staffswap_' . $key, sanitize_text_field( wp_unslash( $_POST[ $key ] ?? '' ) ) ); }
+		foreach ( $fields as $key => $label ) {
+			$posted = $_POST[ $key ] ?? '';
+			if ( in_array( $key, array( 'years_service' ), true ) ) {
+				$posted = absint( $posted );
+			} else {
+				$posted = sanitize_text_field( wp_unslash( $posted ) );
+			}
+			update_user_meta( $user_id, 'staffswap_' . $key, $posted );
+		}
 		update_user_meta( $user_id, 'staffswap_staff_housing', isset( $_POST['staff_housing'] ) ? '1' : '' );
 		update_user_meta( $user_id, 'staffswap_notifications_disabled', isset( $_POST['disable_notifications'] ) ? '1' : '' );
 		update_user_meta( $user_id, 'staffswap_sms_notifications_enabled', isset( $_POST['enable_sms_notifications'] ) ? '1' : '' );

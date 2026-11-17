@@ -53,7 +53,46 @@ function staffswap_message_post_type() { register_post_type( 'staff_message', ar
 add_action( 'init', 'staffswap_message_post_type' );
 function staffswap_create_messages_page() { if ( ! get_page_by_path( 'messages' ) ) { wp_insert_post( array( 'post_title' => 'Messages', 'post_name' => 'messages', 'post_content' => '[staffswap_inbox]', 'post_status' => 'publish', 'post_type' => 'page' ) ); } }
 register_activation_hook( __FILE__, function() { staffswap_message_post_type(); staffswap_create_messages_page(); flush_rewrite_rules(); } ); register_deactivation_hook( __FILE__, 'flush_rewrite_rules' );
-function staffswap_contact_form_shortcode( $atts ) { $atts = shortcode_atts( array( 'listing' => get_the_ID() ), $atts, 'staffswap_contact' ); if ( ! is_user_logged_in() ) { return '<div class="panel"><p>Please sign in to contact this member.</p><a class="button button--primary" href="' . esc_url( wp_login_url( get_permalink() ) ) . '">Sign in</a></div>'; } $notice = ''; if ( isset( $_POST['staffswap_send_message'] ) && check_admin_referer( 'staffswap_send_message', 'staffswap_message_nonce' ) ) { $listing = get_post( (int) $atts['listing'] ); $message_text = sanitize_textarea_field( wp_unslash( $_POST['message'] ?? '' ) ); if ( $listing && 'swap_listing' === $listing->post_type && 'publish' === $listing->post_status && (int) $listing->post_author !== get_current_user_id() && $message_text ) { $message_id = wp_insert_post( array( 'post_type' => 'staff_message', 'post_title' => 'Message about: ' . $listing->post_title, 'post_content' => $message_text, 'post_status' => 'publish', 'post_author' => get_current_user_id() ), true ); if ( ! is_wp_error( $message_id ) ) { update_post_meta( $message_id, '_staffswap_recipient', (int) $listing->post_author ); update_post_meta( $message_id, '_staffswap_listing', (int) $listing->ID ); update_post_meta( $message_id, '_staffswap_read', '0' ); staffswap_notify_user( (int) $listing->post_author, 'New message about ' . $listing->post_title, wp_get_current_user()->display_name . ' sent you a message about your listing "' . $listing->post_title . '":' . "\n\n" . $message_text . "\n\n" . 'Reply here: ' . home_url( '/messages/' ), 'message' ); $notice = '<div class="notice"><div><h2>Message sent</h2><p class="muted">Your message has been sent to the listing owner.</p></div></div>'; } } } ob_start(); echo $notice; ?><div class="panel"><h2>Contact this professional</h2><form method="post"><div class="field"><label for="message">Your message</label><textarea id="message" name="message" rows="5" required placeholder="Introduce yourself and explain why this swap could work..."></textarea></div><?php wp_nonce_field( 'staffswap_send_message', 'staffswap_message_nonce' ); ?><input type="submit" name="staffswap_send_message" value="Send message"></form></div><?php return ob_get_clean(); }
+function staffswap_contact_form_shortcode( $atts ) {
+	$atts = shortcode_atts( array( 'listing' => get_the_ID() ), $atts, 'staffswap_contact' );
+	if ( ! is_user_logged_in() ) {
+		return '<div class="panel"><p>Please sign in to contact this member.</p><a class="button button--primary" href="' . esc_url( add_query_arg( 'redirect_to', get_permalink(), home_url( '/sign-in/' ) ) ) . '">Sign in</a></div>';
+	}
+	$notice = '';
+	$user_id = get_current_user_id();
+	$quota_reached = function_exists( 'staffswap_monthly_interest_count' ) && staffswap_monthly_interest_count( $user_id ) >= staffswap_monthly_interest_limit( $user_id );
+	if ( isset( $_POST['staffswap_send_message'] ) && check_admin_referer( 'staffswap_send_message', 'staffswap_message_nonce' ) ) {
+		if ( $quota_reached ) {
+			$notice = '<div class="notice" role="alert"><p>' . esc_html( staffswap_interest_quota_notice( $user_id ) ) . '</p><a class="button button--outline" href="' . esc_url( home_url( '/pricing/' ) ) . '">View membership plans</a></div>';
+		} else {
+			$listing = get_post( absint( $atts['listing'] ) );
+			$message_value = $_POST['message'] ?? '';
+			$message_text = is_scalar( $message_value ) ? sanitize_textarea_field( wp_unslash( $message_value ) ) : '';
+			if ( $listing && 'swap_listing' === $listing->post_type && 'publish' === $listing->post_status && (int) $listing->post_author !== $user_id && $message_text ) {
+				$message_id = wp_insert_post( array( 'post_type' => 'staff_message', 'post_title' => 'Message about: ' . $listing->post_title, 'post_content' => $message_text, 'post_status' => 'publish', 'post_author' => $user_id ), true );
+				if ( ! is_wp_error( $message_id ) ) {
+					update_post_meta( $message_id, '_staffswap_recipient', (int) $listing->post_author );
+					update_post_meta( $message_id, '_staffswap_listing', (int) $listing->ID );
+					update_post_meta( $message_id, '_staffswap_read', '0' );
+					staffswap_notify_user( (int) $listing->post_author, 'New message about ' . $listing->post_title, wp_get_current_user()->display_name . ' sent you a message about your listing "' . $listing->post_title . '":' . "\n\n" . $message_text . "\n\n" . 'Reply here: ' . home_url( '/messages/' ), 'message' );
+					$notice = '<div class="notice"><div><h2>Message sent</h2><p class="muted">Your message has been sent to the listing owner.</p></div></div>';
+				} else {
+					error_log( 'StaffSwap direct message could not be saved: ' . $message_id->get_error_message() );
+					$notice = '<div class="notice notice--error" role="alert"><p>Your message could not be saved. Please try again.</p></div>';
+				}
+			}
+		}
+	}
+	$quota_reached = function_exists( 'staffswap_monthly_interest_count' ) && staffswap_monthly_interest_count( $user_id ) >= staffswap_monthly_interest_limit( $user_id );
+	ob_start();
+	echo $notice;
+	if ( $quota_reached ) : ?>
+		<div class="panel"><h2>Monthly contact limit reached</h2><p class="muted"><?php echo esc_html( staffswap_interest_quota_notice( $user_id ) ); ?></p><a class="button button--outline" href="<?php echo esc_url( home_url( '/pricing/' ) ); ?>">View membership plans</a></div>
+	<?php else : ?>
+		<div class="panel"><h2>Contact this professional</h2><p class="muted"><?php if ( function_exists( 'staffswap_monthly_interest_count' ) ) { echo esc_html( sprintf( __( '%1$d of %2$d monthly contact requests used.', 'staffswap-messaging' ), staffswap_monthly_interest_count( $user_id ), staffswap_monthly_interest_limit( $user_id ) ) ); } ?></p><form method="post"><div class="field"><label for="message">Your message</label><textarea id="message" name="message" rows="5" required placeholder="Introduce yourself and explain why this swap could work..."></textarea></div><?php wp_nonce_field( 'staffswap_send_message', 'staffswap_message_nonce' ); ?><input type="submit" name="staffswap_send_message" value="Send message"></form></div>
+	<?php endif;
+	return ob_get_clean();
+}
 add_shortcode( 'staffswap_contact', 'staffswap_contact_form_shortcode' );
 
 function staffswap_inbox_shortcode() { if ( ! is_user_logged_in() ) { return '<div class="panel"><p>Please sign in to view your messages.</p></div>'; } $user_id = get_current_user_id(); $received = new WP_Query( array( 'post_type' => 'staff_message', 'post_status' => 'publish', 'posts_per_page' => 30, 'meta_key' => '_staffswap_recipient', 'meta_value' => $user_id ) ); $sent = new WP_Query( array( 'post_type' => 'staff_message', 'post_status' => 'publish', 'author' => $user_id, 'posts_per_page' => 30 ) ); ob_start(); ?><div class="message-inbox"><div class="page-heading"><div><p class="eyebrow">PRIVATE CONVERSATIONS</p><h1>Your messages</h1><p class="muted">Connect with potential exchange partners before you make a move.</p></div></div><section class="panel"><h2>Received</h2><?php if ( $received->have_posts() ) : while ( $received->have_posts() ) : $received->the_post(); ?><article class="message-row"><strong><?php the_title(); ?></strong><p><?php echo esc_html( wp_trim_words( get_the_content(), 22 ) ); ?></p><small class="muted">From <?php echo esc_html( get_the_author() ); ?></small></article><?php endwhile; wp_reset_postdata(); else : ?><p class="muted">No received messages yet.</p><?php endif; ?></section><section class="panel" style="margin-top:16px"><h2>Sent</h2><?php if ( $sent->have_posts() ) : while ( $sent->have_posts() ) : $sent->the_post(); ?><article class="message-row"><strong><?php the_title(); ?></strong><p><?php echo esc_html( wp_trim_words( get_the_content(), 22 ) ); ?></p><small class="muted">Sent <?php echo esc_html( get_the_date() ); ?></small></article><?php endwhile; wp_reset_postdata(); else : ?><p class="muted">No sent messages yet.</p><?php endif; ?></section></div><?php return ob_get_clean(); }
@@ -309,12 +348,38 @@ function staffswap_complete_inbox_shortcode() {
 		}
 	}
 	$vault_documents = get_posts( array( 'post_type' => 'staffswap_document', 'post_status' => 'publish', 'author' => $user_id, 'posts_per_page' => 100, 'orderby' => 'date', 'order' => 'DESC' ) );
+	$group_keys = array_keys( $groups );
+	$selected_group_key = isset( $_GET['conversation'] ) && is_scalar( $_GET['conversation'] ) ? sanitize_text_field( wp_unslash( (string) $_GET['conversation'] ) ) : '';
+	if ( ! $selected_group_key || ! isset( $groups[ $selected_group_key ] ) ) {
+		$selected_group_key = $group_keys[0] ?? '';
+	}
 	ob_start(); echo $notice; ?>
 	<div class="message-inbox">
 		<div class="page-heading"><div><p class="eyebrow">PRIVATE CONVERSATIONS</p><h1>Your messages</h1><p class="muted">Connect with potential exchange partners before you make a move.</p></div><a class="button button--outline" href="<?php echo esc_url( home_url( '/document-vault/' ) ); ?>">Document Vault</a></div>
 		<?php if ( $groups ) : ?>
 			<div class="message-conversations">
-				<?php foreach ( $groups as $group ) : $listing_id = $group['listing_id']; $participant_id = $group['participant_id']; $thread_messages = array_reverse( $group['messages'] ); $unread = (bool) array_intersect( wp_list_pluck( $thread_messages, 'ID' ), $newly_read ); $reply_form_id = 'reply-' . $listing_id . '-' . $participant_id; ?>
+				<aside class="message-contacts panel">
+					<header>
+						<h2>Contacts</h2>
+					</header>
+					<ul>
+						<?php foreach ( $groups as $group_key => $group ) : $listing_id = $group['listing_id']; $participant_id = $group['participant_id']; $thread_messages = array_reverse( $group['messages'] ); $last_message = end( $thread_messages ); $unread = (bool) array_intersect( wp_list_pluck( $thread_messages, 'ID' ), $newly_read ); ?>
+							<li class="message-contact <?php echo $group_key === $selected_group_key ? 'is-active' : ''; ?>">
+								<a href="<?php echo esc_url( add_query_arg( 'conversation', rawurlencode( $group_key ), home_url( '/messages/' ) ) ); ?>">
+									<span class="chat-avatar"><?php echo get_avatar( $participant_id, 42 ); ?></span>
+									<div>
+										<strong><?php echo esc_html( get_the_author_meta( 'display_name', $participant_id ) ); ?></strong>
+										<span class="muted"><?php echo esc_html( $listing_id && get_post( $listing_id ) ? get_the_title( $listing_id ) : 'General conversation' ); ?></span>
+										<small><?php echo esc_html( $last_message ? get_the_date( 'j M', $last_message ) : '' ); ?></small>
+									</div>
+									<?php if ( $unread ) : ?><span class="message-count">New</span><?php endif; ?>
+								</a>
+							</li>
+						<?php endforeach; ?>
+					</ul>
+				</aside>
+
+				<?php $selected_group = $groups[ $selected_group_key ] ?? ( $group_keys ? $groups[ $group_keys[0] ] : null ); if ( $selected_group ) : $listing_id = $selected_group['listing_id']; $participant_id = $selected_group['participant_id']; $thread_messages = array_reverse( $selected_group['messages'] ); $reply_form_id = 'reply-' . $listing_id . '-' . $participant_id; $unread = (bool) array_intersect( wp_list_pluck( $thread_messages, 'ID' ), $newly_read ); ?>
 					<section class="panel message-conversation <?php echo $unread ? 'is-unread' : ''; ?>">
 						<header>
 							<span class="chat-avatar"><?php echo get_avatar( $participant_id, 44 ); ?></span>
@@ -343,7 +408,7 @@ function staffswap_complete_inbox_shortcode() {
 							<input type="hidden" name="listing_id" value="<?php echo esc_attr( $listing_id ); ?>"><input type="hidden" name="recipient_id" value="<?php echo esc_attr( $participant_id ); ?>"><?php wp_nonce_field( 'staffswap_reply_' . $listing_id, 'staffswap_reply_nonce' ); ?>
 						</form><?php endif; ?>
 					</section>
-				<?php endforeach; ?>
+				<?php endif; ?>
 			</div>
 		<?php else : ?><section class="panel"><p class="muted">No conversations yet.</p></section><?php endif; ?>
 	</div>
@@ -358,16 +423,7 @@ function staffswap_chat_assets() {
 	$done = true;
 	?>
 <style>
-.message-conversation{padding:0;overflow:hidden}.message-conversation>header{display:flex;align-items:center;gap:12px;padding:12px 16px;background:#0d2240;color:#fff;border:0;margin:0}.message-conversation>header h2{margin:0;font-size:1rem;color:#fff}.message-conversation>header .eyebrow{margin:0;color:#b8c7dc;font-size:.75rem}.message-conversation>header .message-count{margin-left:auto;background:#00bb7f;color:#fff;border-radius:999px;padding:2px 10px;font-size:.75rem}.chat-avatar img{border-radius:50%;display:block}
-.chat-thread{display:flex;flex-direction:column;gap:6px;padding:16px;max-height:460px;overflow-y:auto;background:#efeae2}
-.chat-thread .message-row{max-width:78%;align-self:flex-start;background:#fff;border-radius:10px 10px 10px 2px;padding:7px 10px 4px;box-shadow:0 1px 1px rgba(0,0,0,.12);border:0;margin:0}.chat-thread .message-row.is-own{align-self:flex-end;background:#d9fdd3;border-radius:10px 10px 2px 10px}.chat-thread .message-row.is-unread{box-shadow:0 0 0 2px #00bb7f}
-.chat-thread .message-row p{margin:0 0 2px;overflow-wrap:anywhere}.chat-thread .message-row small{display:block;text-align:right;font-size:.7rem}.chat-thread .message-attachment{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:rgba(0,0,0,.05);border-radius:8px;padding:8px;margin:2px 0}
-.chat-composer{position:relative;padding:10px 12px;background:#f0f2f5;display:block;margin:0}.chat-composer__bar{display:flex;align-items:flex-end;gap:8px}.chat-composer textarea{flex:1;border:0;border-radius:20px;padding:10px 14px;resize:none;max-height:120px;min-height:40px;margin:0}
-.chat-btn{background:none;border:0;font-size:1.35rem;cursor:pointer;padding:6px;line-height:1;margin:0}.chat-send{width:42px;height:42px;border-radius:50%;border:0;background:#00bb7f;color:#fff;font-size:1.1rem;cursor:pointer;flex:none}
-.chat-composer__file{background:#fff;border-radius:8px;padding:6px 10px;margin-bottom:8px;font-size:.85rem;display:flex;justify-content:space-between;gap:8px}.chat-composer__file[hidden],.chat-emoji-panel[hidden]{display:none}.chat-composer__file button{border:0;background:none;cursor:pointer}
-.chat-emoji-panel{display:grid;grid-template-columns:repeat(auto-fill,minmax(36px,1fr));gap:2px;background:#fff;border-radius:10px;padding:8px;margin-top:8px;max-height:170px;overflow-y:auto}.chat-emoji-panel button{border:0;background:none;font-size:1.4rem;cursor:pointer;border-radius:6px}.chat-emoji-panel button:hover{background:#f0f2f5}
-.chat-vault{margin-top:8px;font-size:.85rem}.chat-vault select{width:100%;margin-top:6px}
-</style>
+.message-conversations{display:grid;grid-template-columns:320px minmax(0,1fr);gap:0;min-height:620px;border:1px solid #e5eaf0;border-radius:14px;overflow:hidden;background:#f6f8fb}.message-contacts{border-right:1px solid #e5eaf0;border-radius:0;overflow:hidden}.message-contacts header{padding:18px 16px 12px}.message-contacts header h2{margin:0;font-size:1rem;color:#0d2240}.message-contacts ul{list-style:none;margin:0;padding:0}.message-contact a{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #eef2f7;color:inherit;text-decoration:none;transition:background .15s ease}.message-contact a:hover,.message-contact.is-active a{background:#edfdf7}.message-contact a > div{display:flex;flex:1;flex-direction:column;min-width:0}.message-contact a strong{display:block;font-size:.95rem;color:#0d2240;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.message-contact a .muted{display:block;font-size:.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.message-contact a small{display:block;font-size:.72rem;color:#64748b;margin-top:3px}.message-contact .message-count{margin-left:auto;background:#00bb7f;color:#fff;border-radius:999px;padding:2px 8px;font-size:.7rem}.message-conversation{padding:0;overflow:hidden;border-radius:0;border:0}.message-conversation>header{display:flex;align-items:center;gap:12px;padding:12px 16px;background:#0d2240;color:#fff;border:0;margin:0}.message-conversation>header h2{margin:0;font-size:1rem;color:#fff}.message-conversation>header .eyebrow{margin:0;color:#b8c7dc;font-size:.75rem}.message-conversation>header .message-count{margin-left:auto;background:#00bb7f;color:#fff;border-radius:999px;padding:2px 10px;font-size:.75rem}.chat-avatar img{border-radius:50%;display:block}.chat-thread{display:flex;flex-direction:column;gap:6px;padding:16px;max-height:460px;overflow-y:auto;background:#efeae2}.chat-thread .message-row{max-width:78%;align-self:flex-start;background:#fff;border-radius:10px 10px 10px 2px;padding:7px 10px 4px;box-shadow:0 1px 1px rgba(0,0,0,.12);border:0;margin:0}.chat-thread .message-row.is-own{align-self:flex-end;background:#d9fdd3;border-radius:10px 10px 2px 10px}.chat-thread .message-row.is-unread{box-shadow:0 0 0 2px #00bb7f}.chat-thread .message-row p{margin:0 0 2px;overflow-wrap:anywhere}.chat-thread .message-row small{display:block;text-align:right;font-size:.7rem}.chat-thread .message-attachment{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:rgba(0,0,0,.05);border-radius:8px;padding:8px;margin:2px 0}.chat-composer{position:relative;padding:10px 12px;background:#f0f2f5;display:block;margin:0}.chat-composer__bar{display:flex;align-items:flex-end;gap:8px}.chat-composer textarea{flex:1;border:0;border-radius:20px;padding:10px 14px;resize:none;max-height:120px;min-height:40px;margin:0}.chat-btn{background:none;border:0;font-size:1.35rem;cursor:pointer;padding:6px;line-height:1;margin:0}.chat-send{width:42px;height:42px;border-radius:50%;border:0;background:#00bb7f;color:#fff;font-size:1.1rem;cursor:pointer;flex:none}.chat-composer__file{background:#fff;border-radius:8px;padding:6px 10px;margin-bottom:8px;font-size:.85rem;display:flex;justify-content:space-between;gap:8px}.chat-composer__file[hidden],.chat-emoji-panel[hidden]{display:none}.chat-composer__file button{border:0;background:none;cursor:pointer}.chat-emoji-panel{display:grid;grid-template-columns:repeat(auto-fill,minmax(36px,1fr));gap:2px;background:#fff;border-radius:10px;padding:8px;margin-top:8px;max-height:170px;overflow-y:auto}.chat-emoji-panel button{border:0;background:none;font-size:1.4rem;cursor:pointer;border-radius:6px}.chat-emoji-panel button:hover{background:#f0f2f5}.chat-vault{margin-top:8px;font-size:.85rem}.chat-vault select{width:100%;margin-top:6px}@media (max-width: 860px){.message-conversations{grid-template-columns:1fr}.message-contacts{border-right:0;border-bottom:1px solid #e5eaf0;max-height:240px;overflow-y:auto}.message-contact a{padding:10px 12px}} </style>
 <script>
 (function(){
 var E='😀 😃 😄 😁 😆 😅 😂 🤣 😊 😇 🙂 😉 😍 🥰 😘 😋 😎 🤩 🥳 🤔 😐 😴 😢 😭 😡 🤝 👍 👎 👏 🙏 💪 🙌 👋 ✅ ❌ ⭐ 🔥 🎉 ❤️ 💼 🏢 🏠 📍 📄 📎 📞 ✉️ 🚗 ✈️'.split(' ');
@@ -840,10 +896,15 @@ function staffswap_offer_form_shortcode( $atts ) {
 		return '';
 	}
 	if ( ! is_user_logged_in() ) {
-		return '<section class="panel" style="margin-top:16px"><h2>Send a formal swap offer</h2><p class="muted">Sign in to send a formal swap offer for this listing.</p><a class="button button--primary" href="' . esc_url( wp_login_url( get_permalink( $listing->ID ) ) ) . '">Sign in to send an offer</a></section>';
+		return '<section class="panel" style="margin-top:16px"><h2>Send a formal swap offer</h2><p class="muted">Sign in to send a formal swap offer for this listing.</p><a class="button button--primary" href="' . esc_url( add_query_arg( 'redirect_to', get_permalink( $listing->ID ), home_url( '/sign-in/' ) ) ) . '">Sign in to send an offer</a></section>';
 	}
 	if ( (int) $listing->post_author === get_current_user_id() ) {
 		return '';
+	}
+	$user_id = get_current_user_id();
+	$quota_reached = function_exists( 'staffswap_monthly_interest_count' ) && staffswap_monthly_interest_count( $user_id ) >= staffswap_monthly_interest_limit( $user_id );
+	if ( $quota_reached ) {
+		return '<section class="panel" style="margin-top:16px"><h2>Monthly contact limit reached</h2><p class="muted">' . esc_html( staffswap_interest_quota_notice( $user_id ) ) . '</p><a class="button button--outline" href="' . esc_url( home_url( '/pricing/' ) ) . '">View membership plans</a></section>';
 	}
 	$sender_listings = get_posts( array( 'post_type' => 'swap_listing', 'post_status' => 'publish', 'author' => get_current_user_id(), 'posts_per_page' => -1, 'orderby' => 'date', 'order' => 'DESC' ) );
 	$notice = '';
@@ -855,6 +916,8 @@ function staffswap_offer_form_shortcode( $atts ) {
 			$notice = '<div class="notice"><p>Select one of your own published swap listings so the offer includes your current and requested details.</p></div>';
 		} elseif ( ! $effective_date ) {
 			$notice = '<div class="notice"><p>Please provide the proposed effective date.</p></div>';
+		} elseif ( function_exists( 'staffswap_monthly_interest_count' ) && staffswap_monthly_interest_count( $user_id ) >= staffswap_monthly_interest_limit( $user_id ) ) {
+			$notice = '<div class="notice" role="alert"><p>' . esc_html( staffswap_interest_quota_notice( $user_id ) ) . '</p></div>';
 		} else {
 			$offer_id = wp_insert_post( array( 'post_type' => 'staffswap_offer', 'post_title' => 'Swap offer: ' . $listing->post_title, 'post_content' => sanitize_textarea_field( wp_unslash( $_POST['notes'] ?? '' ) ), 'post_status' => 'publish', 'post_author' => get_current_user_id() ), true );
 			if ( ! is_wp_error( $offer_id ) ) {
@@ -893,6 +956,14 @@ function staffswap_offer_current_status( $offer_id ) {
 
 function staffswap_offer_action() {
 	if ( ! is_user_logged_in() ) {
+		return;
+	}
+	if ( isset( $_POST['staffswap_offer_milestone'] ) ) {
+		staffswap_handle_offer_milestone();
+		return;
+	}
+	if ( isset( $_POST['staffswap_submit_review'] ) ) {
+		staffswap_handle_offer_review();
 		return;
 	}
 
@@ -999,6 +1070,134 @@ function staffswap_offer_expiry_sweep() {
 }
 add_action( 'staffswap_saved_search_alerts', 'staffswap_offer_expiry_sweep' );
 
+function staffswap_offer_progress_steps() {
+	return array(
+		'paperwork' => 'Paperwork started',
+		'approval' => 'Required approvals received',
+		'transfer_scheduled' => 'Transfer scheduled',
+	);
+}
+
+function staffswap_handle_offer_milestone() {
+	if ( ! is_user_logged_in() || ( function_exists( 'staffswap_has_active_membership' ) && ! staffswap_has_active_membership() ) ) { return; }
+	$offer_id = absint( $_POST['offer_id'] ?? 0 );
+	$key = sanitize_key( wp_unslash( $_POST['staffswap_offer_milestone'] ?? '' ) );
+	$steps = staffswap_offer_progress_steps();
+	if ( ! $offer_id || ! isset( $steps[ $key ] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['staffswap_offer_action_nonce'] ?? '' ) ), 'staffswap_offer_action_' . $offer_id ) ) { return; }
+	$offer = get_post( $offer_id );
+	$user_id = get_current_user_id();
+	$is_party = $offer && 'staffswap_offer' === $offer->post_type && ( (int) $offer->post_author === $user_id || (int) get_post_meta( $offer_id, '_staffswap_offer_recipient', true ) === $user_id );
+	if ( ! $is_party || 'accepted' !== staffswap_offer_current_status( $offer_id ) ) { return; }
+	$milestones = (array) get_post_meta( $offer_id, '_staffswap_offer_milestones', true );
+	$next_key = '';
+	foreach ( $steps as $step_key => $label ) {
+		if ( empty( $milestones[ $step_key ] ) ) { $next_key = $step_key; break; }
+	}
+	if ( $key !== $next_key ) { return; }
+	$milestones[ $key ] = array( 'at' => current_time( 'mysql', true ), 'by' => $user_id );
+	if ( ! update_post_meta( $offer_id, '_staffswap_offer_milestones', $milestones ) ) {
+		error_log( 'StaffSwap offer milestone could not be saved for offer ' . $offer_id . '.' );
+		return;
+	}
+	$other_party = (int) $offer->post_author === $user_id ? absint( get_post_meta( $offer_id, '_staffswap_offer_recipient', true ) ) : (int) $offer->post_author;
+	if ( $other_party && function_exists( 'staffswap_notify_user' ) ) {
+		staffswap_notify_user( $other_party, 'Swap progress updated', wp_get_current_user()->display_name . ' updated the swap progress: ' . $steps[ $key ] . '.' . "\n\n" . 'View the progress: ' . home_url( '/offers/' ), 'offer' );
+	}
+	if ( function_exists( 'staffswap_record_event' ) ) { staffswap_record_event( 'offer_milestone_' . $key, $offer_id, array(), $user_id ); }
+}
+
+function staffswap_handle_offer_review() {
+	if ( ! is_user_logged_in() ) { return; }
+	$offer_id = absint( $_POST['offer_id'] ?? 0 );
+	$user_id = get_current_user_id();
+	if ( ! $offer_id || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['staffswap_offer_review_nonce'] ?? '' ) ), 'staffswap_offer_review_' . $offer_id ) ) { return; }
+	$offer = get_post( $offer_id );
+	$is_party = $offer && 'staffswap_offer' === $offer->post_type && ( (int) $offer->post_author === $user_id || (int) get_post_meta( $offer_id, '_staffswap_offer_recipient', true ) === $user_id );
+	$rating = absint( $_POST['review_rating'] ?? 0 );
+	$reviews = (array) get_post_meta( $offer_id, '_staffswap_offer_reviews', true );
+	if ( ! $is_party || 'completed' !== staffswap_offer_current_status( $offer_id ) || $rating < 1 || $rating > 5 || isset( $reviews[ (string) $user_id ] ) ) { return; }
+	$raw_review = $_POST['review_text'] ?? '';
+	$review_text = is_scalar( $raw_review ) ? sanitize_textarea_field( wp_unslash( (string) $raw_review ) ) : '';
+	$reviews[ (string) $user_id ] = array(
+		'rating' => $rating,
+		'text' => mb_substr( $review_text, 0, 1000 ),
+		'created_at' => current_time( 'mysql', true ),
+	);
+	if ( ! update_post_meta( $offer_id, '_staffswap_offer_reviews', $reviews ) ) {
+		error_log( 'StaffSwap offer review could not be saved for offer ' . $offer_id . '.' );
+		return;
+	}
+	$reviewed_user = (int) $offer->post_author === $user_id ? absint( get_post_meta( $offer_id, '_staffswap_offer_recipient', true ) ) : (int) $offer->post_author;
+	if ( $reviewed_user && function_exists( 'staffswap_notify_user' ) ) {
+		staffswap_notify_user( $reviewed_user, 'You received a swap review', 'Your completed exchange received a new member review. View your profile for details: ' . home_url( '/my-profile/' ), 'general' );
+	}
+	if ( function_exists( 'staffswap_record_event' ) ) { staffswap_record_event( 'offer_review_submitted', $offer_id, array( 'rating' => $rating ), $user_id ); }
+}
+
+function staffswap_profile_reviews_shortcode( $atts ) {
+	$atts = shortcode_atts( array( 'user' => 0 ), $atts, 'staffswap_profile_reviews' );
+	$user_id = absint( $atts['user'] );
+	if ( ! $user_id || ! post_type_exists( 'staffswap_offer' ) ) { return ''; }
+	$offer_query = array(
+		'post_type' => 'staffswap_offer',
+		'post_status' => 'publish',
+		'posts_per_page' => 50,
+		'meta_key' => '_staffswap_offer_status',
+		'meta_value' => 'completed',
+		'orderby' => 'date',
+		'order' => 'DESC',
+		'no_found_rows' => true,
+	);
+	$offers = array_merge(
+		get_posts( array_merge( $offer_query, array( 'author' => $user_id ) ) ),
+		get_posts( array_merge( $offer_query, array( 'meta_query' => array( array( 'key' => '_staffswap_offer_recipient', 'value' => $user_id ) ) ) ) )
+	);
+	$offers = array_values( array_reduce( $offers, function( $unique, $offer ) {
+		$unique[ $offer->ID ] = $offer;
+		return $unique;
+	}, array() ) );
+	usort( $offers, function( $first, $second ) {
+		return strcmp( $second->post_date, $first->post_date );
+	} );
+	$offers = array_slice( $offers, 0, 50 );
+	$reviews = array();
+	foreach ( $offers as $offer ) {
+		$sender_id = (int) $offer->post_author;
+		$recipient_id = absint( get_post_meta( $offer->ID, '_staffswap_offer_recipient', true ) );
+		if ( $sender_id !== $user_id && $recipient_id !== $user_id ) { continue; }
+		$reviewer_id = $sender_id === $user_id ? $recipient_id : $sender_id;
+		$offer_reviews = (array) get_post_meta( $offer->ID, '_staffswap_offer_reviews', true );
+		if ( empty( $offer_reviews[ (string) $reviewer_id ]['rating'] ) ) { continue; }
+		$reviews[] = array(
+			'rating' => absint( $offer_reviews[ (string) $reviewer_id ]['rating'] ),
+			'text' => sanitize_textarea_field( $offer_reviews[ (string) $reviewer_id ]['text'] ?? '' ),
+			'reviewer' => get_the_author_meta( 'display_name', $reviewer_id ),
+			'date' => $offer_reviews[ (string) $reviewer_id ]['created_at'] ?? '',
+		);
+	}
+	if ( ! $reviews ) { return ''; }
+	$average = array_sum( wp_list_pluck( $reviews, 'rating' ) ) / count( $reviews );
+	ob_start(); ?>
+	<section class="panel staffswap-profile-reviews"><h2>Swap reviews</h2><p><strong><?php echo esc_html( number_format_i18n( $average, 1 ) ); ?>/5</strong> average from <?php echo esc_html( count( $reviews ) ); ?> completed swap<?php echo 1 === count( $reviews ) ? '' : 's'; ?></p>
+		<?php foreach ( $reviews as $review ) : ?><article class="staffswap-profile-review"><strong><?php echo esc_html( $review['rating'] ); ?>/5</strong><span>From <?php echo esc_html( $review['reviewer'] ); ?><?php if ( $review['date'] ) : ?> &middot; <?php echo esc_html( mysql2date( 'j M Y', $review['date'] ) ); ?><?php endif; ?></span><?php if ( $review['text'] ) : ?><p><?php echo esc_html( $review['text'] ); ?></p><?php endif; ?></article><?php endforeach; ?>
+	</section>
+	<?php return ob_get_clean();
+}
+add_shortcode( 'staffswap_profile_reviews', 'staffswap_profile_reviews_shortcode' );
+
+function staffswap_profile_reviews_in_profile_shortcode() {
+	if ( ! shortcode_exists( 'staffswap_profile' ) ) { return; }
+	remove_shortcode( 'staffswap_profile' );
+	add_shortcode( 'staffswap_profile', 'staffswap_profile_with_reviews_shortcode' );
+}
+add_action( 'init', 'staffswap_profile_reviews_in_profile_shortcode', 99 );
+
+function staffswap_profile_with_reviews_shortcode( $atts ) {
+	$atts = shortcode_atts( array( 'user' => get_current_user_id() ), $atts, 'staffswap_profile' );
+	$profile = function_exists( 'staffswap_profile_shortcode' ) ? staffswap_profile_shortcode( $atts ) : '';
+	return $profile . do_shortcode( '[staffswap_profile_reviews user="' . absint( $atts['user'] ) . '"]' );
+}
+
 function staffswap_offers_shortcode() {
 	if ( ! is_user_logged_in() ) { return '<div class="panel"><p>Please sign in to view offers.</p></div>'; }
 	$offers = new WP_Query( array( 'post_type' => 'staffswap_offer', 'post_status' => 'publish', 'posts_per_page' => 30, 'meta_key' => '_staffswap_offer_recipient', 'meta_value' => get_current_user_id() ) );
@@ -1018,6 +1217,15 @@ function staffswap_offer_item( $offer, $can_respond = false ) {
 	$document_url = staffswap_offer_document_url( $offer_id );
 	$letter_url = staffswap_offer_letter_url( $offer_id, get_current_user_id() );
 	$status_log = array_filter( (array) get_post_meta( $offer_id, '_staffswap_offer_status_log', true ) );
+	$milestones = (array) get_post_meta( $offer_id, '_staffswap_offer_milestones', true );
+	$progress_steps = staffswap_offer_progress_steps();
+	$next_milestone = '';
+	foreach ( $progress_steps as $step_key => $step_label ) {
+		if ( empty( $milestones[ $step_key ] ) ) { $next_milestone = $step_key; break; }
+	}
+	$offer_reviews = (array) get_post_meta( $offer_id, '_staffswap_offer_reviews', true );
+	$my_review = $offer_reviews[ (string) get_current_user_id() ] ?? null;
+	$is_offer_party = (int) $offer->post_author === get_current_user_id() || absint( get_post_meta( $offer_id, '_staffswap_offer_recipient', true ) ) === get_current_user_id();
 	$nonce = wp_nonce_field( 'staffswap_offer_action_' . $offer_id, 'staffswap_offer_action_nonce', true, false );
 	$hidden = '<input type="hidden" name="offer_id" value="' . esc_attr( $offer_id ) . '">';
 	ob_start(); ?>
@@ -1038,6 +1246,15 @@ function staffswap_offer_item( $offer, $can_respond = false ) {
 			<div><dt>Housing</dt><dd><?php echo esc_html( $housing ); ?></dd></div>
 			<?php if ( $expires_at ) : ?><div><dt>Expires</dt><dd><?php echo esc_html( $expires_at ); ?></dd></div><?php endif; ?>
 		</dl>
+		<?php if ( in_array( $status, array( 'accepted', 'completed' ), true ) ) : ?>
+			<section class="offer-progress" aria-label="Swap progress"><h4>Swap progress</h4><ol>
+				<li class="is-complete"><strong>Offer accepted</strong></li>
+				<?php foreach ( $progress_steps as $step_key => $step_label ) : $milestone = $milestones[ $step_key ] ?? array(); ?><li class="<?php echo $milestone ? 'is-complete' : ''; ?>"><strong><?php echo esc_html( $step_label ); ?></strong><?php if ( $milestone ) : ?><small><?php echo esc_html( mysql2date( 'j M Y', $milestone['at'] ?? '' ) ); ?> &middot; <?php echo esc_html( get_the_author_meta( 'display_name', absint( $milestone['by'] ?? 0 ) ) ); ?></small><?php endif; ?></li><?php endforeach; ?>
+				<li class="<?php echo 'completed' === $status ? 'is-complete' : ''; ?>"><strong>Swap completed</strong></li>
+			</ol>
+			<?php if ( 'accepted' === $status && $is_offer_party && $next_milestone ) : ?><form method="post"><?php echo $hidden . $nonce; ?><button type="submit" name="staffswap_offer_milestone" value="<?php echo esc_attr( $next_milestone ); ?>">Mark <?php echo esc_html( $progress_steps[ $next_milestone ] ); ?></button></form><?php endif; ?>
+			</section>
+		<?php endif; ?>
 		<?php if ( $parent_id ) : ?><p class="muted offer-card__note">Counter-offer to: <?php echo esc_html( get_the_title( $parent_id ) ); ?></p><?php endif; ?>
 		<?php if ( '' !== trim( $offer->post_content ) ) : ?><p class="offer-card__message"><?php echo esc_html( $offer->post_content ); ?></p><?php endif; ?>
 		<div class="offer-docs">
@@ -1068,6 +1285,10 @@ function staffswap_offer_item( $offer, $can_respond = false ) {
 				<textarea name="status_reason" rows="2" placeholder="Note (optional)"></textarea>
 				<div class="offer-actions__buttons"><button type="submit" name="staffswap_offer_action" value="completed">Mark swap completed</button><button type="submit" name="staffswap_offer_action" value="cancelled" class="button--ghost">Cancel agreement</button></div>
 			</form>
+		<?php endif; ?>
+		<?php if ( 'completed' === $status && $is_offer_party ) : ?>
+			<?php if ( $my_review ) : ?><p class="notice" role="status">Thanks for reviewing your completed swap.</p>
+			<?php else : ?><form method="post" class="offer-review-form"><h4>Review your swap partner</h4><p class="muted">Your rating and optional feedback will appear on their public profile.</p><input type="hidden" name="offer_id" value="<?php echo esc_attr( $offer_id ); ?>"><div class="field"><label for="review-rating-<?php echo esc_attr( $offer_id ); ?>">Rating</label><select id="review-rating-<?php echo esc_attr( $offer_id ); ?>" name="review_rating" required><option value="">Choose a rating</option><?php for ( $rating = 5; $rating >= 1; --$rating ) : ?><option value="<?php echo esc_attr( $rating ); ?>"><?php echo esc_html( $rating ); ?>/5</option><?php endfor; ?></select></div><div class="field"><label for="review-text-<?php echo esc_attr( $offer_id ); ?>">Feedback <span class="muted">(optional)</span></label><textarea id="review-text-<?php echo esc_attr( $offer_id ); ?>" name="review_text" rows="3" maxlength="1000"></textarea></div><?php wp_nonce_field( 'staffswap_offer_review_' . $offer_id, 'staffswap_offer_review_nonce' ); ?><button type="submit" name="staffswap_submit_review" value="1">Submit review</button></form><?php endif; ?>
 		<?php endif; ?>
 	</article>
 	<?php return ob_get_clean();
@@ -1117,8 +1338,8 @@ register_activation_hook( __FILE__, 'staffswap_offers_page' );
 add_action( 'admin_init', 'staffswap_offers_page' );
 
 function staffswap_membership_gate_shortcode( $shortcode, $atts, $action ) {
-	if ( is_user_logged_in() && function_exists( 'staffswap_has_active_membership' ) && ! staffswap_has_active_membership() ) {
-		return function_exists( 'staffswap_membership_required_notice' ) ? staffswap_membership_required_notice( $action ) : '<div class="panel"><h2>Membership required</h2><p>Activate your membership to ' . esc_html( $action ) . '.</p></div>';
+	if ( is_user_logged_in() && function_exists( 'staffswap_monthly_interest_count' ) && staffswap_monthly_interest_count() >= staffswap_monthly_interest_limit() ) {
+		return '<div class="panel"><h2>Monthly contact limit reached</h2><p class="muted">' . esc_html( staffswap_interest_quota_notice() ) . '</p><a class="button button--outline" href="' . esc_url( home_url( '/pricing/' ) ) . '">View membership plans</a></div>';
 	}
 	return 'staffswap_contact' === $shortcode ? staffswap_contact_form_shortcode( $atts ) : staffswap_offer_form_shortcode( $atts );
 }
