@@ -14,6 +14,53 @@
     document.addEventListener('keydown', function (event) { if (event.key === 'Escape') setMenu(false); });
     window.matchMedia('(min-width: 761px)').addEventListener('change', function (mq) { if (mq.matches) setMenu(false); });
   }
+  if (nav) {
+    nav.querySelectorAll('li.menu-item-has-children').forEach(function (item, index) {
+      var submenu = null;
+      var link = null;
+      Array.prototype.forEach.call(item.children, function (child) {
+        if (child.tagName === 'UL' && child.classList.contains('sub-menu')) submenu = child;
+        if (child.tagName === 'A') link = child;
+      });
+      if (!submenu || !link) return;
+
+      if (!submenu.id) submenu.id = 'primary-nav-submenu-' + index;
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'submenu-toggle';
+      button.setAttribute('aria-expanded', 'false');
+      button.setAttribute('aria-controls', submenu.id);
+      button.setAttribute('aria-label', 'Toggle submenu for ' + link.textContent.trim());
+      button.innerHTML = '<span aria-hidden="true">+</span>';
+      item.insertBefore(button, submenu);
+      button.addEventListener('click', function () {
+        var open = !item.classList.contains('submenu-open');
+        nav.querySelectorAll('li.menu-item-has-children.submenu-open').forEach(function (openItem) {
+          if (openItem !== item && !openItem.contains(item)) {
+            openItem.classList.remove('submenu-open');
+            var openButton = openItem.querySelector('.submenu-toggle');
+            if (openButton) {
+              openButton.setAttribute('aria-expanded', 'false');
+              openButton.innerHTML = '<span aria-hidden="true">+</span>';
+            }
+          }
+        });
+        item.classList.toggle('submenu-open', open);
+        button.setAttribute('aria-expanded', open ? 'true' : 'false');
+        button.innerHTML = '<span aria-hidden="true">' + (open ? '-' : '+') + '</span>';
+        if (!open) {
+          item.querySelectorAll('li.menu-item-has-children.submenu-open').forEach(function (childItem) {
+            childItem.classList.remove('submenu-open');
+            var childButton = childItem.querySelector('.submenu-toggle');
+            if (childButton) {
+              childButton.setAttribute('aria-expanded', 'false');
+              childButton.innerHTML = '<span aria-hidden="true">+</span>';
+            }
+          });
+        }
+      });
+    });
+  }
   document.querySelectorAll('[data-profile-menu]').forEach(function (wrapper) {
     var trigger = wrapper.querySelector('[data-profile-trigger]');
     var dropdown = wrapper.querySelector('[data-profile-dropdown]');

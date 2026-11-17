@@ -91,6 +91,8 @@ Open **Appearance > Menus**:
 3. Confirm **Primary Menu** is selected under Menu Settings.
 4. Select **Save Menu**.
 
+To add a dropdown, drag a menu item slightly to the right beneath its parent in the menu structure, then save. Dropdowns open on hover or keyboard focus on desktop and expand with a button on mobile.
+
 ### Reading settings
 
 Open **Settings > Reading** and confirm:
