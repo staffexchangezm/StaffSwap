@@ -613,6 +613,7 @@ html{scroll-padding-top:90px}
 .swap-visual--image:before,.swap-visual--image:after{display:none}
 .swap-node{min-width:0}
 .quick-search{grid-template-columns:repeat(4,minmax(0,1fr)) minmax(150px,1.2fr)}
+.site-main>.landing-hero .quick-search{margin-top:24px}
 .quick-search .field{min-width:0;margin:0;padding:14px 12px}
 .quick-search label{line-height:1.3}
 .quick-search input{width:100%;min-width:0}
