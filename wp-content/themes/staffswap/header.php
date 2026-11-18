@@ -23,7 +23,11 @@ if ( ! $staffswap_elementor_header ) :
 	?>
 	<header class="site-header site-header--brand">
 		<div class="site-header__inner">
-			<a class="brand brand--light" href="<?php echo esc_url( home_url( '/' ) ); ?>" aria-label="<?php echo esc_attr( staffswap_home_setting( 'site_name', 'StaffExchangeHub' ) ); ?>"><?php if ( function_exists( 'the_custom_logo' ) && has_custom_logo() ) : ?><?php the_custom_logo(); ?><?php else : ?><?php echo esc_html( staffswap_home_setting( 'site_name', 'StaffExchangeHub' ) ); ?><?php endif; ?></a>
+			<?php if ( function_exists( 'the_custom_logo' ) && has_custom_logo() ) : ?>
+				<div class="brand brand--light"><?php the_custom_logo(); ?></div>
+			<?php else : ?>
+				<a class="brand brand--light" href="<?php echo esc_url( home_url( '/' ) ); ?>" aria-label="<?php echo esc_attr( staffswap_home_setting( 'site_name', 'StaffExchangeHub' ) ); ?>"><?php echo esc_html( staffswap_home_setting( 'site_name', 'StaffExchangeHub' ) ); ?></a>
+			<?php endif; ?>
 			<button class="menu-toggle" type="button" data-mobile-menu aria-expanded="false" aria-controls="primary-nav" aria-label="<?php echo esc_attr__( 'Toggle menu', 'staffswap' ); ?>"><?php echo esc_html__( 'Menu', 'staffswap' ); ?></button>
 			<nav class="primary-nav" id="primary-nav" aria-label="<?php echo esc_attr__( 'Primary navigation', 'staffswap' ); ?>"><?php if ( ! empty( trim( $staffswap_menu ) ) ) { echo $staffswap_menu; } else { staffswap_fallback_menu(); } ?></nav>
 			<div class="header-actions">
