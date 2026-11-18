@@ -1412,6 +1412,16 @@ body.page-id-500>.site-main{padding-inline:12px}
 	.site-header--brand .primary-nav .sub-menu a:focus{background:rgba(255,255,255,.12)}
 }
 @media(max-width:1280px){
+	.site-header--brand .site-header__inner{
+		display:grid;
+		grid-template-columns:minmax(0,1fr) auto auto;
+		align-items:center;
+		gap:clamp(4px,1vw,10px);
+		min-height:64px;
+	}
+	.site-header--brand .brand{grid-column:1;grid-row:1;min-width:0}
+	.site-header--brand .header-actions{grid-column:2;grid-row:1;margin-left:0;min-width:0}
+	.site-header--brand .menu-toggle{grid-column:3;grid-row:1}
 	.site-header--brand .menu-toggle{display:block;order:3;margin-left:0}
 	.site-header--brand .header-actions{order:2}
 	.site-header--brand .primary-nav{display:none}
