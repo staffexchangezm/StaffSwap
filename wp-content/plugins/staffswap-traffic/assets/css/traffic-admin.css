@@ -533,3 +533,141 @@
 		display: none;
 	}
 }
+
+#staffswap_traffic_dashboard_widget .inside {
+	padding: 12px 16px 16px;
+}
+
+.staffswap-traffic-widget-metrics {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 12px;
+}
+
+.staffswap-traffic-widget-metrics > div {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	padding: 14px;
+	border: 1px solid #e7eaf0;
+	border-radius: 8px;
+	background: #fff;
+}
+
+.staffswap-traffic-widget-metrics span,
+.staffswap-traffic-widget-top > span {
+	color: #68758a;
+	font-size: 12px;
+}
+
+.staffswap-traffic-widget-metrics strong {
+	color: #243653;
+	font-size: 24px;
+	line-height: 1.15;
+}
+
+.staffswap-traffic-widget-metrics small {
+	color: #8993a5;
+	font-size: 11px;
+}
+
+.staffswap-traffic-widget-chart {
+	display: grid;
+	grid-template-columns: repeat(7, minmax(0, 1fr));
+	align-items: end;
+	gap: 10px;
+	height: 112px;
+	margin: 20px 4px 14px;
+	padding: 0 4px;
+	border-bottom: 1px solid #e7eaf0;
+	background: repeating-linear-gradient(to bottom, transparent 0, transparent 26px, #f1f3f7 27px, transparent 28px);
+}
+
+.staffswap-traffic-widget-chart > div {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: flex-end;
+	height: 100%;
+	gap: 5px;
+}
+
+.staffswap-traffic-widget-bar {
+	display: block;
+	width: min(100%, 28px);
+	min-height: 2px;
+	border-radius: 4px 4px 0 0;
+	background: linear-gradient(180deg, #7d89e7, #5366d6);
+}
+
+.staffswap-traffic-widget-chart small {
+	color: #8993a5;
+	font-size: 10px;
+}
+
+.staffswap-traffic-widget-top {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+	margin: 0 0 14px;
+	padding: 11px 12px;
+	border-radius: 7px;
+	background: #f7f8fb;
+}
+
+.staffswap-traffic-widget-top code {
+	flex: 1;
+	overflow: hidden;
+	color: #344563;
+	background: transparent;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.staffswap-traffic-widget-top strong {
+	flex-shrink: 0;
+	color: #344563;
+	font-size: 11px;
+}
+
+.staffswap-traffic-widget-devices {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px 14px;
+	margin: -3px 0 14px;
+	color: #68758a;
+	font-size: 11px;
+}
+
+.staffswap-traffic-widget-devices span {
+	margin-right: auto;
+}
+
+.staffswap-traffic-widget-devices strong {
+	color: #344563;
+	font-weight: 600;
+}
+
+.staffswap-traffic-widget .button {
+	border-color: #4658c8;
+	border-radius: 5px;
+	background: #4658c8;
+}
+
+#wpadminbar #wp-admin-bar-staffswap-traffic-default .ab-item {
+	max-width: 300px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+@media (max-width: 782px) {
+	.staffswap-traffic-widget-top {
+		flex-wrap: wrap;
+	}
+
+	.staffswap-traffic-widget-top > span {
+		width: 100%;
+	}
+}

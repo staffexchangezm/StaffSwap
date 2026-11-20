@@ -2,7 +2,7 @@
 /**
  * Plugin Name: StaffSwap Traffic Insights
  * Description: Privacy-conscious traffic reports for StaffSwap, including page views, referral domains, and device summaries.
- * Version: 1.1.0
+ * Version: 1.2.0
  * Requires at least: 6.4
  * Requires PHP: 7.4
  * Text Domain: staffswap-traffic
@@ -153,6 +153,104 @@ function staffswap_traffic_record_view() {
 	staffswap_traffic_increment( 'devices', 'device_type', wp_is_mobile() ? 'mobile' : 'desktop' );
 }
 add_action( 'wp', 'staffswap_traffic_record_view' );
+
+function staffswap_traffic_get_summary() {
+	static $summary = null;
+	if ( null !== $summary ) {
+		return $summary;
+	}
+
+	global $wpdb;
+	$pages_table = staffswap_traffic_table( 'pages' );
+	$devices_table = staffswap_traffic_table( 'devices' );
+	$today = current_time( 'Y-m-d' );
+	$start_date = ( new DateTimeImmutable( 'today', wp_timezone() ) )->modify( '-6 days' )->format( 'Y-m-d' );
+	$summary = array(
+		'today' => (int) $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(SUM(views), 0) FROM $pages_table WHERE visit_date = %s", $today ) ),
+		'week' => (int) $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(SUM(views), 0) FROM $pages_table WHERE visit_date >= %s", $start_date ) ),
+		'daily' => $wpdb->get_results( $wpdb->prepare( "SELECT visit_date, SUM(views) AS total FROM $pages_table WHERE visit_date >= %s GROUP BY visit_date ORDER BY visit_date ASC", $start_date ), OBJECT_K ),
+		'top_page' => $wpdb->get_row( $wpdb->prepare( "SELECT page_path, SUM(views) AS total FROM $pages_table WHERE visit_date = %s GROUP BY page_path ORDER BY total DESC LIMIT 1", $today ) ),
+		'devices' => $wpdb->get_results( $wpdb->prepare( "SELECT device_type, SUM(views) AS total FROM $devices_table WHERE visit_date = %s GROUP BY device_type", $today ) ),
+	);
+	$summary['device_counts'] = array( 'mobile' => 0, 'desktop' => 0 );
+	foreach ( $summary['devices'] as $device ) {
+		if ( isset( $summary['device_counts'][ $device->device_type ] ) ) {
+			$summary['device_counts'][ $device->device_type ] = (int) $device->total;
+		}
+	}
+
+	return $summary;
+}
+
+function staffswap_traffic_register_dashboard_widget() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+	wp_add_dashboard_widget( 'staffswap_traffic_dashboard_widget', 'StaffSwap Traffic', 'staffswap_traffic_dashboard_widget' );
+}
+add_action( 'wp_dashboard_setup', 'staffswap_traffic_register_dashboard_widget' );
+
+function staffswap_traffic_dashboard_widget() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+	$summary = staffswap_traffic_get_summary();
+	$max_daily_views = 1;
+	foreach ( $summary['daily'] as $daily_total ) {
+		$max_daily_views = max( $max_daily_views, (int) $daily_total->total );
+	}
+	$today = new DateTimeImmutable( 'today', wp_timezone() );
+	?>
+	<div class="staffswap-traffic-widget">
+		<div class="staffswap-traffic-widget-metrics">
+			<div><span>Today</span><strong><?php echo esc_html( number_format_i18n( $summary['today'] ) ); ?></strong><small>page views</small></div>
+			<div><span>Last 7 days</span><strong><?php echo esc_html( number_format_i18n( $summary['week'] ) ); ?></strong><small>page views</small></div>
+		</div>
+		<div class="staffswap-traffic-widget-chart" role="img" aria-label="Daily page views over the last seven days">
+			<?php for ( $offset = 6; $offset >= 0; $offset-- ) :
+				$date = $today->modify( '-' . $offset . ' days' );
+				$date_key = $date->format( 'Y-m-d' );
+				$views = isset( $summary['daily'][ $date_key ] ) ? (int) $summary['daily'][ $date_key ]->total : 0;
+				$height = $views ? max( 5, (int) round( ( $views / $max_daily_views ) * 100 ) ) : 2;
+				?>
+				<div><span class="staffswap-traffic-widget-bar" style="height:<?php echo esc_attr( $height ); ?>%" title="<?php echo esc_attr( $date->format( get_option( 'date_format' ) ) . ': ' . number_format_i18n( $views ) . ' views' ); ?>"></span><small><?php echo esc_html( $date->format( 'D' ) ); ?></small></div>
+			<?php endfor; ?>
+		</div>
+		<p class="staffswap-traffic-widget-top"><?php if ( $summary['top_page'] ) : ?><span>Most viewed today</span><code><?php echo esc_html( $summary['top_page']->page_path ); ?></code><strong><?php echo esc_html( number_format_i18n( $summary['top_page']->total ) ); ?> views</strong><?php else : ?><span>No page views recorded today yet.</span><?php endif; ?></p>
+		<p class="staffswap-traffic-widget-devices"><span>Today's devices</span><strong><?php echo esc_html( number_format_i18n( $summary['device_counts']['mobile'] ) ); ?> mobile</strong><strong><?php echo esc_html( number_format_i18n( $summary['device_counts']['desktop'] ) ); ?> desktop</strong></p>
+		<a class="button button-primary" href="<?php echo esc_url( staffswap_traffic_dashboard_url() ); ?>">Open traffic dashboard</a>
+	</div>
+	<?php
+}
+
+function staffswap_traffic_dashboard_url() {
+	if ( post_type_exists( 'swap_listing' ) ) {
+		return admin_url( 'edit.php?post_type=swap_listing&page=staffswap-traffic' );
+	}
+	return admin_url( 'tools.php?page=staffswap-traffic' );
+}
+
+function staffswap_traffic_admin_bar( $admin_bar ) {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+	$summary = staffswap_traffic_get_summary();
+	$dashboard_url = staffswap_traffic_dashboard_url();
+	$admin_bar->add_node( array(
+		'id' => 'staffswap-traffic',
+		'title' => esc_html( 'Traffic: ' . number_format_i18n( $summary['today'] ) ),
+		'href' => $dashboard_url,
+		'meta' => array( 'title' => 'Today\'s page views. Hover for more traffic stats.' ),
+	) );
+	$admin_bar->add_node( array( 'id' => 'staffswap-traffic-today', 'parent' => 'staffswap-traffic', 'title' => esc_html( 'Today: ' . number_format_i18n( $summary['today'] ) . ' page views' ) ) );
+	$admin_bar->add_node( array( 'id' => 'staffswap-traffic-week', 'parent' => 'staffswap-traffic', 'title' => esc_html( 'Last 7 days: ' . number_format_i18n( $summary['week'] ) . ' page views' ) ) );
+	$admin_bar->add_node( array( 'id' => 'staffswap-traffic-mobile', 'parent' => 'staffswap-traffic', 'title' => esc_html( 'Mobile today: ' . number_format_i18n( $summary['device_counts']['mobile'] ) ) ) );
+	$admin_bar->add_node( array( 'id' => 'staffswap-traffic-desktop', 'parent' => 'staffswap-traffic', 'title' => esc_html( 'Desktop today: ' . number_format_i18n( $summary['device_counts']['desktop'] ) ) ) );
+	$top_page = $summary['top_page'] ? $summary['top_page']->page_path : 'No views yet today';
+	$admin_bar->add_node( array( 'id' => 'staffswap-traffic-top-page', 'parent' => 'staffswap-traffic', 'title' => esc_html( 'Top page today: ' . $top_page ) ) );
+	$admin_bar->add_node( array( 'id' => 'staffswap-traffic-open', 'parent' => 'staffswap-traffic', 'title' => esc_html( 'Open traffic dashboard' ), 'href' => $dashboard_url ) );
+}
+add_action( 'admin_bar_menu', 'staffswap_traffic_admin_bar', 90 );
 
 function staffswap_traffic_admin_menu() {
 	$parent = post_type_exists( 'swap_listing' ) ? 'edit.php?post_type=swap_listing' : 'tools.php';
@@ -309,12 +407,19 @@ function staffswap_traffic_admin_screen() {
 }
 
 function staffswap_traffic_admin_styles( $hook ) {
-	if ( ! in_array( $hook, array( 'swap_listing_page_staffswap-traffic', 'tools_page_staffswap-traffic' ), true ) ) {
+	if ( ! in_array( $hook, array( 'swap_listing_page_staffswap-traffic', 'tools_page_staffswap-traffic', 'index.php' ), true ) ) {
 		return;
 	}
-	wp_enqueue_style( 'staffswap-traffic-admin', plugin_dir_url( __FILE__ ) . 'assets/css/traffic-admin.css', array( 'common' ), '1.1.0' );
+	wp_enqueue_style( 'staffswap-traffic-admin', plugin_dir_url( __FILE__ ) . 'assets/css/traffic-admin.css', array( 'common' ), '1.2.0' );
 }
 add_action( 'admin_enqueue_scripts', 'staffswap_traffic_admin_styles' );
+
+function staffswap_traffic_frontend_admin_bar_styles() {
+	if ( is_user_logged_in() && current_user_can( 'manage_options' ) && is_admin_bar_showing() ) {
+		wp_enqueue_style( 'staffswap-traffic-admin', plugin_dir_url( __FILE__ ) . 'assets/css/traffic-admin.css', array(), '1.2.0' );
+	}
+}
+add_action( 'wp_enqueue_scripts', 'staffswap_traffic_frontend_admin_bar_styles' );
 
 function staffswap_traffic_privacy_policy_content() {
 	if ( ! function_exists( 'wp_add_privacy_policy_content' ) ) {
